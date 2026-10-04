@@ -1,0 +1,15 @@
+<!-- @dsCard group="Actions" height=88 -->
+<div id="root"></div>
+<script>
+const h = React.createElement;
+const { Button, IconButton } = window.LiveAI;
+ReactDOM.createRoot(document.getElementById("root")).render(h(React.Fragment, null, h('div',{className:'flex items-center gap-1 p-4'},
+  h(IconButton,{icon:'download',label:'Tải về'}),
+  h(IconButton,{icon:'open_in_new',label:'Chi tiết'}),
+  h(IconButton,{icon:'content_copy',label:'Nhân bản'}),
+  h(IconButton,{icon:'delete',label:'Xoá',variant:'danger'}),
+  h('span',{className:'mx-2 h-6 border-l border-outline-variant'}),
+  h(IconButton,{icon:'menu',label:'Mở menu',variant:'tonal'}),
+  h(IconButton,{icon:'add',label:'Thêm',variant:'filled'}),
+  h(IconButton,{icon:'chevron_left',label:'Trước',disabled:true}))));
+</script>

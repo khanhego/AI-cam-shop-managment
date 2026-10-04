@@ -1,0 +1,11 @@
+<!-- @dsCard group="Feedback" height=260 -->
+<div id="root"></div>
+<script>
+const h = React.createElement;
+const { Alert, Button } = window.LiveAI;
+ReactDOM.createRoot(document.getElementById("root")).render(h(React.Fragment, null, h('div',{className:'max-w-2xl p-4'},
+  h(Alert,{kind:'error'},'Link Drive chưa được chia sẻ công khai (DRIVE_ACCESS_DENIED). Mở quyền xem rồi bấm Thử lại.'),
+  h(Alert,{kind:'warning',action:h(Button,{variant:'text',size:'sm'},'Gia hạn')},'Gói Pro hết hạn sau 3 ngày.'),
+  h(Alert,{kind:'success'},'Đã sinh thêm 4 câu hỏi.'),
+  h(Alert,{kind:'info'},'Clip đang được cắt. File sẵn sàng trong khoảng 1 phút sau khi đóng phiên.'))));
+</script>

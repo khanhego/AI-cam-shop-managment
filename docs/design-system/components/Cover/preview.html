@@ -1,0 +1,41 @@
+<!-- @dsCard height=288 -->
+<div class="cover">
+  <svg class="art" viewBox="480 0 480 288" width="480" height="288" aria-hidden="true">
+    <!--
+      blocks: primary 192x288 slab (bleeds top/bottom) · primary-container 272x136 (bleeds top/right, rx radius-xl) · price disc 128 (rx 64) · secondary-container 128x136 (bleeds right/bottom, rx radius-xl)
+      arrangement: one tall slab with satellites, right of x=480, gaps = space-4 (16px)
+      pattern: pills (buttons and chips are radius-full) — 12 pills 64x24 cut out of the slab in surface, pitch space-4/space-5; chosen because every action in LiveAI is a pill
+      steps/radii: space-4 16, space-6 24; radius-xl 28, radius-full (pill = half the short side: 12, disc 64)
+    -->
+    <rect class="b-primary" x="480" y="0" width="192" height="288"/>
+    <g class="cut">
+      <rect x="504" y="28" width="64" height="24" rx="12"/><rect x="584" y="28" width="64" height="24" rx="12"/>
+      <rect x="504" y="72" width="64" height="24" rx="12"/><rect x="584" y="72" width="64" height="24" rx="12"/>
+      <rect x="504" y="116" width="64" height="24" rx="12"/><rect x="584" y="116" width="64" height="24" rx="12"/>
+      <rect x="504" y="160" width="64" height="24" rx="12"/><rect x="584" y="160" width="64" height="24" rx="12"/>
+      <rect x="504" y="204" width="64" height="24" rx="12"/><rect x="584" y="204" width="64" height="24" rx="12"/>
+      <rect x="504" y="248" width="64" height="24" rx="12"/><rect x="584" y="248" width="64" height="24" rx="12"/>
+    </g>
+    <rect class="b-container r-xl" x="688" y="-28" width="300" height="164"/>
+    <rect class="b-price" x="688" y="152" width="128" height="128" rx="64"/>
+    <rect class="b-secondary r-xl" x="832" y="152" width="156" height="164"/>
+  </svg>
+  <div class="text">
+    <div class="name">Hệ thống X</div>
+    <div class="tag">Material 3 cho ghi hình và đối soát đóng gói</div>
+  </div>
+</div>
+<style>
+  html, body { margin: 0; }
+  .cover { position: relative; width: 960px; height: 288px; overflow: hidden; background: var(--surface); }
+  .art { position: absolute; left: 480px; top: 0; }
+  .b-primary { fill: var(--primary); }
+  .b-container { fill: var(--primary-container); }
+  .b-price { fill: var(--price); }
+  .b-secondary { fill: var(--secondary-container); }
+  .cut rect { fill: var(--surface); }
+  .r-xl { rx: var(--radius-xl); }
+  .text { position: absolute; left: 40px; bottom: 36px; max-width: 440px; }
+  .name { font-family: var(--font-sans); font-weight: 700; font-size: 120px; line-height: .92; letter-spacing: -2px; color: var(--on-surface); }
+  .tag { margin-top: 16px; font-family: var(--font-sans); font-size: 14px; line-height: 20px; color: var(--on-surface-variant); }
+</style>

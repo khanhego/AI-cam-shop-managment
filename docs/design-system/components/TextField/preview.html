@@ -1,0 +1,11 @@
+<!-- @dsCard group="Inputs" height=250 -->
+<div id="root"></div>
+<script>
+const h = React.createElement;
+const { TextField } = window.LiveAI;
+ReactDOM.createRoot(document.getElementById("root")).render(h(React.Fragment, null, h('div',{className:'card m-4 grid max-w-xl gap-x-4 p-4 sm:grid-cols-2'},
+  h(TextField,{label:'Tên đăng nhập',name:'u',defaultValue:'lananh.shop'}),
+  h(TextField,{label:'Email *',name:'e',placeholder:'ten@shop.vn',hint:'Dùng để nhận link đặt lại mật khẩu'}),
+  h(TextField,{label:'Mật khẩu',name:'p',type:'password',defaultValue:'12345678',error:'Mật khẩu cần có chữ và số, tối thiểu 8 ký tự'}),
+  h(TextField,{label:'Shop ID',name:'s',defaultValue:'880001001',disabled:true}))));
+</script>

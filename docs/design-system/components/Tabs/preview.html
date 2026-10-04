@@ -1,0 +1,7 @@
+<!-- @dsCard group="Navigation" height=90 -->
+<div id="root"></div>
+<script>
+const h = React.createElement;
+const { Tabs } = window.LiveAI;
+ReactDOM.createRoot(document.getElementById("root")).render(h(React.Fragment, null, h(function(){const [v,s]=React.useState('segments');return h('div',{className:'p-4'},h(Tabs,{label:'Kết quả phân tích',value:v,onChange:s,items:[['segments','Segments (12)'],['transcript','Transcript'],['raw','Dữ liệu thô']]}))})));
+</script>

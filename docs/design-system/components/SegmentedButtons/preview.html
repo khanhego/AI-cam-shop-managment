@@ -1,0 +1,7 @@
+<!-- @dsCard group="Navigation" height=80 -->
+<div id="root"></div>
+<script>
+const h = React.createElement;
+const { Button, SegmentedButtons } = window.LiveAI;
+ReactDOM.createRoot(document.getElementById("root")).render(h(React.Fragment, null, h(function(){const [v,s]=React.useState('list');return h('div',{className:'p-4'},h(SegmentedButtons,{label:'Chế độ xem',value:v,onChange:s,options:[['list','Danh sách','view_list'],['group','Nhóm','account_tree']]}))})));
+</script>

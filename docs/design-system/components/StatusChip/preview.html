@@ -1,0 +1,14 @@
+<!-- @dsCard group="Feedback" height=110 -->
+<div id="root"></div>
+<script>
+const h = React.createElement;
+const { StatusChip } = window.LiveAI;
+ReactDOM.createRoot(document.getElementById("root")).render(h(React.Fragment, null, h('div',{className:'flex flex-wrap items-center gap-2 p-4'},
+  h(StatusChip,{tone:'success',icon:'check_circle'},'Sẵn sàng'),
+  h(StatusChip,{tone:'warning',icon:'autorenew'},'Phân tích AI 60%'),
+  h(StatusChip,{tone:'error',icon:'error'},'Lỗi'),
+  h(StatusChip,{tone:'primary',icon:'verified'},'Đã rà soát'),
+  h(StatusChip,{tone:'info'},'Gói Pro'),
+  h(StatusChip,{tone:'neutral',icon:'schedule'},'Chờ xử lý'),
+  h(StatusChip,{tone:'live',icon:'sensors'},'LIVE'))));
+</script>

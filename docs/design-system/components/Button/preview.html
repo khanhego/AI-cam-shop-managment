@@ -1,0 +1,18 @@
+<!-- @dsCard group="Actions" height=150 -->
+<div id="root"></div>
+<script>
+const h = React.createElement;
+const { Button } = window.LiveAI;
+ReactDOM.createRoot(document.getElementById("root")).render(h(React.Fragment, null, h('div',{className:'flex flex-wrap items-center gap-3 p-4'},
+  h(Button,{icon:'add'},'Tạo video'),
+  h(Button,{variant:'tonal'},'Xoá bộ lọc'),
+  h(Button,{variant:'outlined',icon:'download'},'Tải về'),
+  h(Button,{variant:'text'},'Đóng'),
+  h(Button,{variant:'elevated'},'Đồng bộ ngay')),
+h('div',{className:'flex flex-wrap items-center gap-3 px-4 pb-4'},
+  h(Button,{variant:'danger'},'Xoá video'),
+  h(Button,{variant:'outlined-danger',icon:'delete'},'Xoá'),
+  h(Button,{variant:'text-danger',size:'sm',icon:'delete'},'Xoá 3 mục'),
+  h(Button,{size:'sm'},'Nhỏ'),
+  h(Button,{disabled:true},'Đang lưu…'))));
+</script>

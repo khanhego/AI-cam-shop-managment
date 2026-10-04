@@ -1,0 +1,7 @@
+<!-- @dsCard group="Containers" height=300 -->
+<div id="root"></div>
+<script>
+const h = React.createElement;
+const { Button, Dialog } = window.LiveAI;
+ReactDOM.createRoot(document.getElementById("root")).render(h(React.Fragment, null, h(function(){const [o,s]=React.useState(true);return h('div',{className:'p-4'},h(Button,{variant:'outlined',onClick:()=>s(true)},'Mở dialog'),h(Dialog,{open:o,title:'Xoá video',onClose:()=>s(false),actions:h(Button,{variant:'danger',onClick:()=>s(false)},'Xoá')},'Video sẽ bị ẩn khỏi danh sách và xoá hẳn sau 30 ngày. Bản sao đã tạo vẫn dùng được.'))})));
+</script>

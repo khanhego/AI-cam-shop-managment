@@ -1,0 +1,11 @@
+<!-- @dsCard group="Feedback" height=90 -->
+<div id="root"></div>
+<script>
+const h = React.createElement;
+const { LinearProgress } = window.LiveAI;
+ReactDOM.createRoot(document.getElementById("root")).render(h(React.Fragment, null, h('div',{className:'grid max-w-md gap-3 p-4'},
+  h('p',{className:'text-body-md text-on-surface-variant'},'Đã dùng 9/100 video · 8/600 phút tháng này'),
+  h(LinearProgress,{label:'Hạn mức video',value:9}),
+  h(LinearProgress,{label:'Upload',value:64}),
+  h(LinearProgress,{label:'Hạn mức phút',value:92,tone:'error'}))));
+</script>

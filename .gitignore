@@ -1,0 +1,8 @@
+# Repo con độc lập (có git riêng)
+ai-cam-be/
+ai-cam-fe/
+
+# OS / editor
+.DS_Store
+.vscode/
+.idea/
