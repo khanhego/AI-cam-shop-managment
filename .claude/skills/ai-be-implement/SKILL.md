@@ -42,4 +42,4 @@ Khác `02a` → cập nhật `02a` + DEC (hỏi trước). Khác contract `02` �
 
 ## 6. Kết thúc
 Cập nhật task trong `03`. Hỏi: commit + mở PR (quy ước profile) · chỉ commit · để nguyên. PR: task · FR/API phủ · migration ·
-cách test · rủi ro. Handoff `ai-lead-review` (code).
+cách test · rủi ro. Task cuối của lát → handoff `ai-dev-explain-business` (tài liệu nghiệp vụ của lát), rồi `ai-lead-review` (code).

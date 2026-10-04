@@ -6,7 +6,7 @@
 | Reviewer | khanhtt (tech lead, review qua subagent ở bước 5) |
 | Trạng thái | Approved (G2 2026-10-04, có điều kiện DEC-33) |
 | Tổng quan & contract | [02-tech-spec.md](02-tech-spec.md) · Màn: [01-srs.md §10.5](01-srs.md) (D1–D13) · [Design system](../../../design-system/README.md) |
-| Last update | 2026-10-04 · FE |
+| Last update | 2026-10-05 · FE (chuẩn hoá template 2026-10-05: Goals/Non-goals, Phương án, Rủi ro) |
 
 > **TL;DR** — Route `/admin/*` trong `ai-cam-fe`: 13 màn D1–D13 trên khung app design system (app bar + drawer theo vai).
 > Dữ liệu qua TanStack Query; realtime qua WS-02 chỉ để **invalidate** query (không giữ state song song).
@@ -19,6 +19,14 @@ Không viết lại API — trỏ API-xx trong [02 §6](02-tech-spec.md#6-api-co
 ---
 
 ## 1. Phạm vi
+
+| Goals (lát/spec này làm) | Non-goals (cố ý không làm — để đâu) |
+|---|---|
+| 13 màn D1–D13 dưới `/admin/*`, guard theo 4 vai (ADMIN, SUPERVISOR, CSKH; STATION → `/station`) | Khung repo, `shared/ui`, API client, auth — ở [02b-station](02b-fe-spec-station.md) T-30..T-33 (DEC-16) |
+| Dữ liệu qua TanStack Query; WS-02 chỉ invalidate, không giữ state song song (DEC-20) | UI xóa clip (DEC-27) |
+| Tra cứu → xem clip → giữ / xuất MP4 có overlay (UC-03, FR-07.*) | Link chia sẻ clip (FR-07.05), xem video thô (FR-07.06), báo cáo FR-09.02..04 → Phase 3 |
+| Supervisor nhận và duyệt yêu cầu từ station trên D13; quyết định về station ≤ 2 giây (AC-19, WS-01 / WS-02) | Màn đối soát, khiếu nại, mở hàng hoàn → Phase 2 |
+| Dùng được từ 360px; Chromium ≥ 120, Safari ≥ 17, Firefox ≥ 120; D2 ≤ 300 KB gzip | Analytics sản phẩm, gửi lỗi JS về BE (DEC-23), SEO |
 
 | Màn / luồng | Route | FR / UC | REUSE / EXTEND / NEW |
 |---|---|---|:---:|
@@ -219,10 +227,42 @@ MSW chung (DEC-19), handler `src/mocks/handlers/{auth,packages,clips,exports,imp
 
 Tổng ≈ 19,5 ngày công.
 
+## Phương án đã cân nhắc
+
+Chỉ lựa chọn riêng phía dashboard. Xuất clip bất đồng bộ và WebSocket thay poll ở [02 §9](02-tech-spec.md#9-phương-án-đã-cân-nhắc); MSW, API client, font, i18n dùng chung ở [02b-station — Phương án](02b-fe-spec-station.md#phương-án-đã-cân-nhắc).
+
+| Phương án | Ưu | Nhược | Chọn? (lý do) |
+|---|---|---|---|
+| **WS-02 chỉ invalidate TanStack Query (throttle 5 giây cho `report.updated`)** | Một nguồn state; không lệch giữa cache và store | Mỗi sự kiện thêm một lần gọi API | ✔ DEC-20 |
+| Đẩy dữ liệu WS thẳng vào store / cache | Không gọi lại API | Hai nguồn sự thật, dễ lệch khi lỡ sự kiện | ✗ |
+| **Tab "Ghép" = 2 `<video>` cạnh nhau đồng bộ `currentTime`** | Xem ngay, không encode | Có thể lệch vài khung khi tua | ✔ DEC-21 (file ghép thật chỉ khi xuất, J-03) |
+| Encode file ghép cho mỗi lần xem | Hình ghép chính xác | Chờ encode, tốn CPU | ✗ |
+| **WHEP tự viết (~60 dòng `RTCPeerConnection`)** | Không thêm phụ thuộc; gửi `Authorization` cho Caddy `forward_auth` | Tự xử lý lỗi ICE / thử lại | ✔ DEC-22 |
+| Thư viện client WHEP | Có sẵn | Thêm phụ thuộc cho phần nhỏ | ✗ |
+| **Bộ lọc D3 lưu ở URL search params** | Back / reload giữ bộ lọc; link từ thẻ D2 sang D3 | Phải đồng bộ form ↔ URL | ✔ (§3 `PackageFilters`) |
+| Bộ lọc trong store | Code gọn | Mất khi reload; không link từ D2 được | ✗ |
+| **Tiến độ xuất: poll API-44 mỗi 2 giây, dừng khi có WS `export.updated`** | Không phụ thuộc WS duy nhất | Thêm request khi WS chậm | ✔ (§4) |
+| **Giữ clip (API-42) optimistic, rollback khi lỗi** | Nút phản hồi ngay | Phải hoàn tác khi lỗi | ✔ (§4); các mutation khác chờ server (cần biết `ALREADY_RESOLVED`) |
+| **Drawer chỉ có mục đã có màn thật** | Không lộ route tạm cho người dùng | Menu tăng dần theo task | ✔ DEC-51 |
+
+## Rủi ro & câu hỏi mở
+
+Nguồn: [02 §11](02-tech-spec.md#11-rủi-ro--câu-hỏi-mở), [03 §5](03-plan.md#5-rủi-ro-tiến-độ), review code M1 (2026-10-05). Ai trả lời: khanhtt nếu không ghi khác.
+
+| ID | Rủi ro / câu hỏi | Ảnh hưởng | Giảm thiểu / ai trả lời | Hạn |
+|---|---|---|---|---|
+| RA-1 | D13 duyệt cần API-20 / API-21 (T-13) chưa có ở BE | Trung bình — AC-19 chưa demo với BE thật | Làm trên MSW; nối BE thật khi T-13 xong | T-13, T-55 |
+| RA-2 | Live view WHEP qua Caddy `forward_auth` chưa thử thật; trình duyệt không hỗ trợ WebRTC | Thấp — D11 không xem được | Thông báo "Trình duyệt không hỗ trợ…"; D11 nằm đầu danh sách cắt phạm vi (03 §5) | T-60 |
+| RA-3 | Thu hồi phiên (D9 → API-91): station bị thu hồi vẫn chạy ≤ 15 phút (access JWT), WS chưa đóng ngay (review code M1) | Trung bình — Admin tưởng đã chặn ngay | BE đóng WS ngay (RB-9 trong 02a); chấp nhận trễ ≤ 15 phút của access token (02 §8) | T-59 |
+| RA-4 | Định dạng giờ API chưa thống nhất hậu tố `Z` (RB-11 trong 02a) | Thấp — giờ hiển thị lệch 7 giờ nếu parse sai | `Intl.DateTimeFormat` với `timeZone: Asia/Ho_Chi_Minh` trên chuỗi ISO có múi; chờ BE chuẩn hoá | T-19 |
+| RA-5 | CSKH dùng Safari ≥ 17 trên điện thoại: phát `<video>` Range, tải file xuất qua URL ký | Thấp | Kiểm trên Safari thật ở E2E | T-61 |
+| RA-6 | Trễ tiến độ (1 dev, 70 ngày công) | Trung bình | Cắt theo thứ tự D11 live view, D10, export SIDE_BY_SIDE (03 §5) — PM quyết | Sau M2 |
+
 ## Decisions
 
 | DEC | Bối cảnh | Lựa chọn | Lý do | Người chốt |
 |---|---|---|---|---|
+| DEC-51 | Menu dashboard khi màn chưa xây (T-50) | Drawer chỉ có mục đã có màn thật (`features/shell/nav.ts`); `/admin` chuyển tới mục đầu tiên của vai, vai chưa có mục nào thấy EmptyState. Mỗi task màn mới thêm mục của nó | Không đưa route tạm vào menu thật (skill ai-fe-implement) | khanhtt (tự quyết) |
 | DEC-20 | Realtime trên dashboard | WS-02 chỉ invalidate TanStack Query | Một nguồn state; tránh lệch dữ liệu | khanhtt (tự quyết) |
 | DEC-21 | Tab "Ghép" trong ClipPlayer | 2 `<video>` cạnh nhau đồng bộ `currentTime` (không cần encode); file ghép thật chỉ khi xuất | Xem ngay không chờ encode | khanhtt (tự quyết) |
 | DEC-22 | Thư viện WHEP | Tự viết ~60 dòng `RTCPeerConnection` | Tránh phụ thuộc; WHEP đơn giản | khanhtt (tự quyết) |

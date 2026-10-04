@@ -1,6 +1,18 @@
 # <NN>-<slug> — Plan
 
-> Owner: PM · Last update: <YYYY-MM-DD> · PM
+| | |
+|---|---|
+| Owner (PM) | |
+| Reviewer | PO · Tech lead (quy mô M/L) |
+| Trạng thái | Draft · In review · Approved (Plan) · Done |
+| Spec | <link 02-tech-spec.md> · <link 02a / 02b> |
+| Last update | <YYYY-MM-DD> · PM |
+
+> **TL;DR** — <số task (BE/FE) · số milestone · đường găng · ngày xong dự kiến · rủi ro tiến độ lớn nhất>
+
+<!-- Đối tượng đọc: cả đội và người duyệt Plan. Task lấy từ 02a §12 / 02b §14; không tự đặt thêm phạm vi. -->
+
+---
 
 ## 1. Chiến lược chia
 (vertical slice / theo layer / theo milestone — và lý do)

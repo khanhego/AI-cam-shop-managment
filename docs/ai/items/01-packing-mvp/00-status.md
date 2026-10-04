@@ -37,7 +37,8 @@ Số item: 01 (chưa có item nào; `git ls-remote --heads` của 3 repo không 
 | 5 | Review bộ spec | ✅ | 2026-10-04 | Vòng 1 Chưa đạt (28), vòng 2 Đạt có điều kiện (12 minor/nit, đã sửa) |
 | 6 | Kế hoạch | ✅ | 2026-10-04 | 03-plan.md |
 | 7 | Test cases | ✅ | 2026-10-04 | CP7 tự duyệt; 04 Ready: 137 case, DEC-38 |
-| 8 | Implement | ▶ đang làm | 2026-10-04 | M0 xong (T-1, 2, 6, 30, 31, 32, 39, 33); tiếp M1: T-7 |
+| 8 | Implement | ▶ đang làm | 2026-10-05 | M0, M1 xong (+ T-37, T-40 làm sớm); review code M1 đã sửa (DEC-53), QA M1 lần 1 xong (04a); tiếp M2: T-5, T-14 |
+| 8c | Tài liệu nghiệp vụ (mỗi lát) | ▶ đang làm | 2026-10-05 | Bước mới của bộ skill 2026-10-05, bắt buộc trước G3. Lát 0, lát 1 đã viết ở `docs/nghiep-vu/01-packing-mvp/` (Draft, có §0 Giải thích đơn giản); chờ CP8c |
 | 9 | Commit / PR | ⬜ | | |
 | 10 | Review code | ⬜ | | |
 | 11 | Chạy test | ⬜ | | |
@@ -53,11 +54,15 @@ Số item: 01 (chưa có item nào; `git ls-remote --heads` của 3 repo không 
 |---|---|---|---|
 | Lead review | Architect, BE, FE, PO | Review G2 lần 1: Chưa đạt (2 blocker, 11 major, 11 minor, 4 nit) | Đã sửa: 01 v0.3 (DEC-24..27), 02 v0.2 (DEC-28, 29), 02a v0.2 (DEC-30..32), 02b v0.2. Vòng 2: Đạt có điều kiện, N1–N12 đã sửa. Đóng |
 | FE | Architect | Chưa có API nhận lỗi JS client (02b-station §11) | Đóng: tự quyết DEC-23 — MVP không thêm API, lỗi xem qua ErrorBoundary + log trình duyệt; xem lại Phase 3 |
+| Lead review (code M1, subagent) | BE, FE | Review code M1: Đạt có điều kiện — 3 major (FE treo khi 409 STATION_INACTIVE/403; J-07 race với quét đóng; rate-limit IP sau proxy), 20 minor/nit | Đã sửa 3 major + #4–#12, #14, #16–#18, #20–#22, một phần #13, kèm test (BE 203, FE 141 pass). Để sau (DEC-53): #13 phần còn lại → T-13/T-59, #15 → T-14, #19, #23. Đóng |
+| QA (M1) | BE, FE | BUG-1 image thiếu alembic · BUG-2 camera mới ONLINE chậm 30 giây · BUG-3 quét ở S0 không phản hồi · BUG-4 D6 không nhận WS `camera.status` | Đã sửa, chạy lại: QA API thật 72/72, E2E BE thật 18/18. Báo cáo: 04a-test-report.md. Đóng |
 | UX | PO | Supervisor duyệt từ dashboard (DEC-5) cần FR mới FR-03.12, sửa FR-03.10, UC-08, ma trận quyền, thêm AC-19 | Đã xử lý trong 01 v0.2 (solo) |
 
 ## Lịch sử
 | Ngày | Role | Việc |
 |---|---|---|
+| 2026-10-05 | BE, FE, QA | Sửa finding review code M1 (DEC-53); thêm `useDashboardSocket` (WS-02 → invalidate D6); E2E với BE thật `ai-cam-fe/e2e/real` (`pnpm e2e:real`); QA M1 lần 1: API 72/72, E2E 18/18 → 04a. Tài liệu nghiệp vụ lát 0, lát 1 (`docs/nghiep-vu/`, thêm §0 theo template cập nhật) |
+| 2026-10-05 | Flow | Đồng bộ bộ skill `ai-*` theo bản mới (CONVENTIONS §9 header + TL;DR cho mọi artifact; 02a/02b thêm Goals/Non-goals, Phương án, Rủi ro; 03/04a/05/ADR header bảng; bước 8c `ai-dev-explain-business`). Chuẩn hoá lại 02a, 02b×2, 03, 04, ADR-001..008, SRS/architecture hệ thống; profile thêm `business_docs_root` |
 | 2026-10-04 | ai-flow-init | Tạo profile, system-map, chuyển SRS + architecture vào system/, tách ADR-001..008 |
 | 2026-10-04 | ai-flow-route | Mở item 01-packing-mvp, lane feature, component be + fe |
 | 2026-10-04 | PO | Viết 01-srs.md v0.1 (Draft): phạm vi Phase 1, DEC-1 tài khoản station, DEC-2 CSV dự phòng, DEC-3 retention 30/90, DEC-4 2 station / 500 đơn |
@@ -74,3 +79,12 @@ Số item: 01 (chưa có item nào; `git ls-remote --heads` của 3 repo không 
 | 2026-10-04 | QA | Viết 04-test-cases.md (Ready): 118 case chức năng + 10 phân quyền + 9 NFR |
 | 2026-10-04 | Dev BE | T-1 khung repo BE, T-2 MediaMTX + camera giả, T-6 core + migration 0001 (19 bảng) + CLI create-admin; 36 test pass; DEC-39, DEC-40. Nhánh `feat/01-packing-mvp` trong ai-cam-be, chưa commit |
 | 2026-10-04 | Dev FE | T-30 khung FE, T-31 tokens, T-32 + T-39 UI kit, T-33 API client + MSW + WS client; 86 test pass; DEC-41 (sửa), 42, 43, 44. Nhánh `feat/01-packing-mvp` trong ai-cam-fe, chưa commit. M0 xong |
+| 2026-10-04 | Dev | Commit + push M0 (be 9efb3b2, fe 73c46f8, docs 4663d1c) theo yêu cầu user. T-7 auth + users: API-01..04, 90..92, 29 test API; DEC-45 |
+| 2026-10-04 | Dev BE | T-8 station + camera: API-60..65, MediaMTX, J-08 (OFFLINE phát hiện 2 giây trên stack thật), J-09, Celery + compose vision/worker/beat; 96 test; DEC-46 |
+| 2026-10-04 | Dev BE | T-9 orders: `transition()` theo 01 §7 v0.3 (56 cặp kiểm), upsert đơn sàn + BR-17 + EX-P10, MockAdapter. Sửa `uuid7` tăng đơn điệu (test bắt thứ tự sản phẩm sai). 148 test |
+| 2026-10-04 | Dev BE | T-10 sessions: API-10/11 theo 02a §4.1 (tray xét trước, BR-18), seed-demo; test song song thật 8 quét (đối chứng: tắt lock → IntegrityError); sửa lỗi nạp model ở entrypoint; 173 test; chạy thật trên stack Docker; DEC-47 |
+| 2026-10-04 | Dev BE | T-20: API-12 hủy (về `package_status_before`), API-15, J-07 (beat 30 giây, chạy thật); sửa kiểm `iat` của PyJWT; 183 test; DEC-48 |
+| 2026-10-04 | Dev BE | T-11 hub WS-01/WS-02 + đẩy station.state / report.updated / camera.status; sửa accept-trước-đóng (đối chứng: 3 test đỏ khi hoàn tác); 190 test. M1 phần BE xong |
+| 2026-10-04 | Dev FE | T-34 auth + guard theo vai + S0; chạy thật với BE (cookie rt_station httpOnly, reload giữ phiên); 94 test FE |
+| 2026-10-04 | Dev FE | Màn station S1–S6 (T-35, 36, 37, 40): ScanBuffer, store một nguồn state, retry cùng client_scan_id, WS, âm thanh, hủy phiên, yêu cầu duyệt (mock). Chạy thật với BE + hub WS; sửa 2 lỗi tương phản thấy qua ảnh chụp; 115 test FE; DEC-50 |
+| 2026-10-04 | Dev FE | T-50 khung dashboard (drawer theo vai, theme, D1, D12, 404) + T-57 D6 station/camera; chạy thật với BE (ảnh chụp camera giả qua ffmpeg); 131 test FE + e2e; DEC-51. M1 xong |

@@ -4,8 +4,26 @@
 | --- | --- |
 | Phiên bản | 0.1 (bản nháp) |
 | Ngày | 2026-10-04 |
-| Đầu vào | [SRS.md](SRS.md) |
+| Owner | khanhtt (Architect) |
+| Reviewer | khanhtt |
+| Trạng thái | Approved — làm nền cho item 01 (G2 2026-10-04) |
+| Đầu vào | [SRS.md](SRS.md) · ADR: [decisions/](decisions/) · áp dụng: [02-tech-spec item 01](../items/01-packing-mvp/02-tech-spec.md) |
 | Repo | `ai-cam-be` (backend + worker), `ai-cam-fe` (station app + dashboard), repo gốc chứa tài liệu |
+| Last update | 2026-10-05 |
+
+> **TL;DR** — Modular monolith Python 3.12 / FastAPI (tiến trình `api`, `worker`, `beat`, `vision`) + MediaMTX + PostgreSQL 16 + Redis 7 + Caddy, chạy tại kho bằng Docker Compose; FE một app React cho `/station` (Chromium kiosk) và `/admin`.
+> Quyết định chính (ADR-001..008): on-premise, cloud chỉ sao lưu; ghi liên tục fMP4 segment 60 giây, cắt clip `-c copy`; logic phiên trong `api` để quét ≤ 1 giây; Cam 2 đọc mã bằng zxing-cpp; sàn qua adapter + polling; clip gốc bất biến + SHA-256.
+> Rủi ro: Cam 2 đọc < 95% (spike S2), quyền / endpoint Shopee (S1), lệch giờ camera làm sai clip, đầy ổ NAS.
+
+| Goals (theo nguyên tắc §1) | Non-goals |
+| --- | --- |
+| Mất Internet vẫn đóng gói, ghi hình (P1, NFR-09) | Chạy nghiệp vụ trên cloud — cloud chỉ sao lưu và truy cập từ xa |
+| Không phụ thuộc phiên mở đúng lúc: ghi liên tục, cắt theo mốc (P2) | Bật/tắt ghi theo phiên |
+| Đồng bộ giờ mọi máy và camera, lệch > 1 giây thì cảnh báo (P3) | — |
+| Clip gốc không sửa được, có hash (P4) | Encode overlay cho mọi clip |
+| Quét bằng máy quét, phản hồi ≤ 1 giây (P5, NFR-01) | Bàn phím / chuột trong phiên |
+| Ít thành phần: một codebase BE, một FE, một file Compose (P6) | Microservice khi chưa có lý do đo được |
+| Thêm sàn = thêm adapter (P7, NFR-28) | Lõi nghiệp vụ biết chi tiết từng sàn |
 
 Hệ thống X là một **modular monolith Python (FastAPI)** cùng các tiến trình worker, chạy **tại kho** bằng Docker Compose. Bên cạnh đó có **MediaMTX** lo ghi hình và phát live từ camera, **PostgreSQL** lưu nghiệp vụ, **Redis** làm hàng đợi và pub/sub, và một **frontend React** phục vụ cả màn hình station lẫn dashboard. Cloud chỉ dùng để sao lưu clip và truy cập từ xa, không nằm trên đường đi của nghiệp vụ.
 
@@ -66,11 +84,11 @@ Hệ thống X là một **modular monolith Python (FastAPI)** cùng các tiến
 | Đọc mã từ Cam 2 | OpenCV (lấy khung hình) + zxing-cpp (giải mã 1D/QR) | |
 | HTTP client tới sàn | httpx (async) + tenacity (retry) | |
 | Ngôn ngữ frontend | TypeScript | 5.x |
-| Framework FE | React + Vite | React 18/19, Vite 5+ |
-| Router | React Router | 6+ |
+| Framework FE | React + Vite | React 19, Vite 8 (đang dùng trong `ai-cam-fe`, 2026-10-05) |
+| Router | React Router | 7 |
 | Data fetching | TanStack Query | 5 |
 | State cục bộ station | Zustand | |
-| UI kit | Tailwind CSS + component tự viết theo [design system](../../design-system/README.md) (Material 3) | Tailwind 3/4 |
+| UI kit | Tailwind CSS + component tự viết theo [design system](../../design-system/README.md) (Material 3) | Tailwind 4 |
 | API client FE | Sinh từ OpenAPI bằng `orval` (hoặc `openapi-typescript`) | |
 | Phát video | `<video>` gốc cho MP4; WebRTC (WHEP) cho live view | |
 | Test BE | pytest, pytest-asyncio, testcontainers (Postgres) | |
@@ -608,14 +626,14 @@ Phiên bản theo SemVer, BE và FE gắn tag độc lập; `compose.yml` ghim c
 
 | ID | Quyết định | Trạng thái |
 | --- | --- | --- |
-| ADR-001 | Chạy on-premise tại kho, cloud chỉ để sao lưu / truy cập từ xa | Đề xuất |
-| ADR-002 | Modular monolith Python (FastAPI), một image nhiều tiến trình | Đề xuất |
-| ADR-003 | Ghi liên tục bằng MediaMTX, cắt clip theo mốc thời gian bằng FFmpeg stream copy | Đề xuất |
-| ADR-004 | Logic phiên đồng bộ trong `api`, việc nặng qua Celery | Đề xuất |
-| ADR-005 | Cam 2 đọc mã bằng OpenCV + zxing-cpp, không chặn quy trình khi đọc thất bại | Đề xuất |
-| ADR-006 | Một app React cho cả station và dashboard, station chạy Chromium kiosk | Đề xuất |
-| ADR-007 | Sàn tích hợp qua adapter, polling là nền, webhook là bổ sung | Đề xuất |
-| ADR-008 | Clip gốc bất biến + SHA-256; overlay chỉ trên bản xuất; bật OSD thời gian của camera | Đề xuất |
+| ADR-001 | Chạy on-premise tại kho, cloud chỉ để sao lưu / truy cập từ xa | Accepted (2026-10-04, qua G2 item 01) |
+| ADR-002 | Modular monolith Python (FastAPI), một image nhiều tiến trình | Accepted (2026-10-04, qua G2 item 01) |
+| ADR-003 | Ghi liên tục bằng MediaMTX, cắt clip theo mốc thời gian bằng FFmpeg stream copy | Accepted (2026-10-04, qua G2 item 01) |
+| ADR-004 | Logic phiên đồng bộ trong `api`, việc nặng qua Celery | Accepted (2026-10-04, qua G2 item 01) |
+| ADR-005 | Cam 2 đọc mã bằng OpenCV + zxing-cpp, không chặn quy trình khi đọc thất bại | Accepted (2026-10-04, qua G2 item 01) |
+| ADR-006 | Một app React cho cả station và dashboard, station chạy Chromium kiosk | Accepted (2026-10-04, qua G2 item 01) |
+| ADR-007 | Sàn tích hợp qua adapter, polling là nền, webhook là bổ sung | Accepted (2026-10-04, qua G2 item 01) |
+| ADR-008 | Clip gốc bất biến + SHA-256; overlay chỉ trên bản xuất; bật OSD thời gian của camera | Accepted (2026-10-04, qua G2 item 01) |
 
 Mỗi ADR có file riêng trong [decisions/](decisions/).
 

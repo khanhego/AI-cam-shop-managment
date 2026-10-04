@@ -42,4 +42,4 @@ Khác `02b` → cập nhật `02b` + DEC (hỏi trước). Contract thiếu/sai 
 
 ## 6. Kết thúc
 Cập nhật task trong `03`. Hỏi commit/PR theo profile. PR: task · màn/FR phủ · ảnh chụp trước/sau · mock còn dùng không ·
-cách test. Handoff `ai-lead-review` (code).
+cách test. Task cuối của lát → handoff `ai-dev-explain-business` (tài liệu nghiệp vụ của lát), rồi `ai-lead-review` (code).

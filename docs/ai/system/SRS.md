@@ -6,8 +6,27 @@
 | --- | --- |
 | Phiên bản | 0.1 (bản nháp) |
 | Ngày | 2026-10-04 |
-| Trạng thái | Chờ review với chủ shop |
-| Nguồn | Yêu cầu thô "Quy trình đóng hàng" |
+| Owner | khanhtt (PO) |
+| Reviewer | Chủ shop (tên cần xác nhận) |
+| Trạng thái | In review — chờ chủ shop; phần Phase 1 đã chi tiết hoá ở item 01 ([01-srs.md](../items/01-packing-mvp/01-srs.md), Approved G1 2026-10-04) |
+| Nguồn | Yêu cầu thô "Quy trình đóng hàng" (file gốc cần xác nhận) · thiết kế: [architecture.md](architecture.md) |
+| Last update | 2026-10-05 |
+
+> **TL;DR** — Shop đóng gói và nhận hàng hoàn thủ công, không có video, nên thua khiếu nại và không biết hàng hoàn đã về kho chưa.
+> Hệ thống X: quét mã vận đơn mở/đóng phiên, ghi 2 camera mỗi station, cắt clip theo đơn, Cam 2 đối chiếu phiếu trên khay, đồng bộ Shopee (sau: TikTok Shop, Lazada), cảnh báo lệch trạng thái sàn / kho.
+> Mục tiêu: ≥ 99% kiện có clip; giao sai = 0; tìm bằng chứng < 30 giây; thao tác thêm ≤ 3 giây/kiện; quét phản hồi ≤ 1 giây; chạy khi mất Internet.
+> Lộ trình 4 giai đoạn (MVP đóng gói 4–6 tuần); rủi ro chính: quyền Shopee API (RK-01), Cam 2 đọc mã (RK-02), đầy ổ (RK-03).
+
+| Goals (trong phạm vi) | Non-goals (ngoài phạm vi giai đoạn này) |
+| --- | --- |
+| Quét mã vận đơn khởi tạo phiên đóng gói và phiên nhận hàng hoàn | In vận đơn (vẫn in từ Seller Center / phần mềm hiện có) |
+| Ghi hình 2 camera cố định, cắt và gắn video theo từng đơn | Quản lý tồn kho, kế toán, điều phối vận chuyển |
+| Cam 2 đối chiếu mã trên khay với mã được quét và dán | Nhận diện sản phẩm bằng AI (giai đoạn sau, mục 13.2) |
+| Kết nối API sàn lấy đơn và trạng thái (Shopee trước, TikTok Shop / Lazada sau) | |
+| Quản lý trạng thái kho, phát hiện lệch sàn / kho | |
+| Tra cứu, xem lại, xuất video làm bằng chứng khiếu nại | |
+
+Chi tiết: [§1.2 Phạm vi](#12-phạm-vi).
 
 ---
 

@@ -6,7 +6,7 @@
 | Reviewer | khanhtt (tech lead, review qua subagent ở bước 5) |
 | Trạng thái | Approved (G2 2026-10-04, có điều kiện DEC-33) |
 | Tổng quan & contract | [02-tech-spec.md](02-tech-spec.md) · SRS [01-srs.md](01-srs.md) |
-| Last update | 2026-10-04 · BE |
+| Last update | 2026-10-05 · BE (chuẩn hoá template 2026-10-05: Goals/Non-goals, Phương án, Rủi ro) |
 
 > **TL;DR** — Dựng mới `ai-cam-be` theo [architecture.md §4](../../system/architecture.md): 12 module, 19 bảng (1 migration đầu), 42 API + 2 kênh WS, 12 job.
 > Điểm khó nhất: (1) `POST /station/scan` (API-11): state machine phiên, khóa theo station, idempotency, phải ≤ 1 giây p95. (2) Đồng bộ Cam 2 qua Redis → WS. (3) Cắt clip từ segment MediaMTX đúng mốc thời gian.
@@ -17,6 +17,15 @@ Không viết lại contract: mọi request / response / mã lỗi theo [02 §6]
 ---
 
 ## 1. Phạm vi
+
+| Goals (lát/spec này làm) | Non-goals (cố ý không làm — để đâu) |
+|---|---|
+| Implement đủ API-01..92 + WS-01/02 theo [02 §6](02-tech-spec.md#6-api-contract), 12 job J-01..J-12, tiến trình `vision` | Phiên mở hàng hoàn (M04), đối soát (M06), khiếu nại (M08), FR-05.05 return request → Phase 2 ([01 §1](01-srs.md)) |
+| API-11 ≤ 1 giây p95 (NFR-01; server ≤ 150 ms, ≤ 4 query) | Adapter TikTok Shop / Lazada → Phase 3 (chỉ chừa interface `PlatformAdapter`) |
+| Clip ≤ 60 giây p95 sau khi đóng phiên (NFR-03), stream copy, SHA-256, chỉ đọc (ADR-008) | Sao lưu cloud (FR-02.08), link chia sẻ (FR-07.05), xem video thô (FR-07.06) → Phase 3 |
+| Chạy offline trong LAN (NFR-09): Shopee chỉ ở worker + tra ≤ 2 giây trong scan | Nhận diện sản phẩm bằng AI → giai đoạn sau (ADR-005) |
+| Bằng chứng: audit log không sửa được (trigger), URL media ký HMAC hạn 10 phút | Nhiều shop / nhiều kho: `platform_order_sn` UNIQUE toàn cục (DEC-12) → Phase 3 |
+| Khung repo, compose, CI, camera giả, spike S1–S3 (T-1..T-5) | API nhận lỗi JS client (DEC-23), thông báo Zalo / Telegram (FR-06.04), báo cáo FR-09.02..04 → Phase 3 |
 
 | API / job / lệnh | FR | Ghi chú |
 |---|---|---|
@@ -302,6 +311,53 @@ flowchart TD
 
 Tổng ≈ 34 ngày công (chưa tính chờ duyệt Shopee).
 
+## Phương án đã cân nhắc
+
+Chỉ lựa chọn riêng phía BE. Lựa chọn xuyên suốt (scan trả 200 + `outcome`, WebSocket thay poll, xuất clip bất đồng bộ) ở [02 §9](02-tech-spec.md#9-phương-án-đã-cân-nhắc); chọn stack (Python, Celery, MediaMTX, zxing-cpp) ở [architecture.md §2.2](../../system/architecture.md) và ADR-002..005.
+
+| Phương án | Ưu | Nhược | Chọn? (lý do) |
+|---|---|---|---|
+| **`pg_advisory_xact_lock(hashtext('station:{id}'))` + partial unique index phiên mở** | Khóa nằm trong tx DB, tự nhả khi commit / rollback; không đụng dòng `station`; `on_tray_changed` dùng chung khóa | Khóa theo chuỗi hash, không thấy trong bảng; phải nhớ lấy ở mọi đường ghi phiên | ✔ DEC-11 (`sessions/service.py`) |
+| `SELECT … FOR UPDATE` trên dòng `station` | Quen thuộc, nhìn thấy khóa trong `pg_locks` theo dòng | Chặn cả sửa station (API-60) và ghi có FK tới station trong lúc giữ khóa; luồng vision phải đọc dòng station chỉ để khóa | ✗ |
+| Lock phân tán Redis (`SET NX` + TTL) | Không tải DB | Nằm ngoài tx DB: TTL hết giữa chừng hoặc Redis mất → hai request cùng ghi; thêm điểm lỗi | ✗ (DEC-11: DB là nguồn sự thật) |
+| **Dedup bằng bảng `scan_dedup` (PK `client_scan_id`), ghi trong cùng tx với phiên** | Response lưu và trạng thái phiên commit cùng lúc → retry luôn nhận đúng outcome (DEC-29) | +1 ghi mỗi lần quét; cần J-11 dọn > 10 phút | ✔ |
+| Dedup bằng Redis `SETNX` theo `client_scan_id` (TTL 10 phút) | TTL tự hết, không cần job dọn | Không cùng tx với DB: crash giữa commit và ghi Redis → retry chạy lại nghiệp vụ | ✗ |
+| Tra Shopee **ngoài** advisory lock (nhả, tra ≤ 2 giây, lấy lại, kiểm lại) | Không giữ khóa station tới 2 giây; quét khác của station không chờ | Phải kiểm lại trạng thái sau khi lấy lại khóa | ✔ (§4.1) |
+| Tra Shopee trong lock | Code tuyến tính | Giữ khóa ≤ 2 giây mỗi mã lạ | ✗ |
+| **Celery + Redis broker** (queue `default`, `video`, `export`, `sync` + beat) | Có Beat cho 12 job định kỳ, `acks_late`, retry sẵn, nhiều queue | Nặng, không có type cho mypy (`ignore_missing_imports`) | ✔ ([architecture.md §2.2](../../system/architecture.md), ADR-004) |
+| arq / Dramatiq / RQ | Nhẹ hơn | Hệ sinh thái nhỏ hơn; lịch định kỳ phải thêm thư viện riêng | ✗ |
+| **Phát hiện camera mất tín hiệu: vòng lặp 2 giây trong `vision`** | Phát hiện ≤ 8 giây (AC-10 ≤ 10 giây) | Logic health nằm ngoài worker | ✔ DEC-31 |
+| Celery beat cho J-08 | Cùng chỗ với job khác | Beat không hợp chu kỳ 2 giây | ✗ |
+| **Không lưu `retention_until`, tính từ setting lúc chạy** | Đổi cấu hình có hiệu lực ngay, không cần backfill (AC-20) | Mỗi lần đọc phải tính | ✔ DEC-30 |
+| Lưu `retention_until` theo clip | Truy vấn đơn giản | Đổi setting phải cập nhật hàng loạt; dễ xóa nhầm bằng chứng | ✗ |
+| **Chặn sửa `audit_log` bằng trigger** | Áp mọi user DB, kể cả owner | Trigger ẩn với người đọc code | ✔ DEC-40 |
+| `REVOKE UPDATE, DELETE` theo user DB | Chuẩn quyền Postgres | Dev / prod dùng chung user owner → không có tác dụng | ✗ |
+| **Queue `export` riêng, concurrency 1, `veryfast` 720p** | Encode không chặn cắt clip; đạt AC-08 | Thêm một worker | ✔ DEC-32 |
+| **Vision đọc RTSP relay của MediaMTX** | Camera chỉ một kết nối (ADR-003) | Phụ thuộc MediaMTX sống | ✔ DEC-14 |
+| Vision kết nối camera trực tiếp | Bớt một chặng | Camera rẻ giới hạn số kết nối | ✗ |
+| **Integration test với Postgres của compose dev / service container CI** | Ổn định trên colima | Cần chạy compose trước khi test | ✔ DEC-39 |
+| testcontainers | Tự dựng DB cho mỗi lần chạy | Không ổn định với colima | ✗ |
+
+## Rủi ro & câu hỏi mở
+
+Nguồn: [02 §11](02-tech-spec.md#11-rủi-ro--câu-hỏi-mở), [03 §5](03-plan.md#5-rủi-ro-tiến-độ), [01 câu hỏi mở Q11–Q13](01-srs.md), review code M1 (2026-10-05). Ai trả lời: khanhtt nếu không ghi khác.
+
+| ID | Rủi ro / câu hỏi | Ảnh hưởng | Giảm thiểu / ai trả lời | Hạn |
+|---|---|---|---|---|
+| RB-1 | Cam 2 đọc mã < 95% (AC-04) | Cao — BR-06 không bắt được phiếu sai | Spike S2 trước T-12; `tray.match = UNAVAILABLE` không chặn phiên (BR-18 gắn `CAM2_UNVERIFIED`); không đạt → change request (camera / ánh sáng / vị trí) | T-4 (M3) |
+| RB-2 | Chưa có quyền Shopee Open Platform (Q11) | Cao — API-70..73, J-04..J-06, J-12 không chạy thật | `SHOPEE_ENABLED=false` + nhập CSV (T-17) + adapter mock; chủ shop trả lời Q11 | T-3 (M4) |
+| RB-3 | Tên endpoint, mapping trạng thái, rate limit Shopee chưa xác minh | Trung bình — sửa adapter, §7 | Spike S1 cập nhật §7 | T-3 |
+| RB-4 | Mã vận đơn ngoài `SCAN_CODE_REGEX` `^[A-Z0-9-]{8,40}$` | Thấp — quét hợp lệ bị `INVALID_CODE` | Kiểm 50 phiếu thật; regex là config | T-4 |
+| RB-5 | Camera không hỗ trợ ONVIF (AC-17, DEC-33) → J-09 không đo được lệch giờ | Trung bình — mất cảnh báo `CLOCK_DRIFT` (BR-15) | Change request: OSD + OCR, hoặc chọn camera có ONVIF | T-4, T-5 |
+| RB-6 | Cắt clip theo keyframe lệch 1–2 giây; độ trễ clip chưa đo (NFR-03 ≤ 60 giây) | Trung bình — clip thiếu đầu / cuối phiên | Đệm `CLIP_PADDING_S` = 5 giây; spike S3 đo | T-5 |
+| RB-7 | Encode export chưa đo (AC-08 ≤ 20 giây p95 với clip ≤ 3 phút) | Trung bình | Spike S3; hạ preset / độ phân giải nếu vượt | T-5 |
+| RB-8 | WS qua Caddy bị ngắt khi idle | Thấp | Ping 20 giây | T-19 |
+| RB-9 | Thu hồi đăng nhập station (API-91 revoke-sessions): access JWT còn dùng được tới ≤ 15 phút, WS đang mở chưa bị đóng ngay (review code M1, chốt làm sau) | Trung bình — máy station bị thu hồi vẫn quét được ≤ 15 phút | Đóng WS ngay qua kênh `ws:user:{id}` khi revoke; chấp nhận trễ ≤ 15 phút của access token (TTL 15 phút, 02 §8) | T-13 / T-59 |
+| RB-10 | Cờ `VIDEO_INCOMPLETE` khi camera OFFLINE giữa phiên (J-08 subscriber) chưa gắn ở M1 (review code M1) | Trung bình — clip thiếu đoạn không được đánh dấu | Dời sang T-14 cùng J-01 (thiếu segment → `VIDEO_INCOMPLETE`) | T-14 |
+| RB-11 | Định dạng giờ trong response API chưa thống nhất hậu tố `Z` (UTC) (review code M1) | Thấp — FE / contract test parse lệch | Chuẩn hoá serializer một định dạng ISO 8601 UTC `Z`; kiểm bằng contract test | T-19 (sửa sớm hơn nếu chạm) |
+| RB-12 | J-09 giữ transaction DB trong lúc gọi ONVIF (timeout 5 giây / camera) (review code M1) | Thấp — giữ kết nối DB lâu khi nhiều camera chậm | Gọi ONVIF ngoài tx, chỉ mở tx khi ghi `clock_offset_ms` | Khi làm T-4 (ONVIF thật) |
+| RB-13 | Thời hạn khiếu nại Shopee thực tế > 90 ngày? (Q13) | Thấp — clip bị xóa trước khi cần | `retention_clip_days` cấu hình được (API-80); chủ shop trả lời | Trước G5 |
+
 ## Decisions
 
 | DEC | Bối cảnh | Lựa chọn | Lý do | Người chốt |
@@ -311,6 +367,11 @@ Tổng ≈ 34 ngày công (chưa tính chờ duyệt Shopee).
 | DEC-13 | Lưu bằng chứng xem clip | Audit `VIEW_CLIP` khi request byte 0 qua API-41 | Range request gọi nhiều lần; chỉ ghi một lần mỗi lần phát | khanhtt (BE) |
 | DEC-39 | Lệch spec khi code T-6 | (1) Thêm cột `session.mismatch jsonb` (API-10 cần `mismatch.source/expected/actual`, 02a §3 thiếu). (2) Integration test dùng Postgres compose dev / service container CI thay testcontainers (không ổn định với colima). (3) `seed-demo` dời sang T-10 (cần service đơn hàng + station) | Phát hiện khi implement | khanhtt (tự quyết) |
 | DEC-40 | Chặn sửa audit_log | Trigger DB thay REVOKE | Dev/prod có thể dùng chung một user owner; trigger áp mọi user | khanhtt (tự quyết) |
+| DEC-45 | Chống dò mật khẩu (T-7) | Khóa tài khoản sau 10 lần sai lưu ở DB (`423 ACCOUNT_LOCKED`, 15 phút); `429 RATE_LIMITED` theo IP (30 lần sai / 5 phút, Redis) thay vì theo username | Hai cơ chế không chồng mã lỗi cho cùng một tình huống; IP chặn dò nhiều tài khoản | khanhtt (tự quyết) |
+| DEC-46 | Hạ tầng Celery chưa có task riêng trong 03 (T-8) | Dựng `workers/celery_app.py` + `tasks.py`, entrypoint worker/beat, compose `vision` / `worker` / `beat` ngay ở T-8 (J-09 là job đầu tiên). Bus Redis trong api (`realtime/bus.py`) nhận `camera.health`. `users/queries.py` cho module khác đọc user mà không vòng import | Job đầu tiên cần hạ tầng; tránh đọc chéo bảng | khanhtt (tự quyết) |
+| DEC-47 | Lệch spec khi code T-10 | (1) Đọc khay ngay lúc mở phiên để đặt `cam2_seen_match` (phiếu đã khớp trước khi quét thì vision không phát sự kiện mới → tránh cờ CAM2_UNVERIFIED sai). (2) `tray.match` khi không có phiên: NOT_SEEN / MULTIPLE / DIFFERENT theo số mã (S1 không dùng). (3) Mọi entrypoint nạp `aicam.db_models` — lỗi thật: khóa ngoại `order.csv_import_id` không phân giải ở tiến trình api/CLI; test chạy tiến trình mới cho từng entrypoint | Phát hiện khi implement / đối chứng | khanhtt (tự quyết) |
+| DEC-48 | Lệch spec khi code T-20 | (1) Publish realtime qua `realtime/publish.py` (kênh Redis `ws:*`) có trước hub WS (T-11). (2) J-07 gửi `alert` (`SESSION_WARN`, `SESSION_ABANDONED`) xuống station. (3) Tắt kiểm `iat`/`nbf` của PyJWT, kiểm mọi mốc thời gian bằng `core.clock` (lỗi thật khi tua giờ trong test: token 'phát hành ở tương lai'). (4) `media/queries.py` để sessions đọc clip không chéo bảng | Phát hiện khi implement | khanhtt (tự quyết) |
+| DEC-49 | WebSocket (T-11) | Hub `realtime/hub.py`: accept trước rồi mới đóng 4401/4403 (đóng trước accept thành HTTP 403 → trình duyệt chỉ thấy 1006, FE không biết refresh); log lỗi task; test bằng uvicorn thật + client `websockets` (TestClient hủy task app lúc đóng). Scan / hủy phiên đẩy `station.state` + `report.updated`; camera đổi trạng thái đẩy `camera.status` + `station.state` | Phát hiện khi test với server thật | khanhtt (tự quyết) |
 | DEC-30 | Retention khi đổi cấu hình (review #6) | Không lưu `retention_until`; tính từ setting lúc chạy | Đổi cấu hình có hiệu lực ngay, không mất bằng chứng | khanhtt (tự quyết) |
 | DEC-31 | Phát hiện camera mất tín hiệu (review #10) | Vòng lặp 2 giây trong `vision`, ngưỡng 6 giây không có byte mới | Đạt AC-10 ≤ 10 giây; Celery beat không hợp chu kỳ 2 giây | khanhtt (tự quyết) |
 | DEC-32 | Export (review #13) | Queue `export` riêng, preset `veryfast` 720p | Không chặn cắt clip; đạt AC-08 | khanhtt (tự quyết) |
