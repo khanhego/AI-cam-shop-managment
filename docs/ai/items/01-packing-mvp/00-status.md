@@ -47,7 +47,7 @@ Số item: 01 (chưa có item nào; `git ls-remote --heads` của 3 repo không 
 ## NOW
 | Owner tiếp | Việc tiếp | Skill |
 |---|---|---|
-| Dev BE (khanhtt) | M1: T-7 users + auth; song song FE T-34. Việc ngoài: gửi đăng ký Shopee (T-3), mua camera (T-4) | ai-be-implement |
+| Dev BE + Dev FE (agent song song) | M2 Video bằng chứng: BE T-5 → T-14 → T-21 → T-15 → T-18; FE T-51 → T-52 → T-53 → T-54 (mock theo contract tới khi BE xong) | ai-be-implement, ai-fe-implement |
 
 ## Phản hồi giữa các vai
 | Từ | Tới | Nội dung | Trạng thái |
@@ -61,6 +61,7 @@ Số item: 01 (chưa có item nào; `git ls-remote --heads` của 3 repo không 
 ## Lịch sử
 | Ngày | Role | Việc |
 |---|---|---|
+| 2026-10-05 | Flow | User giao hoàn thành Phase 1–3 tự động (DEC-56): Phase 1 tiếp item 01 từ bước 8 (M2–M5); commit + push mỗi task; cuối phase G3/G4/G5 (staging local) + PR + merge main; phần thiếu tài nguyên ghi "chưa test"; Q&A nghiệp vụ sau phase, critical → dừng hẳn |
 | 2026-10-05 | BE, FE, QA | Sửa finding review code M1 (DEC-53); thêm `useDashboardSocket` (WS-02 → invalidate D6); E2E với BE thật `ai-cam-fe/e2e/real` (`pnpm e2e:real`); QA M1 lần 1: API 72/72, E2E 18/18 → 04a. Tài liệu nghiệp vụ lát 0, lát 1 (`docs/nghiep-vu/`, thêm §0 theo template cập nhật) |
 | 2026-10-05 | Flow | Đồng bộ bộ skill `ai-*` theo bản mới (CONVENTIONS §9 header + TL;DR cho mọi artifact; 02a/02b thêm Goals/Non-goals, Phương án, Rủi ro; 03/04a/05/ADR header bảng; bước 8c `ai-dev-explain-business`). Chuẩn hoá lại 02a, 02b×2, 03, 04, ADR-001..008, SRS/architecture hệ thống; profile thêm `business_docs_root` |
 | 2026-10-04 | ai-flow-init | Tạo profile, system-map, chuyển SRS + architecture vào system/, tách ADR-001..008 |
