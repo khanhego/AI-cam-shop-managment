@@ -252,7 +252,7 @@ sequenceDiagram
 - AS-06: mỗi bàn chỉ một người đứng tại một thời điểm. AS-07: video Cam 1 đủ để nhận ra người đóng gói. Nếu sai → đảo DEC-1.
 - NFR-01 (p95 ≤ 1 giây) mới đo trên stack dev (`test_tc_03_03_fifty_scans_p95`), chưa đo trên phần cứng tại kho.
 - Regex mã vận đơn `^[A-Z0-9-]{8,40}$` chưa đối chiếu với mã thật của mọi hãng vận chuyển Shopee (phụ thuộc Q11, spike T-3).
-- Thu hồi đăng nhập station (TC-10.06): station chỉ về S0 khi access token hết hạn (≤ 15 phút). PO cần xác nhận độ trễ này chấp nhận được.
+- Thu hồi đăng nhập station (TC-10.06): station về S0 khi access token hết hạn (≤ 15 phút). Đã chốt chấp nhận (DEC-55): thu hồi chỉ dùng khi sự cố hiếm (đổi/mất máy trạm, khai báo lại station, nghi lộ phiên).
 
 ## Liên kết
 

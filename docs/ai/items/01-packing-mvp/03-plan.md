@@ -42,7 +42,7 @@ Owner tất cả: khanhtt (profile §7). Ticket: chưa tạo (§7). Trạng thá
 | T-20 | sessions: API-12, 15, `scan_dedup`, J-07 quá giờ, REPACK superseding | be | FR-03.08, 03.09, BR-03, 16 | tách từ T-10 | T-10 | 1 | | ✅ |
 | T-11 | realtime hub: WS-01, WS-02, `ws:approvals`, after_commit | be | FR-03.06, 09.01 | 02a §12 | T-10 | 1 | | ✅ |
 | T-12 | vision process + `on_tray_changed` + `camera.health` subscriber | be | FR-03.06, 03.07, 01.04, BR-06, 18 | 02a §12 | T-4, T-11 | 2 | | ⬜ |
-| T-13 | approvals: API-13, 14, 20, 21. Kèm từ review M1 (DEC-53): thu hồi đăng nhập station đóng WS ngay | be | FR-03.10, 03.12 | 02a §12 | T-11, T-20 | 1,5 | | ⬜ |
+| T-13 | approvals: API-13, 14, 20, 21 | be | FR-03.10, 03.12 | 02a §12 | T-11, T-20 | 1,5 | | ⬜ |
 | T-14 | media: J-10 index segment, J-01 cắt clip, API-40, 41 | be | FR-02.01..05, 07.02 | 02a §12 (tách) | T-5, T-10 | 2 | | ⬜ |
 | T-21 | media: API-42 giữ clip, API-46 cắt lại, J-02 retention | be | FR-02.06, 02.09, BR-09, AC-15, AC-20 | tách từ T-14 | T-14 | 1 | | ⬜ |
 | T-15 | export: API-43..45, J-03 (overlay, side-by-side, queue `export`) | be | FR-07.04, 02.07 | 02a §12 | T-14 | 2 | | ⬜ |
@@ -168,3 +168,4 @@ Profile: GitHub Issues (`khanhego/ai-cam-be`, `khanhego/ai-cam-fe`). **Chưa t�
 | DEC-37 | Duyệt Plan | Duyệt (ủy quyền DEC-15) | Phủ đủ FR, phụ thuộc rõ | khanhtt (tự quyết) |
 | DEC-53 | Review code M1 (subagent): Đạt có điều kiện, 3 major + 20 minor/nit | Sửa ngay 3 major và #4–#12, #14, #16–#18, #20–#22, một phần #13 (token station đã gỡ → 403 ngay), mỗi sửa có test. Để sau: #13 thu hồi + đóng WS ngay → T-13/T-59; #15 `VIDEO_INCOMPLETE` → T-14; #19 định dạng giờ `Z`; #23 J-09 giữ transaction. Checklist deploy (`FORWARDED_ALLOW_IPS`, không phục vụ `*.map`, secret staging) → T-19 | Major chặn G3; phần để sau phụ thuộc task chưa làm | khanhtt (tự quyết, ủy quyền DEC-15) |
 | DEC-54 | QA M1: tài khoản dashboard mở `/station` bằng tải trang mới | Chấp nhận hành vi thực tế: về `/station/login` (cookie refresh tách `rt_station` / `rt_dashboard`), thay vì `/admin` như ma trận 04 §3. Điều hướng trong app vẫn theo guard | An toàn hơn, không lộ phiên chéo client; đổi lại cần sửa ô ma trận trong 04 | khanhtt (tự quyết) |
+| DEC-55 | Thu hồi đăng nhập station trễ tối đa 15 phút (review M1 #13, TC-10.06) | Chấp nhận: station về màn đăng nhập khi access token hết hạn (≤ 15 phút); không làm "đóng WS ngay". Phiên station giữ như hiện tại (refresh 30 ngày trượt — máy dùng hằng ngày không phải đăng nhập lại) | Thu hồi chỉ dùng khi sự cố hiếm (đổi/mất máy trạm, khai báo lại station, nghi lộ phiên), Admin chủ động; bỏ việc khỏi T-13 | User (2026-10-05) |

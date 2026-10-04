@@ -15,7 +15,7 @@
 > 138 case chức năng: ✅ 38 · ❌ 0 · ⛔ 13 (chờ camera và máy quét thật, T-4) · ⬜ 87 (80 ngoài phạm vi M1, 7 trong M1 chưa chạy hoặc chưa đủ bằng chứng).
 > Bug: 4 bug (1 High, 3 Medium) đã sửa và chạy lại pass; bug Critical/High còn mở = 0. AC thuộc M1: AC-03 đạt; AC-01, AC-13 đạt một phần.
 > NFR-01: p95 API-11 ≈ 13–17 ms trên stack dev (ngưỡng ≤ 1 giây), chưa đo trên phần cứng kho.
-> Rủi ro chính: chưa kiểm phần cứng thật; thu hồi đăng nhập station chưa đóng WS ngay (T-13/T-59); `VIDEO_INCOMPLETE` chưa có (T-14).
+> Rủi ro chính: chưa kiểm phần cứng thật; `VIDEO_INCOMPLETE` chưa có (T-14).
 
 <!-- Đối tượng đọc: người duyệt G4/G5. Báo cáo trung thực (CONVENTIONS §6.7): case không chạy được ghi "không chạy được" + lý do. -->
 
@@ -71,7 +71,7 @@ AC ngoài M1 đã có TC pass sớm (chưa tính đạt): AC-05 (TC-03.08), AC-1
 | #13 (một phần) | Token station đã gỡ khỏi station → 403 ngay | `test_station_scan_api.py` |
 | #14, #16, #17, #20, #21, #22 | Web Locks khi refresh; che log; `seed-demo` chặn production + secret staging; #20 đang chờ duyệt thì mọi lần quét IGNORED, xét trước định dạng mã; #21 username không tồn tại vẫn verify hash giả (không lộ username qua thời gian phản hồi); sourcemap `hidden` | `tests/unit/*`, test FE tương ứng |
 
-Để sau (đã ghi DEC-53): #13 phần thu hồi ≤ 15 phút + đóng WS ngay (T-13/T-59) · #15 `VIDEO_INCOMPLETE` (T-14) · #19 định dạng giờ `Z` · #23 J-09 giữ transaction.
+Để sau (đã ghi DEC-53): #13 phần thu hồi ≤ 15 phút — user chấp nhận, không làm (DEC-55) · #15 `VIDEO_INCOMPLETE` (T-14) · #19 định dạng giờ `Z` · #23 J-09 giữ transaction.
 
 ## 3. Case fail / blocked / chưa đủ
 
@@ -83,7 +83,7 @@ Không có case ❌.
 | TC-01.09, 01.10, 01.11, 01.13, 01.14 | ⛔ Cần camera thật (ONVIF, live view, sai mật khẩu camera thật) | Bàn thử T-4 |
 | TC-03.20..03.24, 03.35 | ⛔ Cần Cam 2 thật, phiếu in, máy quét USB | Bàn thử T-4 (M3) |
 | TC-10.05 | ⬜ Trong M1, chưa chạy (cần `ACCESS_TOKEN_MINUTES=1` + 2 tab) | Viết E2E hoặc chạy tay ở lần 2 |
-| TC-10.06 | ⬜ Phần BE (refresh bị thu hồi) pass ở `INT`; WS chưa đóng ngay | T-13/T-59 (review #13) |
+| TC-10.06 | ⬜ Phần BE (refresh bị thu hồi) pass ở `INT`; trễ ≤ 15 phút đã được chấp nhận (DEC-55) | Chờ màn D9 (T-59) để chạy E2E |
 | TC-10.09 | ⬜ Phần M1 pass (`LOGIN`, `USER_UPDATE`, `STATION_UPDATE`, `CAMERA_UPDATE`); 6 action còn lại thuộc M2/M3 | Chạy lại đủ 10 action sau M3 |
 | TC-03.13 | ⬜ `INT` chỉ kiểm cơ chế cắt với ngưỡng thu nhỏ (sàn chậm 0,5 giây, cắt 0,1 giây); mốc "sàn chậm 3 giây → phản hồi ≤ 3 giây" chưa đo | Thêm test `MockAdapter(delay_s=3)` |
 | TC-03.30, 03.31, 03.32 | ⬜ Chỉ có test component (vitest), chưa có E2E với BE thật | E2E thuộc T-38 / chạy tay ở lần 2 |
@@ -124,7 +124,7 @@ Map test → TC: docstring trong `ai-cam-be/tests/qa/test_m1_live.py`, `ai-cam-b
 
 - Chưa trình G4: lần 1 chỉ phủ M1; M2 (clip, tra cứu, dashboard), M3 (Cam 2, duyệt), M4 (Shopee, CSV) chưa có code.
 - 13 case ⛔ chờ bàn thử phần cứng T-4 (camera thật, máy quét USB, phiếu in); AC-04, AC-10 phụ thuộc nhóm này.
-- Thu hồi đăng nhập station chưa đóng WS ngay; station còn dùng được tới khi access token hết hạn (≤ 15 phút) — T-13/T-59.
+- Thu hồi đăng nhập station có hiệu lực sau ≤ 15 phút (access token hết hạn) — đã chấp nhận (DEC-55).
 - Cờ `VIDEO_INCOMPLETE` khi camera rớt chưa có — T-14.
 - Hiệu năng mới đo 1 station trên máy dev; tải 2 station (TC-N.01) và locust (TC-N.04, T-19) chưa chạy.
 - Lệch spec cần cập nhật `04` §3: ô "dashboard mở `/station`" → `/station/login` (DEC-54).

@@ -116,7 +116,7 @@ flowchart LR
 | Trạng thái kho chỉ nhận giá trị hợp lệ | CHECK enum trên `warehouse_status`, `session.status`, `cancel_reason` | Dữ liệu rác làm sai dashboard và bằng chứng | 01 §7 |
 | Audit log chỉ được thêm | Trigger chặn UPDATE, DELETE, TRUNCATE | Nhật ký là bằng chứng ai làm gì | FR-10.03, DEC-40 |
 | Production không chạy với secret dev | Settings từ chối khởi động | Lộ khóa ký JWT / khóa mã hóa mật khẩu camera | 02a §9 |
-| Đồng hồ giả chỉ ở môi trường test | `AICAM_FAKE_NOW` khi `APP_ENV=test` | Test được "15 phút", "30 phút", "90 ngày" mà không chờ thật; không ai tua giờ trên production | BR-16, BR-09 |
+| Đồng hồ giả chỉ ở môi trường test | `aicam.core.clock.freeze/advance`, chỉ cho phép khi `APP_ENV=test` (`fake_clock_allowed`) | Test được "15 phút", "30 phút", "90 ngày" mà không chờ thật; không ai tua giờ trên production | BR-16, BR-09 |
 | ID tăng đơn điệu | `uuid7` tăng cả trong cùng mili-giây | Sản phẩm trong đơn hiện đúng thứ tự Shopee trả về | T-9 (lỗi thật đã sửa) |
 | Màu nền mang nghĩa | `success-container` = sẵn sàng, `primary-container` = đang đóng gói, `error-container` = lệch mã, `warning-container` = cảnh báo | Người đứng bàn nhìn màu từ 1–2 mét, không đọc chữ | 01 §10.4, DEC-6 |
 | Font, icon đóng gói kèm app | `@fontsource/*`, `material-symbols` | Station phải chạy khi mất Internet | NFR-09, DEC-42 |
