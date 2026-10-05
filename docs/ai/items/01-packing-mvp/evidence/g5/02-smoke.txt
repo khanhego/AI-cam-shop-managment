@@ -1,0 +1,73 @@
+# Smoke staging local — 2026-10-05T19:25:12+07:00
+## S1 migrate trước api
+INFO  [alembic.runtime.migration] Running upgrade  -> 0001, initial
+INFO  [alembic.runtime.migration] Running upgrade 0001 -> 0002, clip: deleted_at, timeline (T-14, DEC-102)
+0002 (head)
+## S2 healthz qua Caddy
+{"status":"ok","version":"0.1.0"} HTTP 200
+## S3 HTTP→HTTPS
+HTTP 308 → https://localhost/admin
+## S4 create-admin
+Warning: Password input may be echoed.
+Mật khẩu: 
+Đã tạo Admin admin.
+exit=0
+## S5 seed-demo bị chặn
+seed-demo không chạy trên production.
+exit=2
+
+# Smoke HTTP/WS (script smoke.py, httpx + websockets qua https://localhost:8443)
+## S6 login Admin: 200 keys ['access_token', 'expires_in', 'user']
+   set-cookie rt_dashboard attrs: HttpOnly; Max-Age=604800; Path=/api/v1/auth; SameSite=strict; Secure
+## S7 tạo user STATION: 201
+   tạo station: 201
+## S8 thử camera rtsp://host.docker.internal:58554/cam-fake1: 200 3.6s ảnh/ok application/json
+   gắn CAM1: 200
+   camera sau khi gắn: {"id": "01a10c07-bd81-75f5-a764-054ca7132054", "role": "CAM1", "rtsp_url_masked": "rtsp://host.docker.internal:58554/cam-fake1", "status": "ONLINE", "roi": null, "clock_offset_ms": null}
+## S9 login STATION: 200
+## S10 WS /ws/station qua Caddy: nhận pong at 2026-10-05T12:26:52.477036Z
+## S11 quét mở SPXVNEC645B4A72: 200 outcome=SESSION_OPENED 35 ms
+   WS nhận sau quét mở: ['station.state:PACKING']
+   quét đóng: 200 outcome=SESSION_COMPLETED 100 ms
+   WS token sai → close code 4401
+## S12 API-30 tìm kiện: 1 None
+   clip sau 10s: [('CAM1', 'READY', 21.04, None), ('CAM2', 'FAILED', None, None)]
+   play-url: 200 → media 206 video/mp4 bytes 0-1023/15154817
+   media không chữ ký: 422
+## S13 /live WHEP: không token 401 · STATION 403 · ADMIN 400 · /live/khác 404
+   CSKH /live 403
+## S14 /api/v1/imports 7 MB: 413 {"error": {"code": "PAYLOAD_TOO_LARGE", "message": "Dữ liệu gửi lên quá lớn (tối đa 6 MB).", "details": {"max_bytes": 62
+   /api/v1/users JSON 1.2 MB: 413
+   /api/v1/imports file nhỏ: 422 (không bị chặn ở proxy)
+## S15 SPA /: 200 no-cache index
+## S15 SPA /admin/packages: 200 no-cache index
+## S15 SPA /station: 200 no-cache index
+## S15 SPA /admin/khong-co: 200 no-cache index
+   asset /assets/index-D5_8OfBe.js 200 public, max-age=31536000, immutable
+   *.map 404
+## S16 header:
+   content-security-policy = default-src 'self'; script-src 'self' 'sha256-wMAAS9iOALRtpDOTov76eUExYsm6fx4bcqr2Ai49TZU='; base-uri 'self'; object-src 'none'; frame-ancestors 'none'; form-action 'self'; img-src 'self' data: blob:; media-src 'self' blob:; connect-src 'self' ws: wss:; style-src 'self' 'unsafe-inline'; font-src 'self' data:
+   x-content-type-options = nosniff
+   x-frame-options = DENY
+   referrer-policy = no-referrer
+   permissions-policy = camera=(), microphone=(), geolocation=(), payment=()
+   cross-origin-opener-policy = same-origin
+   server = None
+   (CAM2 FAILED: station chỉ gắn CAM1 — J-01 luôn tạo dòng clip cho mọi vai, vai chưa cấu hình → FAILED; media/service.py:386, đúng thiết kế)
+   (/live ADMIN 400: qua forward_auth tới MediaMTX, MediaMTX từ chối SDP giả 'v=0' — đúng; 404 cũ ở T-19 vì không có camera)
+
+# Chromium (Playwright, ignoreHTTPSErrors) — bắt console error + securitypolicyviolation
+admin/login: url=/admin/login lỗi console mới=0
+  theme: light
+đăng nhập admin: url=/admin lỗi console mới=0
+admin/packages: url=/admin/packages lỗi console mới=0
+  video: {"src":"https://localhost:8443/api/v1/media/clips/49aeb901-b47c-4821","readyState":0,"t":0,"dur":null,"err":null}
+chi tiết kiện + phát clip: url=/admin/packages/01a10c07-fccd-71c0-834b-d1321347886c lỗi console mới=0
+admin/live: url=/admin/live lỗi console mới=0
+admin/settings/storage: url=/admin/settings/storage lỗi console mới=0
+  inputs: 2 theme: light
+station/login: url=/station/login lỗi console mới=0
+TỔNG: lỗi console=0, lỗi CSP=0
+-- phát clip ở chi tiết kiện (Chromium 153): preload=none; play() ok → readyState 4, currentTime 3.0 s, duration 21.04 s, 1280×720; media 206 video/mp4; 0 lỗi console
+
+# Log Caddy trước sửa G5 (2 dòng warn reverse_proxy 'aborting with incomplete response' chứa sig= nguyên) — sau sửa (commit BE 4079956): 3 dòng aborting, uri ...&sig=REDACTED..., 0 dòng sig=<hex>

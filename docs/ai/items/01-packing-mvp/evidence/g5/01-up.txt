@@ -1,0 +1,267 @@
+# G5 staging local — 2026-10-05T19:22:02+07:00
+BE 3035bbc  FE 833b1e9  docs 9bdcdd3
+## df -h / (truoc)
+/dev/disk3s1s1   460Gi    11Gi    47Gi    20%    453k  495M    0%   /
+## docker system df (truoc)
+TYPE            TOTAL     ACTIVE    SIZE      RECLAIMABLE
+Images          43        9         9.492GB   1.835GB (19%)
+Containers      18        15        6.627MB   180.2kB (2%)
+Local Volumes   10        7         7.652GB   267B (0%)
+Build Cache     0         0         0B        0B
+## config -q
+config OK (dc = docker compose -p aicam-staging --env-file <tạm> -f docker/compose.yml)
+## up -d --build
+ Image aicam-be:staging-g5 Error pull access denied for aicam-be, repository does not exist or may require 'docker login'
+ Image aicam-be:staging-g5 Error pull access denied for aicam-be, repository does not exist or may require 'docker login'
+ Image aicam-be:staging-g5 Error pull access denied for aicam-be, repository does not exist or may require 'docker login'
+ Image aicam-be:staging-g5 Error pull access denied for aicam-be, repository does not exist or may require 'docker login'
+ Image aicam-be:staging-g5 Error pull access denied for aicam-be, repository does not exist or may require 'docker login'
+ Image aicam-be:staging-g5 Error pull access denied for aicam-be, repository does not exist or may require 'docker login'
+time="2026-10-05T19:22:13+07:00" level=warning msg="buildx Docker CLI plugin not found: falling back to the classic builder. BuildKit-only build features (multi-arch, secrets, ssh, additional contexts, ...) will not be available"
+ Image aicam-be:staging-g5 Building 
+ Image aicam-be:staging-g5 Building 
+Sending build context to Docker daemon  229.1kB
+Step 1/18 : FROM python:3.12-slim-bookworm AS base
+ ---> 54c85f3c4760
+Step 2/18 : ENV PYTHONDONTWRITEBYTECODE=1     PYTHONUNBUFFERED=1     UV_COMPILE_BYTECODE=1     UV_LINK_MODE=copy     UV_PROJECT_ENVIRONMENT=/opt/venv     PATH="/opt/venv/bin:$PATH"
+ ---> Using cache
+ ---> 2fc4b2cc6426
+Step 3/18 : RUN apt-get update     && apt-get install -y --no-install-recommends ffmpeg fontconfig curl ca-certificates     && mkdir -p /usr/share/fonts/truetype/bevietnampro     && for w in Regular SemiBold; do          curl -fsSL -o /usr/share/fonts/truetype/bevietnampro/BeVietnamPro-$w.ttf            "https://github.com/google/fonts/raw/main/ofl/bevietnampro/BeVietnamPro-$w.ttf";        done     && fc-cache -f     && apt-get purge -y curl && apt-get autoremove -y     && rm -rf /var/lib/apt/lists/*
+ ---> Using cache
+ ---> e23e26737739
+Step 4/18 : COPY --from=ghcr.io/astral-sh/uv:0.5 /uv /usr/local/bin/uv
+ ---> Using cache
+ ---> 27b63cf5263b
+Step 5/18 : WORKDIR /app
+ ---> Using cache
+ ---> dd350e117f82
+Step 6/18 : COPY pyproject.toml uv.lock ./
+ ---> d815aa4611ac
+Step 7/18 : RUN uv sync --frozen --no-dev --no-install-project
+ ---> Running in 2a11f231d70a
+Using CPython 3.12.15 interpreter at: /usr/local/bin/python3
+Creating virtual environment at: /opt/venv
+Downloading asyncpg (3.3MiB)
+Downloading numpy (15.0MiB)
+Downloading cryptography (4.5MiB)
+Downloading uvloop (4.2MiB)
+Downloading sqlalchemy (4.4MiB)
+Downloading opencv-python-headless (37.8MiB)
+Downloading pydantic-core (1.9MiB)
+ Downloaded pydantic-core
+ Downloaded asyncpg
+ Downloaded uvloop
+ Downloaded cryptography
+ Downloaded sqlalchemy
+ Downloaded numpy
+ Downloaded opencv-python-headless
+Prepared 60 packages in 1m 35s
+Installed 60 packages in 414ms
+Bytecode compiled 2374 files in 1.34s
+ + alembic==1.20.0
+ + amqp==5.4.0
+ + annotated-doc==0.0.5
+ + annotated-types==0.8.0
+ + anyio==4.15.1
+ + argon2-cffi==25.1.0
+ + argon2-cffi-bindings==26.1.0
+ + asyncpg==0.31.0
+ + billiard==4.3.0
+ + celery==5.6.3
+ + certifi==2026.7.22
+ + cffi==2.1.1
+ + click==8.5.0
+ + click-didyoumean==0.3.1
+ + click-plugins==1.1.1.2
+ + click-repl==0.4.0
+ + cryptography==50.0.2
+ + defusedxml==0.7.1
+ + et-xmlfile==2.0.0
+ + fastapi==0.142.2
+ + greenlet==3.5.6
+ + h11==0.16.0
+ + httpcore==1.0.9
+ + httptools==0.8.0
+ + httpx==0.28.1
+ + idna==3.20
+ + kombu==5.6.2
+ + mako==1.4.3
+ + markupsafe==3.0.4
+ + numpy==2.5.3
+ + opencv-python-headless==5.0.0.93
+ + openpyxl==3.1.5
+ + opentelemetry-api==1.45.0
+ + packaging==26.3
+ + prompt-toolkit==3.0.53
+ + pycparser==3.0
+ + pydantic==2.13.5
+ + pydantic-core==2.46.5
+ + pydantic-settings==2.15.0
+ + pyjwt==2.15.1
+ + python-dateutil==2.9.0.post0
+ + python-dotenv==1.2.4
+ + python-multipart==0.0.32
+ + pyyaml==6.0.3
+ + redis==6.4.0
+ + six==1.17.0
+ + sqlalchemy==2.1.3
+ + starlette==1.7.0
+ + structlog==26.1.0
+ + typing-extensions==4.16.0
+ + typing-inspection==0.4.4
+ + tzdata==2026.5
+ + tzlocal==5.4.4
+ + uvicorn==0.54.0
+ + uvloop==0.23.0
+ + vine==5.1.0
+ + watchfiles==1.3.0
+ + wcwidth==0.9.1
+ + websockets==17.2
+ + zxing-cpp==3.1.1
+ ---> Removed intermediate container 2a11f231d70a
+ ---> 5059a9deca18
+Step 8/18 : COPY src ./src
+ ---> 418fc7b47f1b
+Step 9/18 : COPY README.md ./
+ ---> ad6bf4854cd3
+Step 10/18 : COPY alembic.ini ./
+ ---> 084fdff53ff8
+Step 11/18 : COPY alembic ./alembic
+ ---> 0caba1cf0345
+Step 12/18 : RUN uv sync --frozen --no-dev
+ ---> Running in 3472a8f4cd25
+   Building aicam @ file:///app
+      Built aicam @ file:///app
+Prepared 1 package in 2.42s
+Installed 1 package in 4ms
+Bytecode compiled 2374 files in 144ms
+ + aicam==0.1.0 (from file:///app)
+ ---> Removed intermediate container 3472a8f4cd25
+ ---> e77c2dc8b1fe
+Step 13/18 : RUN useradd --create-home --uid 10001 aicam
+ ---> Running in e916e2539bb7
+ ---> Removed intermediate container e916e2539bb7
+ ---> 8e57093f1e76
+Step 14/18 : USER aicam
+ ---> Running in 5d343bbcbe55
+ ---> Removed intermediate container 5d343bbcbe55
+ ---> 2094736d6282
+Step 15/18 : ENV FORWARDED_ALLOW_IPS=127.0.0.1
+ ---> Running in b608faf22677
+ ---> Removed intermediate container b608faf22677
+ ---> aeb1511e30d8
+Step 16/18 : EXPOSE 8000
+ ---> Running in c3d97992776c
+ ---> Removed intermediate container c3d97992776c
+ ---> 19ac00d3bbf1
+Step 17/18 : CMD ["uvicorn", "aicam.entrypoints.api:app", "--host", "0.0.0.0", "--port", "8000", "--proxy-headers", "--no-access-log"]
+ ---> Running in 4962c7c98e27
+ ---> Removed intermediate container 4962c7c98e27
+ ---> a44e32156856
+Step 18/18 : LABEL com.docker.compose.image.builder=classic
+ ---> Running in b0ca772ea980
+ ---> Removed intermediate container b0ca772ea980
+ ---> 40ef4a23e1e1
+Successfully built 40ef4a23e1e1
+Successfully tagged aicam-be:staging-g5
+ Volume aicam-staging_imports Created 
+ Volume aicam-staging_video Created 
+ Volume aicam-staging_video Created 
+ Volume aicam-staging_caddy_config Created 
+ Volume aicam-staging_caddy_config Created 
+ Volume aicam-staging_imports Created 
+ Volume aicam-staging_redisdata Created 
+ Volume aicam-staging_redisdata Created 
+ Volume aicam-staging_pgdata Created 
+ Volume aicam-staging_pgdata Created 
+ Volume aicam-staging_caddy_data Created 
+ Volume aicam-staging_caddy_data Created 
+ Network aicam-staging_aicam Created 
+ Network aicam-staging_aicam Created 
+ Container aicam-staging-volume-init-1 Created 
+ Container aicam-staging-redis-1 Created 
+ Container aicam-staging-postgres-1 Created 
+ Container aicam-staging-mediamtx-1 Created 
+ Container aicam-staging-migrate-1 Created 
+ Container aicam-staging-backup-1 Created 
+ Container aicam-staging-api-1 Created 
+ Container aicam-staging-worker-export-1 Created 
+ Container aicam-staging-vision-1 Created 
+ Container aicam-staging-worker-sync-1 Created 
+ Container aicam-staging-beat-1 Created 
+ Container aicam-staging-worker-1 Created 
+ Container aicam-staging-caddy-1 Created 
+ Container aicam-staging-volume-init-1 Started 
+ Container aicam-staging-redis-1 Started 
+ Container aicam-staging-postgres-1 Started 
+ Container aicam-staging-volume-init-1 Exited 
+ Container aicam-staging-mediamtx-1 Started 
+ Container aicam-staging-postgres-1 Healthy 
+ Container aicam-staging-postgres-1 Healthy 
+ Container aicam-staging-migrate-1 Started 
+ Container aicam-staging-backup-1 Started 
+ Container aicam-staging-redis-1 Healthy 
+ Container aicam-staging-migrate-1 Error service "migrate" didn't complete successfully: exit 1
+service "migrate" didn't complete successfully: exit 1
+$SP/dc up -d --build  0.14s user 0.09s system 0% cpu 2:33.55 total
+## Lần 1: migrate exit 1 — guard G3 'Production không được dùng PLATFORM_ADAPTER=mock' (đúng thiết kế, .env tạm sai). Sửa .env tạm: PLATFORM_ADAPTER=shopee (mặc định), SHOPEE_ENABLED=false
+ Container aicam-staging-backup-1 Running 
+ Container aicam-staging-postgres-1 Running 
+ Container aicam-staging-mediamtx-1 Running 
+ Container aicam-staging-redis-1 Running 
+ Container aicam-staging-migrate-1 Recreate 
+ Container aicam-staging-migrate-1 Recreated 
+ Container aicam-staging-api-1 Recreate 
+ Container aicam-staging-api-1 Recreated 
+ Container aicam-staging-beat-1 Recreate 
+ Container aicam-staging-worker-sync-1 Recreate 
+ Container aicam-staging-vision-1 Recreate 
+ Container aicam-staging-worker-export-1 Recreate 
+ Container aicam-staging-worker-1 Recreate 
+ Container aicam-staging-beat-1 Recreated 
+ Container aicam-staging-vision-1 Recreated 
+ Container aicam-staging-worker-sync-1 Recreated 
+ Container aicam-staging-worker-export-1 Recreated 
+ Container aicam-staging-worker-1 Recreated 
+ Container aicam-staging-volume-init-1 Started 
+ Container aicam-staging-postgres-1 Healthy 
+ Container aicam-staging-postgres-1 Healthy 
+ Container aicam-staging-volume-init-1 Exited 
+ Container aicam-staging-migrate-1 Started 
+ Container aicam-staging-redis-1 Healthy 
+ Container aicam-staging-migrate-1 Exited 
+ Container aicam-staging-api-1 Started 
+ Container aicam-staging-api-1 Healthy 
+ Container aicam-staging-api-1 Healthy 
+ Container aicam-staging-api-1 Healthy 
+ Container aicam-staging-api-1 Healthy 
+ Container aicam-staging-api-1 Healthy 
+ Container aicam-staging-api-1 Healthy 
+ Container aicam-staging-worker-sync-1 Started 
+ Container aicam-staging-worker-1 Started 
+ Container aicam-staging-beat-1 Started 
+ Container aicam-staging-caddy-1 Started 
+ Container aicam-staging-worker-export-1 Started 
+ Container aicam-staging-vision-1 Started 
+$SP/dc up -d  0.12s user 0.05s system 1% cpu 8.519 total
+## ps
+SERVICE         STATUS                                     PORTS
+api             Up 6 seconds (healthy)                     8000/tcp
+backup          Up 20 seconds                              5432/tcp
+beat            Up Less than a second                      8000/tcp
+caddy           Up Less than a second (health: starting)   443/udp, 2019/tcp, 0.0.0.0:8088->80/tcp, [::]:8088->80/tcp, 0.0.0.0:8443->443/tcp, [::]:8443->443/tcp
+mediamtx        Up 30 seconds                              0.0.0.0:8190->8190/tcp, 0.0.0.0:8190->8190/udp, [::]:8190->8190/tcp, [::]:8190->8190/udp
+migrate         Exited (0) 6 seconds ago                   
+postgres        Up 31 seconds (healthy)                    5432/tcp
+redis           Up 31 seconds (healthy)                    6379/tcp
+vision          Up Less than a second                      8000/tcp
+volume-init     Exited (0) 8 seconds ago                   
+worker          Up Less than a second                      8000/tcp
+worker-export   Up Less than a second                      8000/tcp
+worker-sync     Up Less than a second                      8000/tcp
+## logs migrate
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 0001, initial
+INFO  [alembic.runtime.migration] Running upgrade 0001 -> 0002, clip: deleted_at, timeline (T-14, DEC-102)
+## logs volume-init

@@ -7,7 +7,7 @@
 | Lane | feature (chạy bằng `ai-solo-build-feature`) |
 | Quy mô | M |
 | Component bị chạm | ai-cam-be (be), ai-cam-fe (fe: station, admin) |
-| Last update | 2026-10-05 · Lead review (G3 đạt có điều kiện DEC-68; sang bước 11 QA G4) |
+| Last update | 2026-10-05 · QA (G4 đạt có điều kiện DEC-78; sang bước 12 Release G5) |
 
 Phạm vi dự kiến: M01, M02, M03, M05 (Shopee: đơn + trạng thái), M07 cơ bản, M10 của [SRS hệ thống](../../system/SRS.md).
 Spike S1–S5 và dựng khung repo ([architecture.md §17](../../system/architecture.md)) sẽ thành task đầu trong `03-plan`.
@@ -21,7 +21,7 @@ Số item: 01 (chưa có item nào; `git ls-remote --heads` của 3 repo không 
 | G2 Thiết kế | ✅ | 2026-10-04 | khanhtt (tự quyết, DEC-15) | Có điều kiện DEC-33; 2 vòng review subagent |
 | Plan | ✅ | 2026-10-04 | khanhtt (tự quyết, DEC-37) | 46 task, 6 milestone; ticket chưa tạo (DEC-35) |
 | G3 Build | ✅ có điều kiện | 2026-10-05 | khanhtt (tự quyết, DEC-68) | Điều kiện: V-1, V-2 sửa (02a DEC-162, 163) + contract 02 v0.7 (DEC-67 — đã có); đủ khi agent BE xong V-1, V-2 |
-| G4 Kiểm thử | ⬜ | | | |
+| G4 Kiểm thử | ✅ có điều kiện | 2026-10-05 | khanhtt (tự quyết, DEC-78 trong 04) | 160 case: ✅ 132 · ❌ 0 · ⛔ 28 · ⬜ 0; AC 12/19. Điều kiện go-live: bàn thử T-4, Shopee T-3, server kho, điện thoại (04a §6) |
 | G5 Release | ⬜ | | | |
 
 ## Solo pipeline
@@ -41,13 +41,13 @@ Số item: 01 (chưa có item nào; `git ls-remote --heads` của 3 repo không 
 | 8c | Tài liệu nghiệp vụ (mỗi lát) | ✅ | 2026-10-05 | Lát 0–5 ở `docs/nghiep-vu/01-packing-mvp/` (Draft, có §0 Giải thích đơn giản); đã đối chiếu lại code sau sửa review G3 |
 | 9 | Commit / PR | ✅ | 2026-10-05 | Commit + push từng task; PR mở khi merge cuối phase (DEC-56) |
 | 10 | Review code | ✅ | 2026-10-05 | G3 đạt có điều kiện (DEC-68): 2 lượt review toàn Phase 1 + 1 lượt xác minh, ~70 finding đã sửa; điều kiện V-1, V-2 + contract v0.7 — đủ khi agent BE xong V-1, V-2 |
-| 11 | Chạy test | ▶ | | QA G4 (sau khi V-1, V-2 xong) |
-| 12 | Release | ⬜ | | |
+| 11 | Chạy test | ✅ | 2026-10-05 | G4 đạt có điều kiện (DEC-78): mọi TC Phase 1 chạy được trên máy dev đều ✅ (132/160, 0 ❌); 28 ⛔ thiếu tài nguyên ngoài. BE 528 pass / 98 skip, FE 310 pass, QA API 94 pass, E2E BE thật 37/37 × 2 + bài G4 5/5 × 2. 04a-test-report.md |
+| 12 | Release | ✅ | 2026-10-05 | G5 đạt có điều kiện (DEC-56): staging local trên máy dev, smoke 22/22, khôi phục sao lưu đạt; chưa deploy kho — điều kiện go-live ở 05 §7. BE `4079956`, FE `833b1e9` |
 
 ## NOW
 | Owner tiếp | Việc tiếp | Skill |
 |---|---|---|
-| QA → Ops | Bước 11 G4 (QA, gồm TC-05.22, 05.23, TC-07.11; chạy sau khi BE xong V-1, V-2 — điều kiện G3 DEC-68) → bước 12 G5 (release staging local; khôi phục sao lưu phải thử trước go-live — 03 §5) → PR + merge `main`. T-3 chờ Shopee duyệt partner (kèm F9 / F10 hiệu năng Shopee, DEC-158), T-4 chờ camera thật | ai-qa-run-tests → ai-ops-release |
+| Flow | Merge Phase 1 vào main (3 repo) → tự Q&A nghiệp vụ Phase 1 → Phase 2 (item 02 hàng hoàn + đối soát) | ai-solo-build-feature |
 
 ## Phản hồi giữa các vai
 | Từ | Tới | Nội dung | Trạng thái |
@@ -61,11 +61,14 @@ Số item: 01 (chưa có item nào; `git ls-remote --heads` của 3 repo không 
 | BE, FE (M3) | Architect | BE DEC-111, DEC-112 (outcome MISMATCH khi mở với khay sai, `approval.updated`, `alert` SESSION_CANCELLED_BY_SUPERVISOR, trường API-20); FE DEC-82 (ROI 422 VALIDATION_ERROR), DEC-83 (WHEP `Location` thiếu `/live`) | Đóng: 02 v0.4 DEC-61; TC-01.06 sửa kỳ vọng |
 | BE, FE (M4) | Architect, QA | BE DEC-121, 122, 124 (mã mới `IMPORT_CONFLICT`, `SHOP_NOT_CONNECTED`, 403 commit bởi người khác, `get_shipping_statuses` theo lô, dạng `last_error`); DEC-123 điểm Shopee chưa chắc; FE DEC-92 hỏi API ngắt kết nối + `held_clips` | Đóng: 02 v0.5 DEC-62 (contract), DEC-63 (không thêm 2 API trong MVP → backlog 03 §5); 04 DEC-64 (TC-05.09, 05.10, 05.15). DEC-123 chờ T-3 |
 | Lead review (G3, subagent) | BE, FE, Architect, Ops | Review code toàn Phase 1: 2 lượt review + 1 lượt xác minh, ~70 finding (F1–F37, N1–N14, P2-1..17, nit) | Đã sửa hết, mỗi sửa có test: BE 02a DEC-141..161 (+ DEC-162, 163 cho V-1, V-2 — đang làm), FE 02b-admin DEC-171..175; contract 02 v0.7 (DEC-67). Hoãn: F9 / F10 (chi phí gọi Shopee) tới T-3 (DEC-158, RB-15). Bằng chứng E2E sau sửa `evidence/g3-e2e-real.txt`. G3 đạt có điều kiện (DEC-68). Đóng khi V-1, V-2 xong |
+| QA (G4) | BE, FE, Ops | BUG-G4-1 (High) mất lần quét khi máy bận · BUG-G4-2 (Medium) D2 cập nhật > 5 giây · 10 case thiếu bằng chứng (TC-03.11, 03.30..03.32, 03.53, 02.13, 09.05, 10.05, N.02, N.05) | Đóng: FE `9d546ce`, `27fcfc2` (DEC-69); test bổ sung BE `3035bbc`, FE `833b1e9`, đều pass. Môi trường test E2E: `qa-reset.sh --mute-cam2` (BE `3787a37`, FE `f18da22`). Điều kiện go-live chuyển Ops (04a §6) |
 | UX | PO | Supervisor duyệt từ dashboard (DEC-5) cần FR mới FR-03.12, sửa FR-03.10, UC-08, ma trận quyền, thêm AC-19 | Đã xử lý trong 01 v0.2 (solo) |
 
 ## Lịch sử
 | Ngày | Role | Việc |
 |---|---|---|
+| 2026-10-05 | Ops | G5 staging local: smoke 22/22, khôi phục sao lưu đạt, sửa log lỗi Caddy lộ `sig` (`4079956`); `05-release.md` |
+| 2026-10-05 | QA, FE, BE | **G4 đạt có điều kiện (DEC-78 trong 04)**: 160 case ✅ 132 · ❌ 0 · ⛔ 28 · ⬜ 0; AC đạt 12/19 (AC-01, 02, 10 chỉ máy dev / giả lập; AC-04, 08, 09, 17 chưa test — thiếu tài nguyên). 2 bug G4 đã sửa: BUG-G4-1 mất lần quét khi máy bận (FE `9d546ce`, dùng `KeyboardEvent.timeStamp`), BUG-G4-2 D2 cập nhật > 5 giây (FE `27fcfc2`, throttle 2 giây, DEC-69). Bổ sung 10 case ⬜ → ✅ (BE `3035bbc`, FE `833b1e9`): E2E BE thật TC-03.30..03.32, 02.13, 10.05; `INT` TC-03.11, 03.53, 09.05, N.02 (p95 1,58 giây); TC-N.05 1 triệu kiện p95 ≤ 812 ms (máy dev). E2E BE thật 37/37 run2, run3 (run1 hỏng do môi trường); E2E reset `--mute-cam2` (BE `3787a37`, FE `f18da22`) — thay đổi môi trường test. BE 528 pass / 98 skip, FE 310 pass |
 | 2026-10-05 | Lead review, Architect, FE, Dev | **G3 đạt có điều kiện (DEC-68)**: 2 lượt review code + xác minh, ~70 finding đã sửa (02a DEC-141..161, 02b-admin DEC-171..175 — đổi số từ DEC-101..105 trùng 02a); contract 02 v0.7 (DEC-67: `413 PAYLOAD_TOO_LARGE`, `CREDENTIALS_UNREADABLE`, `CLIP_NOT_READY` PENDING khi chưa có dòng clip, `info.json` + `video_gaps`, cookie `aicam_shopee_state`, `IMPORT_CONFLICT` khi deadlock); tài liệu nghiệp vụ lát 0–5 đối chiếu lại code (bước 8c ✅); số contract test sửa thành 48 mục / 42 mã API-xx. Điều kiện còn: V-1, V-2 (BE đang làm, DEC-162, 163) |
 | 2026-10-05 | BE, QA, Architect, PM | **M5 Hoàn thiện xong**: BE T-19 `e2a88a5` (contract test `tests/contract/` 119 test so 48 mục / 42 mã API-xx của 02 §6 với OpenAPI, snapshot `openapi.json`, giờ `Z` qua `clock.iso_z` — đóng RB-11; test song song API-51), `5d83c09` (locust: NFR-05 2 station × 120 quét/giờ + CSKH 10 phút → API-11 p95 mở 80 ms / đóng 50 ms, 0 lỗi; stress 4 station ≈ 13.400 quét/giờ 5 phút → p95 26 ms, max 149 ms, 0 lỗi — máy dev, không phải server kho), `f1cf83a` (`docker/compose.yml` production: `migrate`, `backup`, `caddy`; Caddyfile `tls internal`, `forward_auth` `/live` → `/api/v1/live`, chặn `*.map`; `mediamtx.prod.yml`; `.env.production.example`), `cd5183a` (`docs/ops.md`). Staging local 15/15 bước (compose `-p aicam-staging`, sau đó `down -v`). BE 466 pass / 97 skip; DEC-131..137 (02a). Architect 02 v0.6 (DEC-66); 04 TC-05.22, 05.23 + số tải §4 (DEC-65); 03 §5 thêm rủi ro triển khai; system-map; architecture §14.2. Chưa test: WHEP qua LAN / ICE UDP, cài root cert Caddy trên máy station, `pg_restore`, lịch sao lưu theo giờ, NAS override, nâng cấp / rollback trên dữ liệu thật, tải đủ 1 giờ trên server kho với camera thật |
 | 2026-10-05 | BE, FE, QA, Architect, PO | **M4 Nguồn đơn xong (trừ T-3)**: BE T-17 `90a16c6` (API-50..54 nhập CSV / xlsx, BR-17, fixtures `tests/qa/fixtures/csv/`, volume `imports`), T-16 `d5f7e05` (adapter Shopee v2 HMAC, OAuth, refresh, thử lại theo `Retry-After`, API-70..73, tra 2 giây khi quét ngoài lock), T-22 `2375a2e` (J-04/05/06/12, queue `sync`, beat 5/10/15/30 phút; tắt khi `SHOPEE_ENABLED=false`); FE T-56 `b09e0f3` D5, T-58 `83cc236` D7 + D8, T-59 `c1cb076` D9 + D10, T-61 bộ `e2e/real` 37 bài. Kết quả: BE 345 pass / 97 skip, QA live 94 pass + 2 skip (+ adapter mock 8/8), TC-05.11 nhập 500 đơn 1,1 giây (AC-12 ≤ 30 giây); FE 274 unit, E2E mock 9, E2E BE thật 37/37 (`evidence/m4-e2e-real.txt`). Sửa 2 lỗi test FE `ac017c0`: EX-P9 chập chờn (helper `src/test/scan.ts` `hidScan`), `pnpm test` thoát mã 1 do thay `FormData` toàn cục (nay `src/test/nodeFormData.ts` chỉ trong test upload). Sửa lỗi D11 màn đen `3533ff3` (track WebRTC tới muộn của kết nối đã đóng). Architect 02 v0.5 (DEC-62, DEC-63); 04 DEC-64; system-map; tài liệu nghiệp vụ lát 4. Chưa test (thiếu tài khoản partner, T-3): OAuth thật, `state` trong redirect, mã lỗi thật, bảng trạng thái vận chuyển, rate limit (token bucket ADR-007 chưa làm), tra đơn theo mã vận đơn (DEC-123, tạm dò 60 phút); TC-10.06 mới kiểm tới API 204; `.xlsx` thật ở FE |

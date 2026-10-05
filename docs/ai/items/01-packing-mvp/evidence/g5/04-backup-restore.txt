@@ -1,0 +1,69 @@
+# Sao lưu + thử khôi phục — 2026-10-05T19:33:30+07:00
+## B1 pg-backup.sh once
+2026-10-05T19:33:31+07:00 backup_ok aicam-20261005-193331.dump
+exit=0
+   total 112
+   -rw-------  1 admin  staff  51048 Oct  5 19:33 aicam-20261005-193331.dump
+   -rw-------  1 admin  staff     90 Oct  5 19:33 imports-20261005-193331.tgz
+dump: aicam-20261005-193331.dump 51048 bytes
+## B2 số dòng + md5 nội dung từng bảng — DB gốc aicam
+alembic_version|1|a4310bbe1908ffaaf876d2c88cb0bfa7
+approval_request|0|d41d8cd98f00b204e9800998ecf8427e
+audit_log|19|89a4097c7892bc175622fe6da4ee918b
+camera|1|10f8065f6f3a64f3b891c45ee47c2a7d
+clip|2|c2d18079ba724c25f512b255ec14f72e
+csv_import|0|d41d8cd98f00b204e9800998ecf8427e
+export|0|d41d8cd98f00b204e9800998ecf8427e
+order|0|d41d8cd98f00b204e9800998ecf8427e
+order_item|0|d41d8cd98f00b204e9800998ecf8427e
+package|1|890581e269687fcb25eb5a254191ef3f
+refresh_token|17|760c5ac92ff08ad50a01fa2054b26300
+scan_dedup|2|dc55b3ce67a4202a3e78f7b97af90e2f
+session|1|4c6bda8360d0642a7c9d19eb47dd6246
+session_event|2|49d3e699be2fa48b748c51afe992c6a7
+setting|1|7a2b88ad710e9c08a284ff02ebb7aaef
+shop|0|d41d8cd98f00b204e9800998ecf8427e
+station|1|ecba69fbdcc8f1fb8c9a2d55da89e4be
+status_history|2|62d3084b60de1d5401871bbb1bbb9e8d
+user|3|ef4dc01265a5349a7b8bffc98c1e2abc
+video_segment|6|c18d7cab4bde4763481e4f2259bf2105
+## B3 khôi phục vào DB tạm aicam_restore_test: createdb + pg_restore --no-owner < dump → exit 0 (đã chạy ở trên)
+## B4 so sánh gốc vs khôi phục
+KHỚP: 20/20 bảng cùng số dòng và md5 nội dung
+0002
+## B5 quy trình đầy đủ docs/ops.md §6 trên DB thật của staging (drop → restore → up)
+-- dc stop api vision worker worker-sync worker-export beat backup
+7
+-- dropdb + createdb
+exit=0
+   bảng sau createdb: 0
+-- pg_restore
+exit=0
+-- khôi phục file nhập (lệnh ops §6, volume aicam-staging_imports)
+exit=0
+-- dc up -d
+22
+   api Up 14 seconds (healthy)
+   backup Up 15 seconds
+   beat Up 8 seconds
+   caddy Up 3 minutes (healthy)
+   mediamtx Up 9 minutes
+   postgres Up 9 minutes (healthy)
+   redis Up 9 minutes (healthy)
+   vision Up 8 seconds
+   worker Up 8 seconds
+   worker-export Up 8 seconds
+   worker-sync Up 8 seconds
+19c19
+< video_segment|6|c18d7cab4bde4763481e4f2259bf2105
+---
+> video_segment|7|123e39e835cf5449025b60cf3a2116ff
+orig2.txt:refresh_token|17|760c5ac92ff08ad50a01fa2054b26300
+rest2.txt:refresh_token|17|760c5ac92ff08ad50a01fa2054b26300
+-- healthz
+{"status":"ok","version":"0.1.0"} HTTP 200
+## B6 sau khôi phục: video_segment +1 là đoạn video mới MediaMTX ghi sau `up` (camera vẫn chạy), không phải lệch dữ liệu
+login Admin (mật khẩu cũ): 200
+API-30: 1 kiện SPXVNEC645B4A72 PACKED
+clip cũ phát được: 206 bytes 0-99/15154817
+station/camera: [('Bàn 1 (staging)', [('CAM1', 'ONLINE')])]

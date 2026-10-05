@@ -4,16 +4,16 @@
 |---|---|
 | QA | khanhtt |
 | Reviewer | Tech lead · PO |
-| Trạng thái | Executing (lần 1 — M1) |
+| Trạng thái | Done (lần 2 — Phase 1; G4 đạt có điều kiện, DEC-78) |
 | Nguồn | SRS [01-srs.md](01-srs.md) v0.4 · Tech Spec [02](02-tech-spec.md), [02a](02a-be-spec.md), [02b-station](02b-fe-spec-station.md), [02b-admin](02b-fe-spec-admin.md) · Plan [03](03-plan.md) |
 | Build / môi trường | Stack dev `ai-cam-be/docker/compose.dev.yml` (api :8180) + FE `pnpm dev` (:5180) · bàn thử phần cứng chưa có (T-4) |
-| Last update | 2026-10-05 · QA (M5: TC-05.22, 05.23, số tải máy dev ở §4 — DEC-65) |
+| Last update | 2026-10-05 · QA (lần chạy 2 — Phase 1: bổ sung 10 case ⬜ → ✅, cột KQ, §4, §5, Chốt G4; DEC-78) |
 
 > **TL;DR** — 160 case: 141 chức năng (8 module), 10 phân quyền, 9 NFR; 53 case chức năng P1 + 9 case phân quyền P1 chặn release.
 > 115 case chức năng chạy tự động được (API 33, INT 31, E2E 52); 25 case thủ công (HW 15, MAN 9, API + MAN 1) cần camera thật, máy quét thật hoặc Shopee thật.
 > Phủ AC-01..05, AC-08..21, BR-01..06, 09, 15..18, EX-P1..P11, ma trận quyền 4 vai, NFR-01, 03, 04, 05, 09, 10, 31.
-> Rủi ro: M2..M5 chưa có code (clip, tra cứu, CSV, Shopee) → kỳ vọng các module đó theo spec, chỗ chưa chắc ghi "(cần xác nhận)".
-> Lần chạy 1 (phạm vi M1, 2026-10-05): ✅ 38 · ❌ 0 · ⛔ 13 (chờ phần cứng T-4) · ⬜ 87 (80 ngoài phạm vi M1, 7 chưa chạy / chưa đủ) — kết quả và bug: [04a](04a-test-report.md).
+> **Lần chạy 2 (Phase 1, 2026-10-05):** 160 case: ✅ 132 · ❌ 0 · ⛔ 28 (chưa test — thiếu tài nguyên: camera thật T-4, Shopee thật T-3, server kho, điện thoại) · ⬜ 0. AC đạt 12/19 (3 chỉ đạt trên máy dev / giả lập, 4 chưa test — thiếu tài nguyên). G4 **đạt có điều kiện** (DEC-78). Kết quả, bug, điều kiện go-live: [04a](04a-test-report.md).
+> Lần chạy 1 (M1): ✅ 38 · ⛔ 13 · ⬜ 87 — giữ lịch sử trong 04a.
 
 <!-- Đối tượng đọc: người chạy test (kể cả người mới) và người duyệt release. Mỗi case chạy lại được
 bởi người khác mà không cần hỏi: tiền điều kiện (PRE-x ở §1), bước đánh số, dữ liệu cụ thể, kỳ vọng có giá trị. -->
@@ -84,6 +84,9 @@ Cột **Cách**: `API` (HTTP trên stack dev) · `INT` (pytest integration) · `
 | `ai-cam-be/tests/integration/test_ws_hub.py` | 03.56 |
 | `ai-cam-be/tests/integration/test_import_concurrency.py` | 05.22, 05.23 |
 | `ai-cam-fe/src/features/admin/StationsAdmin.test.tsx` | 01.01–01.04, 01.11 (chữ lỗi theo `reason`) |
+| `ai-cam-be/tests/qa/test_m2_live.py` · `test_m3_live.py` · `test_m4_live.py` (stack thật) | 02.01, 02.04, 02.14, 02.15, 07.07 (API), P.04, P.05, P.08 · 03.20–03.23 (fake-cam2), 03.25, 03.40, 03.41, 03.43, 03.44, 03.46–03.51, 03.55 · 05.03, 05.11–05.15, 05.18, P.06 |
+| `ai-cam-be/tests/integration/test_media_*.py`, `test_packages_api.py`, `test_reports_settings.py`, `test_approvals_api.py`, `test_imports_api.py`, `test_platform_jobs.py`, `test_shops_api.py`, `test_vision_tray.py` | Docstring ghi ID — bảng TC → test ở [04a](04a-test-report.md) §1 |
+| `ai-cam-fe/e2e/real/*.spec.ts` (BE thật, 37 bài) · `ai-cam-fe/e2e/mock/*.spec.ts` (MSW, 9 bài) | Tên test ghi ID (`TC-…`) |
 
 **Vào:** G3 ✅; PRE-1 chạy đủ service; QA reset xong; `fake-cam1`, `fake-cam2` ONLINE; bàn thử phần cứng có cho case `HW`.
 **Ra:** mọi case P1 ✅; mọi AC có ≥ 1 case ✅ kèm bằng chứng; bug Critical/High = 0.
@@ -101,11 +104,11 @@ Mã API viết tắt: API-xx theo 02 §6; base `http://localhost:8180/api/v1`. "
 | TC-10.02 | Sai mật khẩu | API-01 | Negative | P1 | E2E | PRE-1 + FE chạy | 1. Mở `/station/login` 2. Nhập `tst_station01` / `sai` 3. Bấm "Đăng nhập" | API-01 401 `INVALID_CREDENTIALS`; Alert "Sai tài khoản hoặc mật khẩu. Kiểm tra lại hoặc hỏi Admin."; vẫn ở `/station/login` | ✅ |
 | TC-10.03 | Tài khoản dashboard vào station | API-01 WRONG_CLIENT | Negative | P2 | E2E | PRE-1 + FE chạy | 1. Mở `/station/login` 2. Nhập `tst_cskh` / `matkhau123` 3. Bấm "Đăng nhập" | API-01 403 `WRONG_CLIENT`; Alert "Tài khoản này không dùng cho station. Đăng nhập dashboard tại /admin." | ✅ |
 | TC-10.04 | Khóa sau 10 lần sai | §8 AuthN, API-01 | Boundary | P2 | API | PRE-5 | 1. `tst_admin` gọi API-90 POST /users `{"username":"qa_lock","display_name":"QA","role":"CSKH","password":"12345678"}` 2. Gọi API-01 `qa_lock` / `sai` 10 lần 3. Gọi API-01 `qa_lock` / `12345678` | Bước 1: 201. Bước 2: 10 lần 401 `INVALID_CREDENTIALS`. Bước 3: 423 `ACCOUNT_LOCKED`, `details.until` ≈ giờ gọi + 15 phút | ✅ |
-| TC-10.05 | Refresh theo client không ghi đè nhau | API-02, N3 | Regression | P2 | E2E | PRE-1 với biến `ACCESS_TOKEN_MINUTES=1` cho service `api` + FE chạy | 1. Tab A: đăng nhập `/station/login` bằng `tst_station01` 2. Tab B: đăng nhập `/admin/login` bằng `tst_admin` 3. Chờ 70 giây 4. Tab A quét `SPXTST0000001` 5. Tab B tải lại `/admin/settings/stations` | Bước 4: màn "ĐANG ĐÓNG GÓI" (không về `/station/login`). Bước 5: danh sách station hiện, URL không đổi. Trình duyệt giữ cả cookie `rt_station` và `rt_dashboard` | ⬜ |
-| TC-10.06 | Thu hồi đăng nhập station | API-91, FR-03.01 | Happy | P2 | E2E | PRE-2 + cửa sổ dashboard PRE-3 | 1. Dashboard mở D9 `/admin/settings/users` 2. Bấm "Thu hồi phiên đăng nhập" ở dòng `tst_station01` | API-91 204; station về `/station/login` trong ≤ 15 phút (khi access token hết hạn, refresh bị từ chối). WS không cần đóng ngay (DEC-55) | ⬜ |
+| TC-10.05 | Refresh theo client không ghi đè nhau | API-02, N3 | Regression | P2 | E2E | PRE-1 với biến `ACCESS_TOKEN_MINUTES=1` cho service `api` + FE chạy | 1. Tab A: đăng nhập `/station/login` bằng `tst_station01` 2. Tab B: đăng nhập `/admin/login` bằng `tst_admin` 3. Chờ 70 giây 4. Tab A quét `SPXTST0000001` 5. Tab B tải lại `/admin/settings/stations` | Bước 4: màn "ĐANG ĐÓNG GÓI" (không về `/station/login`). Bước 5: danh sách station hiện, URL không đổi. Trình duyệt giữ cả cookie `rt_station` và `rt_dashboard` | ✅ |
+| TC-10.06 | Thu hồi đăng nhập station | API-91, FR-03.01 | Happy | P2 | E2E | PRE-2 + cửa sổ dashboard PRE-3 | 1. Dashboard mở D9 `/admin/settings/users` 2. Bấm "Thu hồi phiên đăng nhập" ở dòng `tst_station01` | API-91 204; station về `/station/login` trong ≤ 15 phút (khi access token hết hạn, refresh bị từ chối). WS không cần đóng ngay (DEC-55) | ✅ |
 | TC-10.07 | Không được khóa Admin cuối | API-90 LAST_ADMIN | Negative | P2 | API | PRE-5 (chỉ có 1 Admin `tst_admin`) | 1. Lấy `id` của `tst_admin` qua API-04 GET /me 2. PATCH /users/{id} `{"is_active": false}` | 409 `LAST_ADMIN`; D9 hiện "Phải còn ít nhất một Admin."; `tst_admin` vẫn đăng nhập được | ✅ |
 | TC-10.08 | Trùng username | API-90 | Negative | P3 | API | PRE-5 | 1. `tst_admin` gọi POST /users `{"username":"tst_admin","display_name":"x","role":"CSKH","password":"12345678"}` | 409 `USERNAME_TAKEN`; D9 hiện lỗi dưới ô tài khoản (chữ cần xác nhận khi có D9) | ✅ |
-| TC-10.09 | Audit thao tác nhạy cảm | FR-10.03, NFR-15 | Happy | P1 | API | PRE-5 | Xem chi tiết bên dưới (10 thao tác) | API-92 có đủ 10 action, mỗi dòng đúng user và `object_id` | ⬜ |
+| TC-10.09 | Audit thao tác nhạy cảm | FR-10.03, NFR-15 | Happy | P1 | API | PRE-5 | Xem chi tiết bên dưới (10 thao tác) | API-92 có đủ 10 action, mỗi dòng đúng user và `object_id` | ✅ |
 | TC-10.10 | Audit không sửa được | 02a §3 quyền DB | Negative | P2 | MAN | PRE-1 | 1. `docker compose -f ai-cam-be/docker/compose.dev.yml exec -T postgres psql -U aicam -d aicam -c "UPDATE audit_log SET action='X'"` 2. Lặp với `DELETE FROM audit_log` | Cả hai lệnh lỗi, thông báo chứa "chỉ cho phép INSERT"; số dòng `audit_log` không đổi | ✅ |
 
 <details><summary>TC-10.09 — chi tiết</summary>
@@ -132,7 +135,7 @@ Mã API viết tắt: API-xx theo 02 §6; base `http://localhost:8180/api/v1`. "
 | TC-01.02 | Tên station trùng | API-60 | Negative | P3 | API | PRE-5 | 1. `tst_admin` gọi POST /stations `{"name":"tst station 01"}` | 409 `NAME_TAKEN` (không phân biệt hoa thường); D6 hiện "Tên station đã tồn tại." dưới ô tên | ✅ |
 | TC-01.03 | Tài khoản station đã gắn nơi khác | API-60 | Negative | P3 | API | PRE-5 | 1. Lấy id `tst_station01` qua GET /users?role=STATION 2. POST /stations `{"name":"QA S3","account_user_id":<id>}` | 409 `ACCOUNT_IN_USE`; D6: `tst_station01` không có trong danh sách chọn "Tài khoản station" | ✅ |
 | TC-01.04 | Camera không tới được (IP không tồn tại) | API-62 | Error | P2 | API | PRE-5 | 1. POST /cameras/test `{"rtsp_url":"rtsp://10.255.255.1:554/x"}` 2. PUT /stations/{id TST Station 02}/cameras/CAM1 cùng URL | Bước 1: 422 `CAMERA_UNREACHABLE`, `details.reason` = `TIMEOUT` (test chấp nhận `STREAM`); D6 hiện "Không kết nối được camera (hết thời gian chờ). Kiểm tra địa chỉ camera và dây mạng." Bước 2: 200, `status` = `OFFLINE` (vẫn lưu được) | ✅ |
-| TC-01.05 | Vẽ và lưu ROI Cam 2 | FR-01.04 | Happy | P1 | E2E | PRE-3 (RoiEditor thuộc T-62) | 1. D6 mở TST Station 01 2. Bước ROI: kéo khung trên ảnh Cam 2 tới x=0.2, y=0.2, w=0.6, h=0.6 3. Bấm "Lưu vùng đọc mã" | API-64 200, `roi` = `{"x":0.2,"y":0.2,"w":0.6,"h":0.6}`; Redis kênh `vision.config` nhận `{"camera_id": <id Cam 2>}`; mã ngoài khung không được đọc — kiểm ở TC-03.35 | ⬜ |
+| TC-01.05 | Vẽ và lưu ROI Cam 2 | FR-01.04 | Happy | P1 | E2E | PRE-3 (RoiEditor thuộc T-62) | 1. D6 mở TST Station 01 2. Bước ROI: kéo khung trên ảnh Cam 2 tới x=0.2, y=0.2, w=0.6, h=0.6 3. Bấm "Lưu vùng đọc mã" | API-64 200, `roi` = `{"x":0.2,"y":0.2,"w":0.6,"h":0.6}`; Redis kênh `vision.config` nhận `{"camera_id": <id Cam 2>}`; mã ngoài khung không được đọc — kiểm ở TC-03.35 | ✅ |
 | TC-01.06 | ROI quá nhỏ | API-64 | Boundary | P3 | API | PRE-5 | 1. PUT /cameras/{id Cam 2 TST Station 01}/roi `{"x":0.2,"y":0.2,"w":0.04,"h":0.6}` | 422 `VALIDATION_ERROR` với `details.fields` chứa `w` (02 v0.4 §6, DEC-61 — bỏ `ROI_INVALID`); ROI cũ giữ nguyên | ✅ |
 | TC-01.07 | Mất tín hiệu camera ≤ 10 giây | FR-01.02, 01.03, AC-10, EX-P7 | NFR | P1 | HW | PRE-7, phiên `SPXTST0000001` đang mở | Xem chi tiết bên dưới | ≤ 10 giây: chip "Cam 2 mất tín hiệu" trên station, D2 "Cần xử lý" có dòng Cam 2 TST Station 01 mất tín hiệu; phiên gắn cờ `VIDEO_INCOMPLETE` | ⛔ |
 | TC-01.08 | Camera trở lại | FR-01.02 | State | P2 | HW | Ngay sau TC-01.07 | 1. Cắm lại cáp Cam 2 2. Bấm đồng hồ | ≤ 10 giây: chip "Cam 2" xanh; API-60 GET /stations → Cam 2 `status` = `ONLINE` | ⛔ |
@@ -183,9 +186,9 @@ Bản giả lập không cần phần cứng: `docker compose -f ai-cam-be/docke
 | TC-03.08 | Đơn đã hủy | BR-01, EX-P1, AC-05 | Negative | P1 | E2E | PRE-2 | 1. Quét `SPXTST0000009` 2. Chờ 5 giây | Nền vàng "ĐƠN ĐÃ HỦY", "SPXTST0000009 đã bị hủy trên Shopee. Không đóng gói.", 2 bíp; sau 5 giây về "SẴN SÀNG". API-11 `ALERT`, `alert.code` = `ORDER_CANCELLED`, `state.session` = null | ✅ |
 | TC-03.09 | Đơn đã đóng | BR-03, EX-P2 | Negative | P1 | E2E | PRE-2 | 1. Quét `SPXTST0000010` 2. Không bấm gì, chờ 5 giây | "ĐƠN ĐÃ ĐÓNG GÓI", "SPXTST0000010 đã đóng gói lúc HH:mm tại TST Station 02." (HH:mm = giờ reset), nút "Yêu cầu đóng gói lại"; `alert.code` = `ALREADY_PACKED`, `alert.data.can_request_repack` = true; sau 5 giây về "SẴN SÀNG" | ✅ |
 | TC-03.10 | Đơn đã bàn giao | BR-03, AC-21 | Negative | P1 | E2E | PRE-2 | 1. Quét `SPXTST0000011` | "ĐƠN ĐÃ BÀN GIAO", "SPXTST0000011 đã bàn giao cho đơn vị vận chuyển. Không đóng gói lại."; không có nút "Yêu cầu đóng gói lại"; `alert.code` = `ALREADY_HANDED_OVER` | ✅ |
-| TC-03.11 | Kiện hủy sau khi đóng | BR-01, N1, EX-P10 | Negative | P2 | API | PRE-5 + `psql -c "UPDATE package SET warehouse_status='CANCELLED_AFTER_PACK' WHERE tracking_number='SPXTST0000010'"` (cách đặt dữ liệu cần xác nhận khi có J-04) | 1. `tst_station01` quét `SPXTST0000010` | `ALERT`, `alert.code` = `ORDER_CANCELLED` (không phải `ALREADY_PACKED` hay `ALREADY_HANDED_OVER`) | ⬜ |
+| TC-03.11 | Kiện hủy sau khi đóng | BR-01, N1, EX-P10 | Negative | P2 | API | PRE-5 + `psql -c "UPDATE package SET warehouse_status='CANCELLED_AFTER_PACK' WHERE tracking_number='SPXTST0000010'"` (cách đặt dữ liệu cần xác nhận khi có J-04) | 1. `tst_station01` quét `SPXTST0000010` | `ALERT`, `alert.code` = `ORDER_CANCELLED` (không phải `ALREADY_PACKED` hay `ALREADY_HANDED_OVER`) | ✅ |
 | TC-03.12 | Mã chưa có, sàn có | BR-04, EX-P3 | Happy | P2 | INT | PRE-6: DB chưa có kiện `SPXTST0000012`, MockAdapter có đơn | 1. API-11 quét `spxtst0000012` | `SESSION_OPENED`; `flags` không có `UNVERIFIED`; `package.items` có 3 sản phẩm; kiện được tạo `verified` = true | ✅ |
-| TC-03.13 | Mã chưa có, sàn chậm 3 giây | BR-04, NFR-01 | Boundary | P1 | INT | PRE-6 với `MockAdapter(delay_s=3)` | 1. API-11 quét `SPXTST9990002` 2. Đo thời gian phản hồi | Phản hồi ≤ 3 giây (tra sàn cắt ở 2 giây); `SESSION_OPENED`, `flags` = `["UNVERIFIED"]`, `items` = []. Trên stack thật (mã `SPXQA00000001` không có trên mock): S2 có chip "Chưa xác minh với Shopee" và dòng "Chưa có danh sách sản phẩm cho đơn này." | ⬜ |
+| TC-03.13 | Mã chưa có, sàn chậm 3 giây | BR-04, NFR-01 | Boundary | P1 | INT | PRE-6 với `MockAdapter(delay_s=3)` | 1. API-11 quét `SPXTST9990002` 2. Đo thời gian phản hồi | Phản hồi ≤ 3 giây (tra sàn cắt ở 2 giây); `SESSION_OPENED`, `flags` = `["UNVERIFIED"]`, `items` = []. Trên stack thật (mã `SPXQA00000001` không có trên mock): S2 có chip "Chưa xác minh với Shopee" và dòng "Chưa có danh sách sản phẩm cho đơn này." | ✅ |
 | TC-03.14 | Mã sai định dạng | API-11 INVALID_CODE | Negative | P2 | E2E | PRE-2 | 1. Quét `abc!!12345` | "MÃ KHÔNG HỢP LỆ", "Mã vừa quét không phải mã vận đơn. Quét lại mã trên phiếu.", 2 bíp, tự về "SẴN SÀNG" sau 5 giây; `alert.code` = `INVALID_CODE`, không có phiên | ✅ |
 | TC-03.15 | Cùng kiện ở 2 station | BR-02 mở rộng | Negative | P2 | API | PRE-5 | 1. `tst_station01` quét `SPXTST0000005` 2. `tst_station02` quét `SPXTST0000005` | Bước 2: `ALERT`, `alert.code` = `PACKED_ELSEWHERE_IN_PROGRESS`, message "SPXTST0000005 đang được đóng gói ở station khác."; station 02 hiện "ĐANG ĐÓNG GÓI Ở STATION KHÁC" | ✅ |
 | TC-03.16 | Hai request scan song song | BR-02, 02a §6 | Negative | P1 | INT | PRE-6 (`test_scan_concurrency.py`, dữ liệu commit thật) | Xem chi tiết bên dưới | Đúng 1 phiên mở trên station; 2 `outcome` là {`SESSION_OPENED`, `MISMATCH`} | ✅ |
@@ -197,14 +200,14 @@ Bản giả lập không cần phần cứng: `docker compose -f ai-cam-be/docke
 | TC-03.22 | Quét đúng khi khay còn phiếu sai | BR-06, AC-04, review #2 | Negative | P1 | HW | Sau TC-03.21, phiếu `SPXTST0000015` còn trên khay | 1. Quét `SPXTST0000014` 2. Quét `SPXTST0000014` lần nữa 3. Lặp bước 1–2 thêm 4 lần | Mỗi lần: `MISMATCH`, `mismatch.source` = `CAM2`; 10/10 lần phiên không đóng | ⛔ |
 | TC-03.23 | Bỏ phiếu sai khỏi khay | BR-06 | State | P1 | HW | Sau TC-03.22 | 1. Lấy phiếu `SPXTST0000015` ra khỏi khay 2. Chờ 2 giây 3. Quét `SPXTST0000014` | Bước 2: phiên về `OPEN`, màn "ĐANG ĐÓNG GÓI". Bước 3: `SESSION_COMPLETED` | ⛔ |
 | TC-03.24 | Cam 2 không đọc được | EX-P6, BR-18 | Negative | P1 | HW | PRE-7 | 1. Che khay bằng tấm bìa 2. Quét `SPXTST0000016` 3. Chờ 2 giây 4. Quét `SPXTST0000016` | Bước 3: chip vàng "Cam 2 chưa thấy phiếu". Bước 4: không bị chặn, `SESSION_COMPLETED`, phiên `flags` chứa `CAM2_UNVERIFIED`; D4 hiện chip "Cam 2 không xác minh" (M3) | ⛔ |
-| TC-03.25 | Vision dừng | BR-18 | Negative | P2 | MAN | PRE-2 | 1. `docker compose -f ai-cam-be/docker/compose.dev.yml stop vision` 2. Quét `SPXTST0000017` 3. Quét `SPXTST0000017` 4. `… start vision` | Bước 2: API-10 `tray.match` = `UNAVAILABLE`, chip "Cam 2 không đọc được". Bước 3: `SESSION_COMPLETED`, `flags` chứa `CAM2_UNVERIFIED` | ⬜ |
+| TC-03.25 | Vision dừng | BR-18 | Negative | P2 | MAN | PRE-2 | 1. `docker compose -f ai-cam-be/docker/compose.dev.yml stop vision` 2. Quét `SPXTST0000017` 3. Quét `SPXTST0000017` 4. `… start vision` | Bước 2: API-10 `tray.match` = `UNAVAILABLE`, chip "Cam 2 không đọc được". Bước 3: `SESSION_COMPLETED`, `flags` chứa `CAM2_UNVERIFIED` | ✅ |
 | TC-03.26 | Phiếu còn trên khay khi đóng | BR-18 | Boundary | P3 | INT | PRE-6; Redis `tray:{station_id}` = mã `SPXTST0000021` (HW: 2 phiếu in trùng, dán 1, để 1 trên khay) | 1. Quét `SPXTST0000021` 2. Quét `SPXTST0000021` | `SESSION_COMPLETED`, `flags` chứa `LABEL_ON_TRAY` | ✅ |
 | TC-03.27 | Cảnh báo 15 phút | BR-16, FR-03.09, EX-P5 | Boundary | P2 | INT | PRE-6, `clock.freeze` | Xem chi tiết bên dưới | 14:59 không cảnh báo; 15:00 có đúng 1 cảnh báo, S2 Alert "Phiên đã mở 15 phút. Quét lại mã để hoàn tất hoặc Hủy phiên." | ✅ |
 | TC-03.28 | Bỏ dở 30 phút | BR-16, AC-16, EX-P5 | Boundary | P1 | INT | PRE-6, `clock.freeze` | Xem chi tiết bên dưới | Phiên `ABANDONED`, kiện `NEW`, station "SẴN SÀNG" + Alert "Phiên SPXTST0000008 đã tự đóng do quá 30 phút." | ✅ |
 | TC-03.29 | Không bỏ dở khi đang chờ duyệt | BR-16 (02a) | State | P3 | INT | PRE-6, phiên `SPXTST0000012` ở `WAITING_APPROVAL` | 1. `clock.advance(31 phút)` 2. Chạy `sessions.check_timeouts` | Phiên vẫn `WAITING_APPROVAL`, kiện vẫn `PACKING` | ✅ |
-| TC-03.30 | Station chưa đăng nhập quét | EX-P9, AC-13 | Negative | P2 | E2E | PRE-1 + FE chạy, đang ở `/station/login` | 1. Máy quét giả gõ `SPXTST0000001` (5 ms/phím) + Enter | Alert "Station chưa đăng nhập. Đăng nhập rồi quét lại."; 0 request API-11; ô tài khoản không bị điền mã | ⬜ |
-| TC-03.31 | Gõ tay không bị coi là quét | 02b-station §10 | Negative | P2 | E2E | PRE-2 | 1. Gõ `SPXTST0000001` 200 ms/phím + Enter | 0 request API-11; màn giữ "SẴN SÀNG" | ⬜ |
-| TC-03.32 | Mất kết nối server | NFR-09, S6 | Error | P1 | E2E | PRE-2, phiên `SPXTST0000001` mở | Xem chi tiết bên dưới | > 5 giây mất kết nối → "MẤT KẾT NỐI MÁY CHỦ", không nhận quét; nối lại → về "ĐANG ĐÓNG GÓI" …01 | ⬜ |
+| TC-03.30 | Station chưa đăng nhập quét | EX-P9, AC-13 | Negative | P2 | E2E | PRE-1 + FE chạy, đang ở `/station/login` | 1. Máy quét giả gõ `SPXTST0000001` (5 ms/phím) + Enter | Alert "Station chưa đăng nhập. Đăng nhập rồi quét lại."; 0 request API-11; ô tài khoản không bị điền mã | ✅ |
+| TC-03.31 | Gõ tay không bị coi là quét | 02b-station §10 | Negative | P2 | E2E | PRE-2 | 1. Gõ `SPXTST0000001` 200 ms/phím + Enter | 0 request API-11; màn giữ "SẴN SÀNG" | ✅ |
+| TC-03.32 | Mất kết nối server | NFR-09, S6 | Error | P1 | E2E | PRE-2, phiên `SPXTST0000001` mở | Xem chi tiết bên dưới | > 5 giây mất kết nối → "MẤT KẾT NỐI MÁY CHỦ", không nhận quét; nối lại → về "ĐANG ĐÓNG GÓI" …01 | ✅ |
 | TC-03.33 | Phiên gần đây + xem clip | §5.1 ma trận, API-15 | Happy | P2 | API | PRE-5; `tst_station01` đã đóng 2 phiên `SPXTST0000005`, `SPXTST0000006` hôm nay | 1. GET /station/sessions/recent 2. (M2) Ở S1 bấm "Xem" dòng …06 | Bước 1: 1–5 item, mới nhất trước (…06 trước …05); phiên ngày trước không có (kiểm ở `INT` bằng `clock.freeze`). Bước 2: Dialog phát Cam 1 / Cam 2 | ✅ |
 | TC-03.34 | Mã < 4 ký tự bị bỏ qua (tách từ TC-03.14) | 02b-station §5 | Negative | P3 | E2E | PRE-2 | 1. Máy quét giả gõ `ABC` (5 ms/phím) + Enter | 0 request API-11; màn giữ "SẴN SÀNG", không âm báo | ✅ |
 | TC-03.35 | Phiếu ngoài ROI không được đọc (tách từ TC-03.20) | FR-01.04, FR-03.06 | Negative | P2 | HW | PRE-7, ROI Cam 2 x=0.2, y=0.2, w=0.6, h=0.6 | 1. Đặt phiếu `SPXTST0000014` ở góc khay ngoài ROI 2. Quét `SPXTST0000014` 3. Chờ 2 giây | Chip "Cam 2 chưa thấy phiếu"; API-10 `tray.match` = `NOT_SEEN` | ⛔ |
@@ -282,22 +285,22 @@ Trên stack thật: đặt `session_warn_minutes=1`, `session_abandon_minutes=2`
 
 | ID | Tiêu đề | Phủ | Loại | Ưu tiên | Cách | Tiền điều kiện | Bước | Kỳ vọng | KQ |
 |---|---|---|---|:---:|:---:|---|---|---|:---:|
-| TC-03.40 | Gửi duyệt lệch mã → Cho tiếp tục | FR-03.12, UC-08, AC-19 | Happy | P1 | E2E | PRE-4 | Xem chi tiết bên dưới | D13 có yêu cầu ≤ 2 giây + âm báo; station về "ĐANG ĐÓNG GÓI" ≤ 2 giây sau duyệt; audit `APPROVAL_DECISION` user "Nguyễn B" | ⬜ |
-| TC-03.41 | Gọi quản lý từ S2 (ASSIST) | FR-03.12, DEC-25 | Happy | P1 | E2E | PRE-4 | 1. Station quét `SPXTST0000001` 2. Bấm "Gọi quản lý" | Station "ĐANG CHỜ QUẢN LÝ DUYỆT", lý do "Gọi quản lý", "Quản lý duyệt trên dashboard, mục Yêu cầu duyệt."; D13 ≤ 2 giây có dòng loại "Gọi quản lý" với 3 nút "Cho tiếp tục", "Đóng phiên có ghi chú", "Hủy phiên" | ⬜ |
-| TC-03.42 | Đóng phiên có ghi chú | API-21 | Happy | P2 | E2E | PRE-4; phiên …01 `MISMATCH` (quét …02), đã "Gọi quản lý"; khay không có phiếu sai | 1. D13 bấm "Đóng phiên có ghi chú" 2. Nhập ghi chú `QA đóng tay` 3. Xác nhận | API-21 200, `decision` = `CLOSE_WITH_NOTE`; phiên `COMPLETED`, `flags` chứa `CLOSED_BY_SUPERVISOR`; kiện …01 `PACKED`; station về "SẴN SÀNG" | ⬜ |
-| TC-03.43 | Đóng có ghi chú khi khay còn sai | API-21 TRAY_STILL_DIFFERENT | Negative | P1 | API | PRE-5 + PRE-7; yêu cầu MISMATCH `source` = `CAM2`, `tray.match` = `DIFFERENT` (phiếu …15 trên khay phiên …14) | 1. `tst_sup` gọi API-21 `{"action":"CLOSE_WITH_NOTE","note":"QA"}` 2. Xem D13 | Bước 1: 409 `TRAY_STILL_DIFFERENT`, phiên vẫn `WAITING_APPROVAL`. Bước 2: nút "Đóng phiên có ghi chú" bị khóa, Alert "Cam 2 vẫn thấy phiếu sai trên khay. Yêu cầu bỏ phiếu sai trước." | ⬜ |
-| TC-03.44 | Cho tiếp tục khi khay còn sai | N7 | State | P2 | E2E | Như TC-03.43 | 1. D13 xem dòng yêu cầu 2. Bấm "Cho tiếp tục" | Bước 1: D13 cảnh báo "Cam 2 vẫn thấy phiếu sai" (nút không khóa). Bước 2: phiên về `OPEN` rồi `MISMATCH` ngay; station "LỆCH MÃ", nguồn "Cam 2 thấy trên khay" | ⬜ |
-| TC-03.45 | Hủy phiên từ dashboard | API-21 | Happy | P2 | API | PRE-5 + PRE-2; phiên …01 mở, station đã gửi ASSIST | 1. `tst_sup` gọi API-21 `{"action":"CANCEL_SESSION"}` | 200; phiên `CANCELLED` lý do `SUPERVISOR`; kiện …01 `NEW`; station "SẴN SÀNG" + Alert "Quản lý đã hủy phiên." | ⬜ |
-| TC-03.46 | Rút yêu cầu | API-14 | State | P2 | E2E | PRE-4; station ở "ĐANG CHỜ QUẢN LÝ DUYỆT" từ "LỆCH MÃ" (…01 / …02) | 1. Station bấm "Rút yêu cầu" | Station về "LỆCH MÃ" …01 / …02; API-14 200; yêu cầu `WITHDRAWN`; D13 dòng biến mất ≤ 2 giây | ⬜ |
-| TC-03.47 | Hai người duyệt cùng lúc | API-21 ALREADY_RESOLVED | Negative | P2 | API | PRE-5; 1 yêu cầu ASSIST `PENDING` | Xem chi tiết bên dưới | 1 request 200; request kia 409 `ALREADY_RESOLVED` kèm `decided_by` | ⬜ |
-| TC-03.48 | Duyệt khi station đã rút | API-21 | Negative | P3 | API | PRE-5; yêu cầu ASSIST đã rút (API-14) | 1. `tst_sup` gọi API-21 `{"action":"CONTINUE"}` | 409 `ALREADY_RESOLVED`, `details.status` = `WITHDRAWN`, `details.decided_by` = null; D13 "Station đã rút yêu cầu." | ⬜ |
-| TC-03.49 | Gửi 2 yêu cầu | API-13 APPROVAL_ALREADY_PENDING | Negative | P3 | API | PRE-5; station có yêu cầu ASSIST `PENDING` cho phiên …01 | 1. `tst_station01` gọi API-13 `{"type":"ASSIST","session_id":<id>}` lần nữa | 409 `APPROVAL_ALREADY_PENDING`; vẫn chỉ 1 yêu cầu `PENDING` | ⬜ |
-| TC-03.50 | Quét khi đang chờ duyệt | API-11 IGNORED | Negative | P2 | E2E | PRE-2; station ở "ĐANG CHỜ QUẢN LÝ DUYỆT" | 1. Quét `SPXTST0000003` | API-11 `outcome` = `IGNORED`; toast "Đang chờ duyệt."; `state.state` vẫn `WAITING_APPROVAL` | ⬜ |
-| TC-03.51 | Đóng gói lại: duyệt → hoàn tất | BR-03, FR-03.10, AC-14, EX-P2 | Happy | P1 | E2E | PRE-4 | Xem chi tiết bên dưới | Phiên cũ `SUPERSEDED` chỉ sau khi phiên mới `COMPLETED` (cờ `REPACK`); cả hai clip còn | ⬜ |
+| TC-03.40 | Gửi duyệt lệch mã → Cho tiếp tục | FR-03.12, UC-08, AC-19 | Happy | P1 | E2E | PRE-4 | Xem chi tiết bên dưới | D13 có yêu cầu ≤ 2 giây + âm báo; station về "ĐANG ĐÓNG GÓI" ≤ 2 giây sau duyệt; audit `APPROVAL_DECISION` user "Nguyễn B" | ✅ |
+| TC-03.41 | Gọi quản lý từ S2 (ASSIST) | FR-03.12, DEC-25 | Happy | P1 | E2E | PRE-4 | 1. Station quét `SPXTST0000001` 2. Bấm "Gọi quản lý" | Station "ĐANG CHỜ QUẢN LÝ DUYỆT", lý do "Gọi quản lý", "Quản lý duyệt trên dashboard, mục Yêu cầu duyệt."; D13 ≤ 2 giây có dòng loại "Gọi quản lý" với 3 nút "Cho tiếp tục", "Đóng phiên có ghi chú", "Hủy phiên" | ✅ |
+| TC-03.42 | Đóng phiên có ghi chú | API-21 | Happy | P2 | E2E | PRE-4; phiên …01 `MISMATCH` (quét …02), đã "Gọi quản lý"; khay không có phiếu sai | 1. D13 bấm "Đóng phiên có ghi chú" 2. Nhập ghi chú `QA đóng tay` 3. Xác nhận | API-21 200, `decision` = `CLOSE_WITH_NOTE`; phiên `COMPLETED`, `flags` chứa `CLOSED_BY_SUPERVISOR`; kiện …01 `PACKED`; station về "SẴN SÀNG" | ✅ |
+| TC-03.43 | Đóng có ghi chú khi khay còn sai | API-21 TRAY_STILL_DIFFERENT | Negative | P1 | API | PRE-5 + PRE-7; yêu cầu MISMATCH `source` = `CAM2`, `tray.match` = `DIFFERENT` (phiếu …15 trên khay phiên …14) | 1. `tst_sup` gọi API-21 `{"action":"CLOSE_WITH_NOTE","note":"QA"}` 2. Xem D13 | Bước 1: 409 `TRAY_STILL_DIFFERENT`, phiên vẫn `WAITING_APPROVAL`. Bước 2: nút "Đóng phiên có ghi chú" bị khóa, Alert "Cam 2 vẫn thấy phiếu sai trên khay. Yêu cầu bỏ phiếu sai trước." | ✅ |
+| TC-03.44 | Cho tiếp tục khi khay còn sai | N7 | State | P2 | E2E | Như TC-03.43 | 1. D13 xem dòng yêu cầu 2. Bấm "Cho tiếp tục" | Bước 1: D13 cảnh báo "Cam 2 vẫn thấy phiếu sai" (nút không khóa). Bước 2: phiên về `OPEN` rồi `MISMATCH` ngay; station "LỆCH MÃ", nguồn "Cam 2 thấy trên khay" | ✅ |
+| TC-03.45 | Hủy phiên từ dashboard | API-21 | Happy | P2 | API | PRE-5 + PRE-2; phiên …01 mở, station đã gửi ASSIST | 1. `tst_sup` gọi API-21 `{"action":"CANCEL_SESSION"}` | 200; phiên `CANCELLED` lý do `SUPERVISOR`; kiện …01 `NEW`; station "SẴN SÀNG" + Alert "Quản lý đã hủy phiên." | ✅ |
+| TC-03.46 | Rút yêu cầu | API-14 | State | P2 | E2E | PRE-4; station ở "ĐANG CHỜ QUẢN LÝ DUYỆT" từ "LỆCH MÃ" (…01 / …02) | 1. Station bấm "Rút yêu cầu" | Station về "LỆCH MÃ" …01 / …02; API-14 200; yêu cầu `WITHDRAWN`; D13 dòng biến mất ≤ 2 giây | ✅ |
+| TC-03.47 | Hai người duyệt cùng lúc | API-21 ALREADY_RESOLVED | Negative | P2 | API | PRE-5; 1 yêu cầu ASSIST `PENDING` | Xem chi tiết bên dưới | 1 request 200; request kia 409 `ALREADY_RESOLVED` kèm `decided_by` | ✅ |
+| TC-03.48 | Duyệt khi station đã rút | API-21 | Negative | P3 | API | PRE-5; yêu cầu ASSIST đã rút (API-14) | 1. `tst_sup` gọi API-21 `{"action":"CONTINUE"}` | 409 `ALREADY_RESOLVED`, `details.status` = `WITHDRAWN`, `details.decided_by` = null; D13 "Station đã rút yêu cầu." | ✅ |
+| TC-03.49 | Gửi 2 yêu cầu | API-13 APPROVAL_ALREADY_PENDING | Negative | P3 | API | PRE-5; station có yêu cầu ASSIST `PENDING` cho phiên …01 | 1. `tst_station01` gọi API-13 `{"type":"ASSIST","session_id":<id>}` lần nữa | 409 `APPROVAL_ALREADY_PENDING`; vẫn chỉ 1 yêu cầu `PENDING` | ✅ |
+| TC-03.50 | Quét khi đang chờ duyệt | API-11 IGNORED | Negative | P2 | E2E | PRE-2; station ở "ĐANG CHỜ QUẢN LÝ DUYỆT" | 1. Quét `SPXTST0000003` | API-11 `outcome` = `IGNORED`; toast "Đang chờ duyệt."; `state.state` vẫn `WAITING_APPROVAL` | ✅ |
+| TC-03.51 | Đóng gói lại: duyệt → hoàn tất | BR-03, FR-03.10, AC-14, EX-P2 | Happy | P1 | E2E | PRE-4 | Xem chi tiết bên dưới | Phiên cũ `SUPERSEDED` chỉ sau khi phiên mới `COMPLETED` (cờ `REPACK`); cả hai clip còn | ✅ |
 | TC-03.52 | Đóng gói lại: duyệt → hủy | BR-03, AC-21 | State | P1 | INT | PRE-6; kiện `SPXTST0000010` `PACKED`, phiên cũ `COMPLETED`, đã duyệt REPACK, phiên mới mở | 1. API-12 hủy phiên mới `{"reason":"WRONG_SCAN"}` | Kiện về `PACKED`; phiên cũ vẫn `COMPLETED`; phiên mới `CANCELLED` | ✅ |
-| TC-03.53 | Đóng gói lại: bỏ dở | BR-03, BR-16 | State | P2 | INT | Như TC-03.52, `clock.freeze` | 1. `clock.advance(30 phút)` 2. Chạy `sessions.check_timeouts` | Phiên mới `ABANDONED`; kiện `PACKED`; phiên cũ vẫn `COMPLETED` | ⬜ |
-| TC-03.54 | Từ chối đóng gói lại | API-21 REJECT | Negative | P2 | E2E | PRE-4; station đã gửi REPACK cho `SPXTST0000010` | 1. D13 bấm "Từ chối" | API-21 200, `decision` = `REJECT`; station về "SẴN SÀNG"; kiện …10 vẫn `PACKED` | ⬜ |
-| TC-03.55 | REPACK kiện đã bàn giao qua API | API-13 NOT_ELIGIBLE | Negative | P2 | API | PRE-5 | 1. `tst_station01` gọi API-13 `{"type":"REPACK","tracking_number":"SPXTST0000011"}` | 409 `NOT_ELIGIBLE`; không tạo yêu cầu | ⬜ |
+| TC-03.53 | Đóng gói lại: bỏ dở | BR-03, BR-16 | State | P2 | INT | Như TC-03.52, `clock.freeze` | 1. `clock.advance(30 phút)` 2. Chạy `sessions.check_timeouts` | Phiên mới `ABANDONED`; kiện `PACKED`; phiên cũ vẫn `COMPLETED` | ✅ |
+| TC-03.54 | Từ chối đóng gói lại | API-21 REJECT | Negative | P2 | E2E | PRE-4; station đã gửi REPACK cho `SPXTST0000010` | 1. D13 bấm "Từ chối" | API-21 200, `decision` = `REJECT`; station về "SẴN SÀNG"; kiện …10 vẫn `PACKED` | ✅ |
+| TC-03.55 | REPACK kiện đã bàn giao qua API | API-13 NOT_ELIGIBLE | Negative | P2 | API | PRE-5 | 1. `tst_station01` gọi API-13 `{"type":"REPACK","tracking_number":"SPXTST0000011"}` | 409 `NOT_ELIGIBLE`; không tạo yêu cầu | ✅ |
 | TC-03.56 | CSKH không nhận sự kiện duyệt | 02 WS-02 | Permission | P3 | INT | PRE-6; WS-02 `/ws/dashboard?token=<token tst_cskh>` | 1. Phát `approval.created` 2. Phát `report.updated` | Không nhận `approval.created` trong 5 giây; nhận `report.updated` | ✅ |
 | TC-03.57 | Chờ duyệt lâu không làm phiên bỏ dở (đồng hồ tính lại sau duyệt) | BR-16 (01 v0.4), DEC-60 | State | P2 | INT | PRE-6, `clock.freeze` lúc T0; station mở phiên `SPXTST0000005`, gửi ASSIST ngay | 1. `clock.freeze(T0 + 40 phút)` 2. `tst_sup` gọi API-21 `{"action":"CONTINUE"}` 3. Chạy `sessions.check_timeouts` 4. API-10 đọc `session.abandon_at` 5. Tua tới T0 + 55 phút, chạy lại 6. Tua tới T0 + 70 phút, chạy lại | Bước 3: không cảnh báo, không bỏ dở (phiên `OPEN`). Bước 4: `abandon_at` = T0 + 70 phút (30 phút kể từ lúc duyệt). Bước 5: đúng 1 cảnh báo (15 phút kể từ lúc duyệt). Bước 6: phiên `ABANDONED`. Test: `test_timer_restarts_after_approval_resolved` (`ai-cam-be/tests/integration/test_approvals_api.py`) | ✅ |
 
@@ -343,25 +346,25 @@ Trên stack thật: đặt `session_warn_minutes=1`, `session_abandon_minutes=2`
 
 | ID | Tiêu đề | Phủ | Loại | Ưu tiên | Cách | Tiền điều kiện | Bước | Kỳ vọng | KQ |
 |---|---|---|---|:---:|:---:|---|---|---|:---:|
-| TC-02.01 | Clip phủ đủ khoảng | FR-02.02, AC-02 | Happy | P1 | API + MAN | PRE-2; camera giả có OSD giờ (cần xác nhận `fake-cam*` có OSD) | Xem chi tiết bên dưới | Clip Cam 1, Cam 2 `READY` ≤ 60 giây; phủ ≥ [T0 − 5 giây, T1 + 5 giây] | ⬜ |
-| TC-02.02 | 20 clip ngẫu nhiên | AC-02 | Happy | P1 | HW | PRE-7; 20 phiên đã đóng ở bàn thử | 1. Chọn ngẫu nhiên 20 phiên 2. Mở clip Cam 1 và Cam 2 ở D4 3. So OSD khung đầu / cuối với `started_at − 5 giây` / `ended_at + 5 giây` | 20/20 clip phủ đủ khoảng (sai số ≤ 1 keyframe) | ⬜ |
-| TC-02.03 | Clip khi camera rớt giữa phiên | FR-02.02, EX-P7, AC-10 | Negative | P1 | HW | PRE-7 | 1. Quét mở `SPXTST0000018` 2. Rút cáp Cam 1 30 giây rồi cắm lại 3. Quét đóng …18 4. Mở D4 | Clip `READY`, cờ `VIDEO_INCOMPLETE`; D4 chip "Thiếu video" | ⬜ |
-| TC-02.04 | SHA-256 clip khớp | FR-02.04, AC-11 | Happy | P1 | API | PRE-5; phiên …01 đã đóng, clip `READY` | 1. Lấy `clips[].sha256` qua API-31 2. `docker compose -f ai-cam-be/docker/compose.dev.yml exec api sha256sum <đường dẫn file clip>` (đường dẫn cần xác nhận) | Hai giá trị bằng nhau (64 ký tự hex) | ⬜ |
-| TC-02.05 | Không có API xóa / sửa clip | FR-02.05, AC-11, DEC-27 | Negative | P1 | API | PRE-5; clip `READY` id C | 1. Với token 4 vai, gọi `DELETE /clips/C`, `PUT /clips/C`, `PATCH /clips/C` | 12/12 response 404 hoặc 405, không 2xx; clip C vẫn `READY`, file còn | ⬜ |
-| TC-02.06 | Giữ clip qua retention | FR-02.09, BR-09, AC-15 | Happy | P1 | INT | PRE-6, `clock.freeze` | Xem chi tiết bên dưới | Clip giữ còn `READY`; clip không giữ `DELETED`, file bị xóa | ⬜ |
-| TC-02.07 | Tăng retention có hiệu lực ngay | FR-02.06, AC-20 | Regression | P1 | INT | PRE-6; clip tạo lúc T0 − 100 ngày, `retention_clip_days` = 90, J-02 chưa chạy | 1. API-80 PUT `retention_clip_days` = 180 2. Chạy J-02 | Clip vẫn `READY`, file còn; `retention_until` = tạo + 180 ngày | ⬜ |
-| TC-02.08 | Retention video thô | FR-02.06 | Happy | P2 | INT | PRE-6; segment A tạo T0 − 31 ngày, segment B tạo T0 − 1 ngày, `retention_raw_days` = 30 | 1. Chạy J-02 | Segment A bị xóa (bản ghi + file); segment B còn | ⬜ |
-| TC-02.09 | Ràng buộc: clip < video thô | API-80 | Boundary | P2 | E2E | PRE-3 | 1. D8 nhập "video thô" = 30, "clip" = 20 2. Bấm Lưu | Lỗi dưới ô clip "Số ngày giữ clip phải lớn hơn hoặc bằng video thô."; API-80 trực tiếp → 422 `VALIDATION_ERROR` | ⬜ |
-| TC-02.10 | Cắt lại clip lỗi | API-46 | Error | P2 | API | PRE-5; clip `FAILED` (xóa segment trong khoảng phiên) | 1. Khôi phục segment 2. `tst_sup` gọi API-46 POST /sessions/{id}/clips/rebuild | 202 `{"queued": true}`; clip `READY` ≤ 60 giây; gọi lại khi không còn clip `FAILED` → 409 `CLIP_NOT_FAILED` | ⬜ |
-| TC-02.11 | Clip đang cắt | API-40 CLIP_NOT_READY | State | P2 | E2E | PRE-2 + cửa sổ `tst_cskh` | 1. Station đóng phiên …19 2. Trong ≤ 5 giây mở D4 kiện …19 3. Chờ clip `READY` | Bước 2: EmptyState "Clip đang được cắt, sẵn sàng trong khoảng 1 phút."; API-40 409 `CLIP_NOT_READY`. Bước 3: player tự hiện, không cần tải lại | ⬜ |
-| TC-02.12 | URL clip hết hạn | API-41 SIGNATURE_INVALID | Negative | P2 | INT | PRE-6; URL lấy từ API-40 (hạn 10 phút) | 1. `clock.advance(11 phút)` 2. GET URL | 403 `SIGNATURE_INVALID` | ⬜ |
-| TC-02.13 | Audit xem clip đúng người | NFR-15, DEC-13 | Happy | P1 | E2E | PRE-1 + FE; dashboard đăng nhập `tst_cskh`; clip `READY` | 1. Mở D4 kiện có clip, chưa bấm phát 2. Bấm phát 3. Tua tới giữa clip | Bước 1: 0 dòng `VIEW_CLIP` mới. Sau bước 2–3: đúng 1 dòng `VIEW_CLIP`, user "Lan" | ⬜ |
-| TC-02.14 | SHA-256 trong `info.json` bản xuất (tách từ TC-02.04) | FR-02.04, FR-07.04 | Happy | P2 | API | PRE-5; bản xuất `READY` của phiên …01 | 1. Tải `info.json` qua API-45 2. So `source_clip_sha256.CAM1`, `.CAM2` với `clips[].sha256` của API-31 | Khớp cả 2 camera | ⬜ |
-| TC-02.15 | File clip chỉ đọc (tách từ TC-02.05) | FR-02.05, AC-11 | Negative | P1 | MAN | PRE-1; clip `READY` | 1. `docker compose … exec api stat -c %a <file clip>` | `444` | ⬜ |
-| TC-02.16 | Ràng buộc: bỏ dở ≤ cảnh báo (tách từ TC-02.09) | API-80, BR-16 | Boundary | P2 | API | PRE-5 | 1. `tst_admin` PUT /settings `session_warn_minutes` = 30, `session_abandon_minutes` = 30 | 422 `VALIDATION_ERROR`, `details.fields` chứa `session_abandon_minutes`; setting không đổi (chữ trên UI cần xác nhận) | ⬜ |
-| TC-02.17 | Ràng buộc: số ngày = 0 (tách từ TC-02.09) | API-80 | Boundary | P2 | E2E | PRE-3 | 1. D8 nhập "video thô" = 0 2. Bấm Lưu | Lỗi dưới ô (khoảng 1–365, chữ cần xác nhận); API-80 → 422 `VALIDATION_ERROR` | ⬜ |
-| TC-02.18 | Ràng buộc: số ngày = 366 (tách từ TC-02.09) | API-80 | Boundary | P2 | E2E | PRE-3 | 1. D8 nhập "clip" = 366 2. Bấm Lưu | Lỗi dưới ô (chữ cần xác nhận); API-80 → 422 `VALIDATION_ERROR` | ⬜ |
-| TC-02.19 | URL clip bị sửa `uid` (tách từ TC-02.12) | API-41 SIGNATURE_INVALID | Negative | P2 | API | PRE-5; URL từ API-40 của `tst_cskh` | 1. Đổi `uid` trong URL thành id `tst_sup` 2. GET URL | 403 `SIGNATURE_INVALID` | ⬜ |
+| TC-02.01 | Clip phủ đủ khoảng | FR-02.02, AC-02 | Happy | P1 | API + MAN | PRE-2; camera giả có OSD giờ (cần xác nhận `fake-cam*` có OSD) | Xem chi tiết bên dưới | Clip Cam 1, Cam 2 `READY` ≤ 60 giây; phủ ≥ [T0 − 5 giây, T1 + 5 giây] | ✅ |
+| TC-02.02 | 20 clip ngẫu nhiên | AC-02 | Happy | P1 | HW | PRE-7; 20 phiên đã đóng ở bàn thử | 1. Chọn ngẫu nhiên 20 phiên 2. Mở clip Cam 1 và Cam 2 ở D4 3. So OSD khung đầu / cuối với `started_at − 5 giây` / `ended_at + 5 giây` | 20/20 clip phủ đủ khoảng (sai số ≤ 1 keyframe) | ⛔ |
+| TC-02.03 | Clip khi camera rớt giữa phiên | FR-02.02, EX-P7, AC-10 | Negative | P1 | HW | PRE-7 | 1. Quét mở `SPXTST0000018` 2. Rút cáp Cam 1 30 giây rồi cắm lại 3. Quét đóng …18 4. Mở D4 | Clip `READY`, cờ `VIDEO_INCOMPLETE`; D4 chip "Thiếu video" | ⛔ |
+| TC-02.04 | SHA-256 clip khớp | FR-02.04, AC-11 | Happy | P1 | API | PRE-5; phiên …01 đã đóng, clip `READY` | 1. Lấy `clips[].sha256` qua API-31 2. `docker compose -f ai-cam-be/docker/compose.dev.yml exec api sha256sum <đường dẫn file clip>` (đường dẫn cần xác nhận) | Hai giá trị bằng nhau (64 ký tự hex) | ✅ |
+| TC-02.05 | Không có API xóa / sửa clip | FR-02.05, AC-11, DEC-27 | Negative | P1 | API | PRE-5; clip `READY` id C | 1. Với token 4 vai, gọi `DELETE /clips/C`, `PUT /clips/C`, `PATCH /clips/C` | 12/12 response 404 hoặc 405, không 2xx; clip C vẫn `READY`, file còn | ✅ |
+| TC-02.06 | Giữ clip qua retention | FR-02.09, BR-09, AC-15 | Happy | P1 | INT | PRE-6, `clock.freeze` | Xem chi tiết bên dưới | Clip giữ còn `READY`; clip không giữ `DELETED`, file bị xóa | ✅ |
+| TC-02.07 | Tăng retention có hiệu lực ngay | FR-02.06, AC-20 | Regression | P1 | INT | PRE-6; clip tạo lúc T0 − 100 ngày, `retention_clip_days` = 90, J-02 chưa chạy | 1. API-80 PUT `retention_clip_days` = 180 2. Chạy J-02 | Clip vẫn `READY`, file còn; `retention_until` = tạo + 180 ngày | ✅ |
+| TC-02.08 | Retention video thô | FR-02.06 | Happy | P2 | INT | PRE-6; segment A tạo T0 − 31 ngày, segment B tạo T0 − 1 ngày, `retention_raw_days` = 30 | 1. Chạy J-02 | Segment A bị xóa (bản ghi + file); segment B còn | ✅ |
+| TC-02.09 | Ràng buộc: clip < video thô | API-80 | Boundary | P2 | E2E | PRE-3 | 1. D8 nhập "video thô" = 30, "clip" = 20 2. Bấm Lưu | Lỗi dưới ô clip "Số ngày giữ clip phải lớn hơn hoặc bằng video thô."; API-80 trực tiếp → 422 `VALIDATION_ERROR` | ✅ |
+| TC-02.10 | Cắt lại clip lỗi | API-46 | Error | P2 | API | PRE-5; clip `FAILED` (xóa segment trong khoảng phiên) | 1. Khôi phục segment 2. `tst_sup` gọi API-46 POST /sessions/{id}/clips/rebuild | 202 `{"queued": true}`; clip `READY` ≤ 60 giây; gọi lại khi không còn clip `FAILED` → 409 `CLIP_NOT_FAILED` | ✅ |
+| TC-02.11 | Clip đang cắt | API-40 CLIP_NOT_READY | State | P2 | E2E | PRE-2 + cửa sổ `tst_cskh` | 1. Station đóng phiên …19 2. Trong ≤ 5 giây mở D4 kiện …19 3. Chờ clip `READY` | Bước 2: EmptyState "Clip đang được cắt, sẵn sàng trong khoảng 1 phút."; API-40 409 `CLIP_NOT_READY`. Bước 3: player tự hiện, không cần tải lại | ✅ |
+| TC-02.12 | URL clip hết hạn | API-41 SIGNATURE_INVALID | Negative | P2 | INT | PRE-6; URL lấy từ API-40 (hạn 10 phút) | 1. `clock.advance(11 phút)` 2. GET URL | 403 `SIGNATURE_INVALID` | ✅ |
+| TC-02.13 | Audit xem clip đúng người | NFR-15, DEC-13 | Happy | P1 | E2E | PRE-1 + FE; dashboard đăng nhập `tst_cskh`; clip `READY` | 1. Mở D4 kiện có clip, chưa bấm phát 2. Bấm phát 3. Tua tới giữa clip | Bước 1: 0 dòng `VIEW_CLIP` mới. Sau bước 2–3: đúng 1 dòng `VIEW_CLIP`, user "Lan" | ✅ |
+| TC-02.14 | SHA-256 trong `info.json` bản xuất (tách từ TC-02.04) | FR-02.04, FR-07.04 | Happy | P2 | API | PRE-5; bản xuất `READY` của phiên …01 | 1. Tải `info.json` qua API-45 2. So `source_clip_sha256.CAM1`, `.CAM2` với `clips[].sha256` của API-31 | Khớp cả 2 camera | ✅ |
+| TC-02.15 | File clip chỉ đọc (tách từ TC-02.05) | FR-02.05, AC-11 | Negative | P1 | MAN | PRE-1; clip `READY` | 1. `docker compose … exec api stat -c %a <file clip>` | `444` | ✅ |
+| TC-02.16 | Ràng buộc: bỏ dở ≤ cảnh báo (tách từ TC-02.09) | API-80, BR-16 | Boundary | P2 | API | PRE-5 | 1. `tst_admin` PUT /settings `session_warn_minutes` = 30, `session_abandon_minutes` = 30 | 422 `VALIDATION_ERROR`, `details.fields` chứa `session_abandon_minutes`; setting không đổi (chữ trên UI cần xác nhận) | ✅ |
+| TC-02.17 | Ràng buộc: số ngày = 0 (tách từ TC-02.09) | API-80 | Boundary | P2 | E2E | PRE-3 | 1. D8 nhập "video thô" = 0 2. Bấm Lưu | Lỗi dưới ô (khoảng 1–365, chữ cần xác nhận); API-80 → 422 `VALIDATION_ERROR` | ✅ |
+| TC-02.18 | Ràng buộc: số ngày = 366 (tách từ TC-02.09) | API-80 | Boundary | P2 | E2E | PRE-3 | 1. D8 nhập "clip" = 366 2. Bấm Lưu | Lỗi dưới ô (chữ cần xác nhận); API-80 → 422 `VALIDATION_ERROR` | ✅ |
+| TC-02.19 | URL clip bị sửa `uid` (tách từ TC-02.12) | API-41 SIGNATURE_INVALID | Negative | P2 | API | PRE-5; URL từ API-40 của `tst_cskh` | 1. Đổi `uid` trong URL thành id `tst_sup` 2. GET URL | 403 `SIGNATURE_INVALID` | ✅ |
 
 <details><summary>TC-02.01 — chi tiết</summary>
 
@@ -391,23 +394,23 @@ Trên stack thật: đặt `session_warn_minutes=1`, `session_abandon_minutes=2`
 
 | ID | Tiêu đề | Phủ | Loại | Ưu tiên | Cách | Tiền điều kiện | Bước | Kỳ vọng | KQ |
 |---|---|---|---|:---:|:---:|---|---|---|:---:|
-| TC-07.01 | Quét mã vào ô tìm → mở chi tiết | FR-07.01, 07.03, UC-03 | Happy | P1 | E2E | PRE-1 + FE; dashboard `tst_cskh` | 1. Mở D3 `/admin/packages` 2. Máy quét giả gõ `SPXTST0000010` (5 ms/phím) + Enter | Ô tìm tự focus; mở thẳng D4 `/admin/packages/<id …10>` | ⬜ |
-| TC-07.02 | Tìm theo mã đơn sàn | FR-07.01 | Happy | P2 | API | PRE-5 | 1. `tst_cskh` GET /packages?q=2410TST00010 | 200, `total` = 1, `items[0].tracking_number` = `SPXTST0000010` | ⬜ |
-| TC-07.03 | Lọc theo ngày | FR-07.01 | Happy | P2 | E2E | PRE-3; đã đóng phiên `SPXTST0000001`, `…02` ở TST Station 01 hôm nay | 1. D3 chọn ngày từ = đến = hôm nay 2. Chọn từ = đến = hôm qua | Bước 1: có …01, …02, …10 (cần xác nhận API-30 lọc theo ngày phiên hay ngày cập nhật). Bước 2: "Không tìm thấy …" / 0 dòng | ⬜ |
-| TC-07.04 | Khoảng ngày > 92 | API-30 | Boundary | P3 | API | PRE-5 | 1. GET /packages?date_from=2026-07-01&date_to=2026-10-02 (93 ngày) | 422 `VALIDATION_ERROR` | ⬜ |
-| TC-07.05 | Không tìm thấy | D3 empty | Negative | P2 | E2E | PRE-3 | 1. D3 nhập `SPXTST000XXXX` + Enter | EmptyState "Không tìm thấy mã SPXTST000XXXX." + nút "Xóa bộ lọc" | ⬜ |
-| TC-07.06 | Chi tiết đủ thông tin | FR-07.02 | Happy | P1 | E2E | PRE-3; kiện …10 có 2 phiên sau TC-03.51 | 1. Mở D4 kiện …10 | Sản phẩm "Áo thun basic · Đen / L × 2"; 2 phiên, mới nhất trước, phiên cũ chip "Bị thay thế"; dòng thời gian có Kho + Sàn; SHA-256 rút gọn + nút Copy | ⬜ |
-| TC-07.07 | Xuất clip ≤ 30 giây | FR-07.04, AC-08 | NFR | P1 | E2E | PRE-1 + FE; `tst_cskh`; phiên …01 clip 2 phút `READY` | Xem chi tiết bên dưới | Tổng thời gian ≤ 30 giây; MP4 phát được trên iOS + Android; overlay đúng | ⬜ |
-| TC-07.08 | Xuất 10 đơn | AC-08 | NFR | P1 | MAN | Như TC-07.07, 10 phiên `READY` (…01..…08, …13, …14) | 1. Lặp TC-07.07 với 10 đơn | 10/10 ≤ 30 giây | ⬜ |
-| TC-07.09 | Xuất khi clip đã xóa | API-43 CLIP_DELETED | Negative | P3 | INT | PRE-6; clip của phiên đã `DELETED` (như TC-02.06 clip B) | 1. API-43 POST /sessions/{id}/exports `{"layout":"CAM1"}` | 410 `CLIP_DELETED`; không tạo bản xuất | ⬜ |
-| TC-07.10 | Encode lỗi | J-03 FAILED | Error | P3 | INT | PRE-6; giả lập ffmpeg lỗi (cách cần xác nhận) | 1. API-43 `{"layout":"SIDE_BY_SIDE"}` 2. Poll API-44 | `status` = `FAILED`; D4 Dialog "Không tạo được file xuất. Bấm Thử lại; nếu vẫn lỗi, báo Admin kèm mã đơn." | ⬜ |
-| TC-07.11 | Tab Ghép đồng bộ | DEC-21 | Happy | P3 | E2E | PRE-3; phiên …01 có 2 clip `READY` | 1. D4 chọn tab "Ghép" 2. Tua tới 00:30 3. Đọc OSD hai video | Hai OSD lệch ≤ 0,5 giây | ⬜ |
-| TC-07.12 | D3 trên điện thoại | 02b-admin §9 | Regression | P3 | MAN | Safari iOS, màn rộng 360px; `tst_cskh` | 1. Mở D3 2. Tìm `SPXTST0000010` | Không cuộn ngang; kết quả hiện dạng card | ⬜ |
-| TC-07.13 | Lọc theo station (tách từ TC-07.03) | FR-07.01 | Happy | P2 | E2E | Như TC-07.03 | 1. D3 chọn Station = TST Station 01 | Chỉ …01, …02; không có …10 (đóng ở TST Station 02) | ⬜ |
-| TC-07.14 | Lọc theo trạng thái kho (tách từ TC-07.03) | FR-07.01 | Happy | P2 | E2E | Như TC-07.03 | 1. D3 chọn Trạng thái kho = Đã đóng gói | Có …01, …02, …10; không có …11 (`HANDED_OVER`) | ⬜ |
-| TC-07.15 | Lọc theo nguồn (tách từ TC-07.03) | FR-07.01 | Happy | P2 | E2E | Như TC-07.03 (seed toàn nguồn `API`) | 1. D3 chọn Nguồn = File 2. Chọn Nguồn = Shopee | Bước 1: 0 dòng, "Xóa bộ lọc". Bước 2: cùng kết quả như không lọc nguồn | ⬜ |
-| TC-07.16 | URL giữ bộ lọc khi tải lại (tách từ TC-07.03) | FR-07.01 | Regression | P2 | E2E | Sau TC-07.14 | 1. Tải lại trang (F5) | URL còn tham số trạng thái `PACKED`; bộ lọc và kết quả như trước khi tải lại | ⬜ |
-| TC-07.17 | D4 trên điện thoại (tách từ TC-07.12) | 02b-admin §9 | Regression | P3 | MAN | Safari iOS, 360px; `tst_cskh` | 1. Mở D4 kiện …10 | Không cuộn ngang; player rộng bằng màn hình (cần xác nhận bố cục) | ⬜ |
+| TC-07.01 | Quét mã vào ô tìm → mở chi tiết | FR-07.01, 07.03, UC-03 | Happy | P1 | E2E | PRE-1 + FE; dashboard `tst_cskh` | 1. Mở D3 `/admin/packages` 2. Máy quét giả gõ `SPXTST0000010` (5 ms/phím) + Enter | Ô tìm tự focus; mở thẳng D4 `/admin/packages/<id …10>` | ✅ |
+| TC-07.02 | Tìm theo mã đơn sàn | FR-07.01 | Happy | P2 | API | PRE-5 | 1. `tst_cskh` GET /packages?q=2410TST00010 | 200, `total` = 1, `items[0].tracking_number` = `SPXTST0000010` | ✅ |
+| TC-07.03 | Lọc theo ngày | FR-07.01 | Happy | P2 | E2E | PRE-3; đã đóng phiên `SPXTST0000001`, `…02` ở TST Station 01 hôm nay | 1. D3 chọn ngày từ = đến = hôm nay 2. Chọn từ = đến = hôm qua | Bước 1: có …01, …02, …10 (cần xác nhận API-30 lọc theo ngày phiên hay ngày cập nhật). Bước 2: "Không tìm thấy …" / 0 dòng | ✅ |
+| TC-07.04 | Khoảng ngày > 92 | API-30 | Boundary | P3 | API | PRE-5 | 1. GET /packages?date_from=2026-07-01&date_to=2026-10-02 (93 ngày) | 422 `VALIDATION_ERROR` | ✅ |
+| TC-07.05 | Không tìm thấy | D3 empty | Negative | P2 | E2E | PRE-3 | 1. D3 nhập `SPXTST000XXXX` + Enter | EmptyState "Không tìm thấy mã SPXTST000XXXX." + nút "Xóa bộ lọc" | ✅ |
+| TC-07.06 | Chi tiết đủ thông tin | FR-07.02 | Happy | P1 | E2E | PRE-3; kiện …10 có 2 phiên sau TC-03.51 | 1. Mở D4 kiện …10 | Sản phẩm "Áo thun basic · Đen / L × 2"; 2 phiên, mới nhất trước, phiên cũ chip "Bị thay thế"; dòng thời gian có Kho + Sàn; SHA-256 rút gọn + nút Copy | ✅ |
+| TC-07.07 | Xuất clip ≤ 30 giây | FR-07.04, AC-08 | NFR | P1 | E2E | PRE-1 + FE; `tst_cskh`; phiên …01 clip 2 phút `READY` | Xem chi tiết bên dưới | Tổng thời gian ≤ 30 giây; MP4 phát được trên iOS + Android; overlay đúng | ⛔ |
+| TC-07.08 | Xuất 10 đơn | AC-08 | NFR | P1 | MAN | Như TC-07.07, 10 phiên `READY` (…01..…08, …13, …14) | 1. Lặp TC-07.07 với 10 đơn | 10/10 ≤ 30 giây | ⛔ |
+| TC-07.09 | Xuất khi clip đã xóa | API-43 CLIP_DELETED | Negative | P3 | INT | PRE-6; clip của phiên đã `DELETED` (như TC-02.06 clip B) | 1. API-43 POST /sessions/{id}/exports `{"layout":"CAM1"}` | 410 `CLIP_DELETED`; không tạo bản xuất | ✅ |
+| TC-07.10 | Encode lỗi | J-03 FAILED | Error | P3 | INT | PRE-6; giả lập ffmpeg lỗi (cách cần xác nhận) | 1. API-43 `{"layout":"SIDE_BY_SIDE"}` 2. Poll API-44 | `status` = `FAILED`; D4 Dialog "Không tạo được file xuất. Bấm Thử lại; nếu vẫn lỗi, báo Admin kèm mã đơn." | ✅ |
+| TC-07.11 | Tab Ghép đồng bộ | DEC-21 | Happy | P3 | E2E | PRE-3; phiên …01 có 2 clip `READY` | 1. D4 chọn tab "Ghép" 2. Tua tới 00:30 3. Đọc OSD hai video | Hai OSD lệch ≤ 0,5 giây | ✅ |
+| TC-07.12 | D3 trên điện thoại | 02b-admin §9 | Regression | P3 | MAN | Safari iOS, màn rộng 360px; `tst_cskh` | 1. Mở D3 2. Tìm `SPXTST0000010` | Không cuộn ngang; kết quả hiện dạng card | ⛔ |
+| TC-07.13 | Lọc theo station (tách từ TC-07.03) | FR-07.01 | Happy | P2 | E2E | Như TC-07.03 | 1. D3 chọn Station = TST Station 01 | Chỉ …01, …02; không có …10 (đóng ở TST Station 02) | ✅ |
+| TC-07.14 | Lọc theo trạng thái kho (tách từ TC-07.03) | FR-07.01 | Happy | P2 | E2E | Như TC-07.03 | 1. D3 chọn Trạng thái kho = Đã đóng gói | Có …01, …02, …10; không có …11 (`HANDED_OVER`) | ✅ |
+| TC-07.15 | Lọc theo nguồn (tách từ TC-07.03) | FR-07.01 | Happy | P2 | E2E | Như TC-07.03 (seed toàn nguồn `API`) | 1. D3 chọn Nguồn = File 2. Chọn Nguồn = Shopee | Bước 1: 0 dòng, "Xóa bộ lọc". Bước 2: cùng kết quả như không lọc nguồn | ✅ |
+| TC-07.16 | URL giữ bộ lọc khi tải lại (tách từ TC-07.03) | FR-07.01 | Regression | P2 | E2E | Sau TC-07.14 | 1. Tải lại trang (F5) | URL còn tham số trạng thái `PACKED`; bộ lọc và kết quả như trước khi tải lại | ✅ |
+| TC-07.17 | D4 trên điện thoại (tách từ TC-07.12) | 02b-admin §9 | Regression | P3 | MAN | Safari iOS, 360px; `tst_cskh` | 1. Mở D4 kiện …10 | Không cuộn ngang; player rộng bằng màn hình (cần xác nhận bố cục) | ⛔ |
 
 <details><summary>TC-07.07 — chi tiết</summary>
 
@@ -426,27 +429,27 @@ Trên stack thật: đặt `session_warn_minutes=1`, `session_abandon_minutes=2`
 
 | ID | Tiêu đề | Phủ | Loại | Ưu tiên | Cách | Tiền điều kiện | Bước | Kỳ vọng | KQ |
 |---|---|---|---|:---:|:---:|---|---|---|:---:|
-| TC-05.01 | Kết nối Shopee | FR-05.01, UC-10 | Happy | P1 | MAN | PRE-3; partner key (Q11), `PLATFORM_ADAPTER=shopee`, shop test Shopee | 1. D7 `/admin/settings/shopee` bấm "Kết nối Shopee" 2. Đăng nhập shop test, bấm đồng ý ủy quyền 3. Chờ 5 phút | Bước 2: về `/admin/settings/shopee?result=connected`, Alert thành công, trạng thái "Đã kết nối" + tên shop. Bước 3: API-70 `today_synced_orders` > 0, `last_synced_at` ≤ 5 phút | ⬜ |
-| TC-05.02 | Từ chối ủy quyền | UC-10 EX | Negative | P2 | MAN | Như TC-05.01 | 1. D7 bấm "Kết nối Shopee" 2. Trên Shopee bấm từ chối | Về `?result=denied`; Alert "Shopee từ chối ủy quyền. Bấm Kết nối lại để thử lần nữa." | ⬜ |
-| TC-05.03 | Chưa cấu hình partner | API-71 PLATFORM_NOT_CONFIGURED | Negative | P2 | E2E | PRE-3; `SHOPEE_ENABLED=false` | 1. Mở D7 2. Bấm "Kết nối Shopee" | API-71 503 `PLATFORM_NOT_CONFIGURED`; Alert "Chưa cấu hình Shopee Open Platform. Dùng Nhập đơn từ file." | ⬜ |
-| TC-05.04 | Đồng bộ đơn mới | FR-05.02, 05.03, EX-P8 | Happy | P1 | INT | PRE-6; MockAdapter `put` 5 đơn `2410TST00031..35`, đơn 35 có 2 mã vận đơn `SPXTST0000035`, `SPXTST0000036` | 1. Chạy J-04 | 5 đơn, 6 kiện, sản phẩm đủ; `order.source` = `API`; quét …35 và …36 mở 2 phiên riêng | ⬜ |
-| TC-05.05 | Đơn hủy sau khi đóng | EX-P10 | State | P1 | INT | PRE-6; kiện `SPXTST0000010` `PACKED` | 1. `MockAdapter.set_status("2410TST00010", "CANCELLED", now)` 2. Chạy J-04 | Kiện `CANCELLED_AFTER_PACK`; API-32 `counts.cancelled_after_pack` = 1, `attention` có `CANCELLED_AFTER_PACK` count 1; D2 "⚠ 1 đơn bị hủy sau khi đóng" | ⬜ |
-| TC-05.06 | Vận chuyển: đã lấy hàng | FR-05.04 | State | P2 | INT | PRE-6; kiện …10 `PACKED` | 1. `MockAdapter.shipping["SPXTST0000010"] = "PICKED_UP"` 2. Chạy J-06 | Kiện `HANDED_OVER`; `status_history` thêm dòng nguồn `PLATFORM`; D4 dòng thời gian có mốc mới | ⬜ |
-| TC-05.07 | Xác minh kiện chưa xác minh | J-05, BR-04 | State | P2 | INT | PRE-6; kiện `SPXTST9990001` `verified` = false (mở + đóng khi sàn không có) | 1. MockAdapter `put` đơn có mã `SPXTST9990001` 2. Chạy J-05 | Kiện `verified` = true, gắn đơn mới; D4 bỏ chip "Chưa xác minh với Shopee" | ⬜ |
-| TC-05.08 | Lỗi tạm Shopee | 02a §7 J-04 | Error | P2 | INT | PRE-6; adapter trả 503 hai lần rồi OK | 1. Chạy J-04 | Thành công sau retry; không đơn nào trùng (`SELECT platform_order_sn FROM "order" GROUP BY 1 HAVING count(*)>1` = 0 dòng) | ⬜ |
-| TC-05.09 | Lỗi cuối Shopee | J-04 | Error | P2 | INT | PRE-6; adapter trả 503 liên tục | 1. Chạy J-04 tới hết số lần retry | `shop.last_error` = `{code: "SYNC_FAILED", message, at}`; `auth_status` vẫn `CONNECTED`, `last_sync_cursor` không đổi; API-32 `attention` có `SYNC_ERROR`; D2 "Cần xử lý" có dòng lỗi đồng bộ (chữ cần xác nhận) (DEC-64) | ⬜ |
-| TC-05.10 | Token hết hạn, refresh hỏng | J-12 | Error | P2 | INT | PRE-6; shop `CONNECTED`, token còn < 1 giờ; Shopee từ chối refresh token (lỗi token, không phải lỗi tạm) | 1. Chạy J-12 | `shop.auth_status` = `EXPIRED`, `last_error.code` = `AUTH_EXPIRED`; D7 chip "Hết hạn" + nút "Kết nối lại". Biến thể lỗi tạm (mạng, 5xx): giữ `CONNECTED`, `last_error.code` = `REFRESH_FAILED` (DEC-64) | ⬜ |
-| TC-05.11 | Nhập CSV 500 dòng | FR-05.09, AC-12 | Happy | P1 | E2E | PRE-1 + FE; `tst_sup`; `ok_500.csv` | Xem chi tiết bên dưới | Xem trước + nhập ≤ 30 giây; "Đã nhập 500 đơn."; Lịch sử có dòng mới | ⬜ |
-| TC-05.12 | CSV 1 dòng lỗi | FR-05.09, EX-P11, AC-12 | Negative | P1 | E2E | Như TC-05.11; `one_error.csv` (dòng 12 bỏ trống `tracking_number`) | 1. D5 chọn file 2. Xem kết quả kiểm tra | Alert "File có 1 dòng lỗi. Sửa file rồi tải lại; chưa có đơn nào được nhập."; bảng lỗi: dòng 12, cột `tracking_number`, "Bỏ trống"; nút Nhập bị khóa; API-51 → 409 `IMPORT_HAS_ERRORS`; 0 đơn được tạo | ⬜ |
-| TC-05.13 | CSV thiếu cột | API-50 FILE_INVALID | Negative | P2 | E2E | Như TC-05.11; `missing_column.csv` (không có cột `tracking_number`) | 1. D5 chọn file | API-50 422 `FILE_INVALID`, `details.missing_columns` = ["tracking_number"]; D5 "File thiếu cột bắt buộc: Mã vận đơn. Dùng file mẫu." | ⬜ |
-| TC-05.14 | CSV > 5 MB | API-50 | Boundary | P3 | API | PRE-5; file CSV 5,1 MB | 1. `tst_sup` POST /imports multipart `file` | 422 `FILE_INVALID` | ⬜ |
-| TC-05.15 | CSV trùng đơn từ API | BR-17 | Negative | P1 | API | PRE-5; `overlap_api.csv` có 5 dòng `SPXTST0000001..05` (đã có từ API) | 1. POST /imports 2. POST /imports/{id}/commit | Bước 1: `counts.skipped` = 5 (đếm theo đơn), `sample` 5 dòng `action` = `SKIP`; D5 hiện "Bỏ qua 5 (đã có từ Shopee)", cột Kết quả "Bỏ qua", nút Nhập khóa + "Không có đơn nào để nhập: mọi dòng đã có từ Shopee." Bước 2 (gọi thẳng API): 200, `counts.skipped` = 5; đơn …01..05 giữ `source` = `API`, sản phẩm không đổi (DEC-64) | ⬜ |
-| TC-05.16 | API ghi đè đơn CSV | BR-17, FR-05.10 | State | P1 | INT | PRE-6; đơn `2410TST00040` nguồn CSV (nhập qua API-50/51) | 1. MockAdapter `put` cùng đơn `2410TST00040` 2. Chạy J-04 | `order.source` = `API`; audit `ORDER_OVERWRITTEN_BY_API` chứa bản CSV cũ | ⬜ |
-| TC-05.17 | Xem trước hết hạn | API-51 IMPORT_EXPIRED | Boundary | P3 | INT | PRE-6, `clock.freeze`; bản xem trước `PREVIEW` | 1. `clock.advance(31 phút)` 2. API-51 commit | 409 `IMPORT_EXPIRED`; D5 "Bản xem trước đã hết hạn. Tải file lại." | ⬜ |
-| TC-05.18 | Tải file gốc | API-54 | Happy | P3 | API | PRE-5; lần nhập đã `COMMITTED` | 1. `tst_sup` GET /imports/{id}/file 2. So SHA-256 với file đã tải lên | 200; SHA-256 bằng nhau | ⬜ |
-| TC-05.19 | Vận chuyển: giao thành công (tách từ TC-05.06) | FR-05.04 | State | P2 | INT | Sau TC-05.06, kiện …10 `HANDED_OVER` | 1. `MockAdapter.shipping["SPXTST0000010"] = "DELIVERED"` 2. Chạy J-06 | Kiện `DELIVERED`; dòng thời gian có mốc mới | ⬜ |
-| TC-05.20 | CSV > 5.000 dòng (tách từ TC-05.14) | API-50 | Boundary | P3 | API | PRE-5; file CSV 5.001 dòng dữ liệu, < 5 MB | 1. `tst_sup` POST /imports | 422 `FILE_INVALID` | ⬜ |
-| TC-05.21 | File gốc hết hạn 90 ngày (tách từ TC-05.18) | API-54 | Boundary | P3 | INT | PRE-6, `clock.freeze`; lần nhập `COMMITTED` | 1. `clock.advance(91 ngày)` 2. GET /imports/{id}/file | 410 `FILE_EXPIRED` | ⬜ |
+| TC-05.01 | Kết nối Shopee | FR-05.01, UC-10 | Happy | P1 | MAN | PRE-3; partner key (Q11), `PLATFORM_ADAPTER=shopee`, shop test Shopee | 1. D7 `/admin/settings/shopee` bấm "Kết nối Shopee" 2. Đăng nhập shop test, bấm đồng ý ủy quyền 3. Chờ 5 phút | Bước 2: về `/admin/settings/shopee?result=connected`, Alert thành công, trạng thái "Đã kết nối" + tên shop. Bước 3: API-70 `today_synced_orders` > 0, `last_synced_at` ≤ 5 phút | ⛔ |
+| TC-05.02 | Từ chối ủy quyền | UC-10 EX | Negative | P2 | MAN | Như TC-05.01 | 1. D7 bấm "Kết nối Shopee" 2. Trên Shopee bấm từ chối | Về `?result=denied`; Alert "Shopee từ chối ủy quyền. Bấm Kết nối lại để thử lần nữa." | ⛔ |
+| TC-05.03 | Chưa cấu hình partner | API-71 PLATFORM_NOT_CONFIGURED | Negative | P2 | E2E | PRE-3; `SHOPEE_ENABLED=false` | 1. Mở D7 2. Bấm "Kết nối Shopee" | API-71 503 `PLATFORM_NOT_CONFIGURED`; Alert "Chưa cấu hình Shopee Open Platform. Dùng Nhập đơn từ file." | ✅ |
+| TC-05.04 | Đồng bộ đơn mới | FR-05.02, 05.03, EX-P8 | Happy | P1 | INT | PRE-6; MockAdapter `put` 5 đơn `2410TST00031..35`, đơn 35 có 2 mã vận đơn `SPXTST0000035`, `SPXTST0000036` | 1. Chạy J-04 | 5 đơn, 6 kiện, sản phẩm đủ; `order.source` = `API`; quét …35 và …36 mở 2 phiên riêng | ✅ |
+| TC-05.05 | Đơn hủy sau khi đóng | EX-P10 | State | P1 | INT | PRE-6; kiện `SPXTST0000010` `PACKED` | 1. `MockAdapter.set_status("2410TST00010", "CANCELLED", now)` 2. Chạy J-04 | Kiện `CANCELLED_AFTER_PACK`; API-32 `counts.cancelled_after_pack` = 1, `attention` có `CANCELLED_AFTER_PACK` count 1; D2 "⚠ 1 đơn bị hủy sau khi đóng" | ✅ |
+| TC-05.06 | Vận chuyển: đã lấy hàng | FR-05.04 | State | P2 | INT | PRE-6; kiện …10 `PACKED` | 1. `MockAdapter.shipping["SPXTST0000010"] = "PICKED_UP"` 2. Chạy J-06 | Kiện `HANDED_OVER`; `status_history` thêm dòng nguồn `PLATFORM`; D4 dòng thời gian có mốc mới | ✅ |
+| TC-05.07 | Xác minh kiện chưa xác minh | J-05, BR-04 | State | P2 | INT | PRE-6; kiện `SPXTST9990001` `verified` = false (mở + đóng khi sàn không có) | 1. MockAdapter `put` đơn có mã `SPXTST9990001` 2. Chạy J-05 | Kiện `verified` = true, gắn đơn mới; D4 bỏ chip "Chưa xác minh với Shopee" | ✅ |
+| TC-05.08 | Lỗi tạm Shopee | 02a §7 J-04 | Error | P2 | INT | PRE-6; adapter trả 503 hai lần rồi OK | 1. Chạy J-04 | Thành công sau retry; không đơn nào trùng (`SELECT platform_order_sn FROM "order" GROUP BY 1 HAVING count(*)>1` = 0 dòng) | ✅ |
+| TC-05.09 | Lỗi cuối Shopee | J-04 | Error | P2 | INT | PRE-6; adapter trả 503 liên tục | 1. Chạy J-04 tới hết số lần retry | `shop.last_error` = `{code: "SYNC_FAILED", message, at}`; `auth_status` vẫn `CONNECTED`, `last_sync_cursor` không đổi; API-32 `attention` có `SYNC_ERROR`; D2 "Cần xử lý" có dòng lỗi đồng bộ (chữ cần xác nhận) (DEC-64) | ✅ |
+| TC-05.10 | Token hết hạn, refresh hỏng | J-12 | Error | P2 | INT | PRE-6; shop `CONNECTED`, token còn < 1 giờ; Shopee từ chối refresh token (lỗi token, không phải lỗi tạm) | 1. Chạy J-12 | `shop.auth_status` = `EXPIRED`, `last_error.code` = `AUTH_EXPIRED`; D7 chip "Hết hạn" + nút "Kết nối lại". Biến thể lỗi tạm (mạng, 5xx): giữ `CONNECTED`, `last_error.code` = `REFRESH_FAILED` (DEC-64) | ✅ |
+| TC-05.11 | Nhập CSV 500 dòng | FR-05.09, AC-12 | Happy | P1 | E2E | PRE-1 + FE; `tst_sup`; `ok_500.csv` | Xem chi tiết bên dưới | Xem trước + nhập ≤ 30 giây; "Đã nhập 500 đơn."; Lịch sử có dòng mới | ✅ |
+| TC-05.12 | CSV 1 dòng lỗi | FR-05.09, EX-P11, AC-12 | Negative | P1 | E2E | Như TC-05.11; `one_error.csv` (dòng 12 bỏ trống `tracking_number`) | 1. D5 chọn file 2. Xem kết quả kiểm tra | Alert "File có 1 dòng lỗi. Sửa file rồi tải lại; chưa có đơn nào được nhập."; bảng lỗi: dòng 12, cột `tracking_number`, "Bỏ trống"; nút Nhập bị khóa; API-51 → 409 `IMPORT_HAS_ERRORS`; 0 đơn được tạo | ✅ |
+| TC-05.13 | CSV thiếu cột | API-50 FILE_INVALID | Negative | P2 | E2E | Như TC-05.11; `missing_column.csv` (không có cột `tracking_number`) | 1. D5 chọn file | API-50 422 `FILE_INVALID`, `details.missing_columns` = ["tracking_number"]; D5 "File thiếu cột bắt buộc: Mã vận đơn. Dùng file mẫu." | ✅ |
+| TC-05.14 | CSV > 5 MB | API-50 | Boundary | P3 | API | PRE-5; file CSV 5,1 MB | 1. `tst_sup` POST /imports multipart `file` | 422 `FILE_INVALID` | ✅ |
+| TC-05.15 | CSV trùng đơn từ API | BR-17 | Negative | P1 | API | PRE-5; `overlap_api.csv` có 5 dòng `SPXTST0000001..05` (đã có từ API) | 1. POST /imports 2. POST /imports/{id}/commit | Bước 1: `counts.skipped` = 5 (đếm theo đơn), `sample` 5 dòng `action` = `SKIP`; D5 hiện "Bỏ qua 5 (đã có từ Shopee)", cột Kết quả "Bỏ qua", nút Nhập khóa + "Không có đơn nào để nhập: mọi dòng đã có từ Shopee." Bước 2 (gọi thẳng API): 200, `counts.skipped` = 5; đơn …01..05 giữ `source` = `API`, sản phẩm không đổi (DEC-64) | ✅ |
+| TC-05.16 | API ghi đè đơn CSV | BR-17, FR-05.10 | State | P1 | INT | PRE-6; đơn `2410TST00040` nguồn CSV (nhập qua API-50/51) | 1. MockAdapter `put` cùng đơn `2410TST00040` 2. Chạy J-04 | `order.source` = `API`; audit `ORDER_OVERWRITTEN_BY_API` chứa bản CSV cũ | ✅ |
+| TC-05.17 | Xem trước hết hạn | API-51 IMPORT_EXPIRED | Boundary | P3 | INT | PRE-6, `clock.freeze`; bản xem trước `PREVIEW` | 1. `clock.advance(31 phút)` 2. API-51 commit | 409 `IMPORT_EXPIRED`; D5 "Bản xem trước đã hết hạn. Tải file lại." | ✅ |
+| TC-05.18 | Tải file gốc | API-54 | Happy | P3 | API | PRE-5; lần nhập đã `COMMITTED` | 1. `tst_sup` GET /imports/{id}/file 2. So SHA-256 với file đã tải lên | 200; SHA-256 bằng nhau | ✅ |
+| TC-05.19 | Vận chuyển: giao thành công (tách từ TC-05.06) | FR-05.04 | State | P2 | INT | Sau TC-05.06, kiện …10 `HANDED_OVER` | 1. `MockAdapter.shipping["SPXTST0000010"] = "DELIVERED"` 2. Chạy J-06 | Kiện `DELIVERED`; dòng thời gian có mốc mới | ✅ |
+| TC-05.20 | CSV > 5.000 dòng (tách từ TC-05.14) | API-50 | Boundary | P3 | API | PRE-5; file CSV 5.001 dòng dữ liệu, < 5 MB | 1. `tst_sup` POST /imports | 422 `FILE_INVALID` | ✅ |
+| TC-05.21 | File gốc hết hạn 90 ngày (tách từ TC-05.18) | API-54 | Boundary | P3 | INT | PRE-6, `clock.freeze`; lần nhập `COMMITTED` | 1. `clock.advance(91 ngày)` 2. GET /imports/{id}/file | 410 `FILE_EXPIRED` | ✅ |
 | TC-05.22 | Hai bản xem trước của cùng file xác nhận đồng thời | API-51 IMPORT_CONFLICT, BR-17 | Error | P2 | INT | PRE-6, engine commit thật; cùng file 3 đơn tải lên 2 lần → 2 bản `PREVIEW` của cùng người tạo | 1. Gọi API-51 commit cả hai bản cùng lúc (barrier sau bước phân loại) 2. Đếm đơn / kiện theo mã | Một bản 200 `COMMITTED`, bản kia `409 IMPORT_CONFLICT` và vẫn `PREVIEW`; 3 đơn / 3 kiện, không trùng. Test: `ai-cam-be/tests/integration/test_import_concurrency.py::test_two_previews_committed_at_once_one_conflicts` (DEC-65) | ✅ |
 | TC-05.23 | Cùng bản xem trước xác nhận hai lần đồng thời | API-51, DEC-62 (c) commit lặp → 200 | Boundary | P2 | INT | PRE-6, engine commit thật; một bản `PREVIEW` 3 đơn | 1. Gọi API-51 commit cùng `id` hai lần cùng lúc 2. So hai response, đếm đơn / kiện | Cả hai 200 cùng `counts` (khóa `FOR UPDATE` tuần tự hóa — không phải 409); 3 đơn / 3 kiện, không trùng. Test: `ai-cam-be/tests/integration/test_import_concurrency.py::test_same_preview_committed_twice_at_once_is_idempotent` (DEC-65) | ✅ |
 
@@ -466,11 +469,11 @@ Trên stack thật: đặt `session_warn_minutes=1`, `session_abandon_minutes=2`
 
 | ID | Tiêu đề | Phủ | Loại | Ưu tiên | Cách | Tiền điều kiện | Bước | Kỳ vọng | KQ |
 |---|---|---|---|:---:|:---:|---|---|---|:---:|
-| TC-09.01 | Số liệu đúng | FR-09.01, AC-18 | Happy | P1 | INT | PRE-6 | Xem chi tiết bên dưới | `counts` = `packed 12, had_mismatch 3, abandoned 1, cancelled 2, packed_not_handed_over 4, cancelled_after_pack 1` | ⬜ |
-| TC-09.02 | Thẻ dẫn đúng bộ lọc | N2, 02b-admin KpiCard | Regression | P2 | E2E | Dữ liệu như TC-09.01 trên stack (cách nạp cần xác nhận); `tst_sup` ở D2 | 1. Bấm thẻ "Đã đóng gói" 2. Đếm dòng D3 3. Lặp với 5 thẻ còn lại | Mỗi thẻ: D3 mở với bộ lọc tương ứng + ngày; số dòng = số trên thẻ | ⬜ |
-| TC-09.03 | Tự cập nhật | WS-02 | Happy | P2 | E2E | PRE-4 (cửa sổ dashboard mở D2 `/admin`) | 1. Ghi số thẻ "Đã đóng gói" = N 2. Station quét mở + đóng `SPXTST0000001` 3. Bấm đồng hồ, không tải lại D2 | Thẻ "Đã đóng gói" = N + 1 trong ≤ 5 giây | ⬜ |
-| TC-09.04 | Ngày trống | D2 empty | Negative | P3 | E2E | PRE-3 | 1. D2 đổi ngày sang 01/01/2026 | 4 thẻ theo ngày ("Đã đóng gói", "Từng lệch mã", "Bỏ dở", "Hủy phiên") = 0; 2 thẻ "Chưa bàn giao", "Hủy sau khi đóng" giữ số hiện tại (không theo ngày, = `packed_not_handed_over`, `cancelled_after_pack` của API-32); hiện "Chưa có phiên đóng gói nào trong ngày." (DEC-59) | ⬜ |
-| TC-09.05 | Ổ đĩa > 80% | NFR-30 | Boundary | P2 | MAN | PRE-3; volume `video` gắn đĩa nhỏ lấp > 80% (cách giả lập cần xác nhận) | 1. Gọi API-81 2. Mở D2 3. Mở D8 | API-81 `disk.percent` > 80; D2 "Cần xử lý" có dòng ổ đĩa kèm % (chữ cần xác nhận); D8 LinearProgress màu cảnh báo | ⬜ |
+| TC-09.01 | Số liệu đúng | FR-09.01, AC-18 | Happy | P1 | INT | PRE-6 | Xem chi tiết bên dưới | `counts` = `packed 12, had_mismatch 3, abandoned 1, cancelled 2, packed_not_handed_over 4, cancelled_after_pack 1` | ✅ |
+| TC-09.02 | Thẻ dẫn đúng bộ lọc | N2, 02b-admin KpiCard | Regression | P2 | E2E | Dữ liệu như TC-09.01 trên stack (cách nạp cần xác nhận); `tst_sup` ở D2 | 1. Bấm thẻ "Đã đóng gói" 2. Đếm dòng D3 3. Lặp với 5 thẻ còn lại | Mỗi thẻ: D3 mở với bộ lọc tương ứng + ngày; số dòng = số trên thẻ | ✅ |
+| TC-09.03 | Tự cập nhật | WS-02 | Happy | P2 | E2E | PRE-4 (cửa sổ dashboard mở D2 `/admin`) | 1. Ghi số thẻ "Đã đóng gói" = N 2. Station quét mở + đóng `SPXTST0000001` 3. Bấm đồng hồ, không tải lại D2 | Thẻ "Đã đóng gói" = N + 1 trong ≤ 5 giây | ✅ |
+| TC-09.04 | Ngày trống | D2 empty | Negative | P3 | E2E | PRE-3 | 1. D2 đổi ngày sang 01/01/2026 | 4 thẻ theo ngày ("Đã đóng gói", "Từng lệch mã", "Bỏ dở", "Hủy phiên") = 0; 2 thẻ "Chưa bàn giao", "Hủy sau khi đóng" giữ số hiện tại (không theo ngày, = `packed_not_handed_over`, `cancelled_after_pack` của API-32); hiện "Chưa có phiên đóng gói nào trong ngày." (DEC-59) | ✅ |
+| TC-09.05 | Ổ đĩa > 80% | NFR-30 | Boundary | P2 | MAN | PRE-3; volume `video` gắn đĩa nhỏ lấp > 80% (cách giả lập cần xác nhận) | 1. Gọi API-81 2. Mở D2 3. Mở D8 | API-81 `disk.percent` > 80; D2 "Cần xử lý" có dòng ổ đĩa kèm % (chữ cần xác nhận); D8 LinearProgress màu cảnh báo | ✅ |
 
 <details><summary>TC-09.01 — chi tiết</summary>
 
@@ -507,78 +510,80 @@ Gọi API trực tiếp bằng token từng vai (PRE-5) để chắc server ch�
 
 TC-P.01..P.09: `API`, P1, mọi ô của bảng (đã tự động cho P.01, P.07, P.09 trong `test_tc_p_matrix`). TC-P.10: `E2E`, P2; trang forbidden hiện "Tài khoản của bạn không có quyền xem trang này." + "Về Tổng quan".
 
+**KQ lần chạy 2:** TC-P.01 ✅ · P.02 ✅ · P.03 ✅ · P.04 ✅ · P.05 ✅ · P.06 ✅ · P.07 ✅ · P.08 ✅ · P.09 ✅ · P.10 ✅ (ghép, DEC-70: 2 ô E2E BE thật, 2 ô test component). Bằng chứng từng ô: [04a](04a-test-report.md) §1.
+
 ## 4. Phi chức năng
 
 | ID | NFR | Kịch bản & tải | Ngưỡng đạt | Kết quả đo |
 |---|---|---|---|---|
-| TC-N.01 | NFR-01 | PRE-1; 100 lần quét đơn đã có, 2 station (`tst_station01`, `tst_station02`) song song | p95 ≤ 1 giây (thời gian client; metric server cần xác nhận) | Máy dev (Colima, adapter mock, locust cùng máy — DEC-134 02a): stress 4 station ≈ 13.400 quét/giờ 5 phút → API-11 p95 26 ms, max 149 ms, 0 lỗi. **Chưa đo trên server kho** — chưa kết luận đạt |
-| TC-N.02 | NFR-01 | `INT`: 20 lần quét mã phải tra sàn, `MockAdapter(delay_s=1.5)` | p95 ≤ 3 giây | |
-| TC-N.03 | NFR-03 | PRE-2; 50 phiên dài 1–5 phút | Clip `READY` p95 ≤ 60 giây sau đóng | |
-| TC-N.04 | NFR-05 | locust (`tests/load/locustfile.py`, profile `nfr05`) 1 giờ: 2 station × 120 quét/giờ + 1 CSKH tra cứu 1 lần/10 giây + 2 xuất clip/giờ | NFR-01, 03, 04 vẫn đạt; CPU server < 80% | Máy dev, 10 phút (không phải 1 giờ), không xuất clip, không camera: 2 station × 120 quét/giờ + CSKH → API-11 p95 mở 80 ms / đóng 50 ms, API-30 26 ms, API-32 46 ms, 0 / 182 lỗi; CPU không đo. **Chưa đo trên server kho với camera thật, đủ 1 giờ** — chưa kết luận đạt |
-| TC-N.05 | NFR-04 | 1.000.000 kiện giả lập trong DB (script nạp chưa có — T-19) | API-30 theo mã ≤ 2 giây | |
-| TC-N.06 | NFR-09, AC-09 | PRE-7; rút WAN 30 phút khi đang đóng gói; cắm lại | Quét, phiên, ghi hình chạy bình thường suốt 30 phút; đồng bộ lại ≤ 10 phút sau khi có mạng | |
-| TC-N.07 | NFR-31 | PRE-7; đo bitrate thực 4 camera trong 1 giờ | Dung lượng dự báo 30 ngày thô + 90 ngày clip < 80% NAS | |
-| TC-N.08 | AC-08 / DEC-32 | Encode export clip 3 phút `SIDE_BY_SIDE`, 20 lần | p95 ≤ 20 giây | |
-| TC-N.09 | NFR-10 | Rút điện server (có UPS) | UPS giữ ≥ 15 phút, tắt an toàn; segment đang ghi đọc được sau khi bật | |
+| TC-N.01 | NFR-01 | PRE-1; 100 lần quét đơn đã có, 2 station (`tst_station01`, `tst_station02`) song song | p95 ≤ 1 giây (thời gian client; metric server cần xác nhận) | Máy dev (Colima, adapter mock, locust cùng máy — DEC-134 02a): stress 4 station ≈ 13.400 quét/giờ 5 phút → API-11 p95 26 ms, max 149 ms, 0 lỗi. **Chưa đo trên server kho** — ⛔ chưa kết luận đạt |
+| TC-N.02 | NFR-01 | `INT`: 20 lần quét mã phải tra sàn, `MockAdapter(delay_s=1.5)` | p95 ≤ 3 giây | ✅ `INT` `test_tc_n02_twenty_slow_platform_lookups`: 20 lần, sàn mock trễ 1,5 giây → min 1,53 · p95 1,58 · max 1,59 giây. 10 mã có trên sàn → phiên xác minh, 10 mã lạ → `UNVERIFIED` |
+| TC-N.03 | NFR-03 | PRE-2; 50 phiên dài 1–5 phút | Clip `READY` p95 ≤ 60 giây sau đóng | ⛔ Chưa test — thiếu server kho + camera thật. Máy dev: 1 phiên, 2 clip `READY` ≤ 60 giây (`test_clips_ready_within_60s`) |
+| TC-N.04 | NFR-05 | locust (`tests/load/locustfile.py`, profile `nfr05`) 1 giờ: 2 station × 120 quét/giờ + 1 CSKH tra cứu 1 lần/10 giây + 2 xuất clip/giờ | NFR-01, 03, 04 vẫn đạt; CPU server < 80% | Máy dev, 10 phút (không phải 1 giờ), không xuất clip, không camera: 2 station × 120 quét/giờ + CSKH → API-11 p95 mở 80 ms / đóng 50 ms, API-30 26 ms, API-32 46 ms, 0 / 182 lỗi; CPU không đo. **Chưa đo trên server kho với camera thật, đủ 1 giờ** — ⛔ chưa kết luận đạt |
+| TC-N.05 | NFR-04 | 1.000.000 kiện giả lập trong DB (script nạp chưa có — T-19) | API-30 theo mã ≤ 2 giây | ✅ máy dev: `RUN_PERF=1` `tests/integration/test_perf_packages.py::test_tc_n05_search_one_million_packages` nạp 1.000.000 kiện (67,7 giây), 20 lần mỗi kiểu: theo mã vận đơn p95 697 ms, theo mã đơn 812 ms, theo ngày (2.740 kiện) 196 ms. DB test trên máy dev; **server kho chưa đo** (gộp vào tải 1 giờ TC-N.04) |
+| TC-N.06 | NFR-09, AC-09 | PRE-7; rút WAN 30 phút khi đang đóng gói; cắm lại | Quét, phiên, ghi hình chạy bình thường suốt 30 phút; đồng bộ lại ≤ 10 phút sau khi có mạng | ⛔ Chưa test — thiếu bàn thử + server kho |
+| TC-N.07 | NFR-31 | PRE-7; đo bitrate thực 4 camera trong 1 giờ | Dung lượng dự báo 30 ngày thô + 90 ngày clip < 80% NAS | ⛔ Chưa test — thiếu camera thật + NAS |
+| TC-N.08 | AC-08 / DEC-32 | Encode export clip 3 phút `SIDE_BY_SIDE`, 20 lần | p95 ≤ 20 giây | ⛔ Chưa test trên server kho. Spike S3 máy dev (03 §5, RB-7): nguồn giả 720p ghép 17,8–19,3 giây (đạt), 28,4 giây khi máy bận; nguồn giả 1080p H.265 106–167 giây — **không đạt** |
+| TC-N.09 | NFR-10 | Rút điện server (có UPS) | UPS giữ ≥ 15 phút, tắt an toàn; segment đang ghi đọc được sau khi bật | ⛔ Chưa test — thiếu server kho + UPS |
 
 ## 5. Truy vết
 
-| FR / AC / BR / EX | TC | Đạt |
+| FR / AC / BR / EX | TC | Đạt (lần 2) |
 |---|---|:---:|
-| AC-01 | TC-03.01, 03.02, 03.03, N.01 | ⬜ |
-| AC-02 | TC-02.01, 02.02 | ⬜ |
-| AC-03 | TC-03.04, 03.06 | ⬜ |
-| AC-04 | TC-03.21, 03.22 | ⬜ |
-| AC-05 | TC-03.08 | ⬜ |
-| AC-08 | TC-07.07, 07.08, N.08 | ⬜ |
-| AC-09 | TC-N.06 | ⬜ |
-| AC-10 | TC-01.07, 02.03 | ⬜ |
-| AC-11 | TC-02.04, 02.05, 02.15 | ⬜ |
-| AC-12 | TC-05.11, 05.12 | ⬜ |
-| AC-13 | TC-10.01, 03.30 | ⬜ |
-| AC-14 | TC-03.51 | ⬜ |
-| AC-15 | TC-02.06 | ⬜ |
-| AC-16 | TC-03.28 | ⬜ |
-| AC-17 | TC-01.09, 01.13 | ⬜ |
-| AC-18 | TC-09.01, 09.02 | ⬜ |
-| AC-19 | TC-03.40, 03.41 | ⬜ |
-| AC-20 | TC-02.07 | ⬜ |
-| AC-21 | TC-03.10, 03.52 | ⬜ |
-| FR-01.01..01.06 | TC-01.01..01.14 | ⬜ |
-| FR-02.01..02.07, 02.09 | TC-02.01..02.19, 07.07, 07.11 | ⬜ |
-| FR-03.01 | TC-10.01, 10.06, 03.30 | ⬜ |
-| FR-03.02..03.07 | TC-03.01..03.17, 03.20..03.26, 03.34, 03.35 | ⬜ |
-| FR-03.08, 03.09 | TC-03.18, 03.19, 03.27..03.29 | ⬜ |
-| FR-03.10, 03.12 | TC-03.40..03.57 | ⬜ |
-| FR-03.11 | TC-03.03, 03.31, 03.34 | ⬜ |
-| FR-05.01..05.04, 05.06..05.08 | TC-05.01..05.10, 05.19, 03.12, 03.13 | ⬜ |
-| FR-05.09, 05.10 | TC-05.11..05.18, 05.20..05.23 | ⬜ |
-| FR-07.01..07.04 | TC-07.01..07.17 | ⬜ |
-| FR-09.01 | TC-09.01..09.05 | ⬜ |
-| FR-10.01..10.03 | TC-10.01..10.10, TC-P.01..P.10 | ⬜ |
-| BR-01 | TC-03.08, 03.11 | ⬜ |
-| BR-02 | TC-03.07, 03.15, 03.16 | ⬜ |
-| BR-03 | TC-03.09, 03.10, 03.51..03.55 | ⬜ |
-| BR-04 | TC-03.12, 03.13, 05.07 | ⬜ |
-| BR-05 | TC-03.04, 03.06 | ⬜ |
-| BR-06 | TC-03.21..03.23 | ⬜ |
-| BR-09 | TC-02.06 | ⬜ |
-| BR-15 | TC-01.09, 01.13 | ⬜ |
-| BR-16 | TC-03.27..03.29, 03.53, 03.57, 02.16 | ⬜ |
-| BR-17 | TC-05.15, 05.16, 05.22 | ⬜ |
-| BR-18 | TC-03.24..03.26 | ⬜ |
-| EX-P1 | TC-03.08 | ⬜ |
-| EX-P2 | TC-03.09, 03.51 | ⬜ |
-| EX-P3 | TC-03.12, 03.13 | ⬜ |
-| EX-P4 | TC-03.07 | ⬜ |
-| EX-P5 | TC-03.27, 03.28 | ⬜ |
-| EX-P6 | TC-03.24 | ⬜ |
-| EX-P7 | TC-01.07, 02.03 | ⬜ |
-| EX-P8 | TC-03.01 (đơn …12 có 3 sản phẩm); đơn nhiều kiện: TC-05.04 (1 đơn 2 mã vận đơn → 2 kiện, 2 phiên) | ⬜ |
-| EX-P9 | TC-03.30 | ⬜ |
-| EX-P10 | TC-05.05, 03.11 | ⬜ |
-| EX-P11 | TC-05.12, 05.13 | ⬜ |
-| State kiện (01 §7) | NEW→PACKING (03.01) · PACKING→PACKED (03.02) · PACKING→NEW (03.18, 03.28) · PACKED→PACKING (03.51) · PACKING→PACKED hủy repack (03.52) · PACKED→HANDED_OVER (05.06) · HANDED_OVER→DELIVERED (05.19) · PACKED→CANCELLED_AFTER_PACK (05.05) · NEW→CANCELLED (03.08 dữ liệu). Chuyển cấm: HANDED_OVER→PACKING (03.10, 03.55) | ⬜ |
+| AC-01 | TC-03.01, 03.02, 03.03, N.01 | ⚠️ máy dev |
+| AC-02 | TC-02.01, 02.02 | ⚠️ giả lập |
+| AC-03 | TC-03.04, 03.06 | ✅ |
+| AC-04 | TC-03.21, 03.22 | ⛔ |
+| AC-05 | TC-03.08 | ✅ |
+| AC-08 | TC-07.07, 07.08, N.08 | ⛔ |
+| AC-09 | TC-N.06 | ⛔ |
+| AC-10 | TC-01.07, 02.03 | ⚠️ giả lập |
+| AC-11 | TC-02.04, 02.05, 02.15 | ✅ |
+| AC-12 | TC-05.11, 05.12 | ✅ |
+| AC-13 | TC-10.01, 03.30 | ✅ |
+| AC-14 | TC-03.51 | ✅ |
+| AC-15 | TC-02.06 | ✅ |
+| AC-16 | TC-03.28 | ✅ |
+| AC-17 | TC-01.09, 01.13 | ⛔ |
+| AC-18 | TC-09.01, 09.02 | ✅ |
+| AC-19 | TC-03.40, 03.41 | ✅ |
+| AC-20 | TC-02.07 | ✅ |
+| AC-21 | TC-03.10, 03.52 | ✅ |
+| FR-01.01..01.06 | TC-01.01..01.14 | ⚠️ (HW ⛔) |
+| FR-02.01..02.07, 02.09 | TC-02.01..02.19, 07.07, 07.11 | ⚠️ (HW ⛔) |
+| FR-03.01 | TC-10.01, 10.06, 03.30 | ✅ |
+| FR-03.02..03.07 | TC-03.01..03.17, 03.20..03.26, 03.34, 03.35 | ⚠️ (HW ⛔) |
+| FR-03.08, 03.09 | TC-03.18, 03.19, 03.27..03.29 | ✅ |
+| FR-03.10, 03.12 | TC-03.40..03.57 | ✅ |
+| FR-03.11 | TC-03.03, 03.31, 03.34 | ✅ (máy quét thật chưa test) |
+| FR-05.01..05.04, 05.06..05.08 | TC-05.01..05.10, 05.19, 03.12, 03.13 | ⚠️ (Shopee thật ⛔) |
+| FR-05.09, 05.10 | TC-05.11..05.18, 05.20..05.23 | ✅ |
+| FR-07.01..07.04 | TC-07.01..07.17 | ⚠️ (07.07/08 ⛔) |
+| FR-09.01 | TC-09.01..09.05 | ✅ |
+| FR-10.01..10.03 | TC-10.01..10.10, TC-P.01..P.10 | ✅ |
+| BR-01 | TC-03.08, 03.11 | ✅ |
+| BR-02 | TC-03.07, 03.15, 03.16 | ✅ |
+| BR-03 | TC-03.09, 03.10, 03.51..03.55 | ✅ |
+| BR-04 | TC-03.12, 03.13, 05.07 | ✅ |
+| BR-05 | TC-03.04, 03.06 | ✅ |
+| BR-06 | TC-03.21..03.23 | ⛔ (giả lập ✅) |
+| BR-09 | TC-02.06 | ✅ |
+| BR-15 | TC-01.09, 01.13 | ⛔ |
+| BR-16 | TC-03.27..03.29, 03.53, 03.57, 02.16 | ✅ |
+| BR-17 | TC-05.15, 05.16, 05.22 | ✅ |
+| BR-18 | TC-03.24..03.26 | ⚠️ (03.24 ⛔) |
+| EX-P1 | TC-03.08 | ✅ |
+| EX-P2 | TC-03.09, 03.51 | ✅ |
+| EX-P3 | TC-03.12, 03.13 | ✅ |
+| EX-P4 | TC-03.07 | ✅ |
+| EX-P5 | TC-03.27, 03.28 | ✅ |
+| EX-P6 | TC-03.24 | ⛔ |
+| EX-P7 | TC-01.07, 02.03 | ⛔ (giả lập ✅) |
+| EX-P8 | TC-03.01 (đơn …12 có 3 sản phẩm); đơn nhiều kiện: TC-05.04 (1 đơn 2 mã vận đơn → 2 kiện, 2 phiên) | ✅ |
+| EX-P9 | TC-03.30 | ✅ |
+| EX-P10 | TC-05.05, 03.11 | ✅ |
+| EX-P11 | TC-05.12, 05.13 | ✅ |
+| State kiện (01 §7) | NEW→PACKING (03.01) · PACKING→PACKED (03.02) · PACKING→NEW (03.18, 03.28) · PACKED→PACKING (03.51) · PACKING→PACKED hủy repack (03.52) · PACKED→HANDED_OVER (05.06) · HANDED_OVER→DELIVERED (05.19) · PACKED→CANCELLED_AFTER_PACK (05.05) · NEW→CANCELLED (03.08 dữ liệu). Chuyển cấm: HANDED_OVER→PACKING (03.10, 03.55) | ✅ |
 
 ## Decisions
 
@@ -588,11 +593,17 @@ TC-P.01..P.09: `API`, P1, mọi ô của bảng (đã tự động cho P.01, P.0
 | DEC-52 | Chuẩn hoá theo CONVENTIONS §9 bản 2026-10-05 | Mỗi kịch bản một case (tách 20 case mới, 118 → 138 case chức năng, giữ ID cũ cho kịch bản test code đang tham chiếu); bước đánh số; tiền điều kiện chuẩn PRE-1..7; case phức tạp viết trong `<details>`; sửa thông tin lỗi thời theo code (seed `aicam seed-demo`, `qa-reset.sh`, `compose.dev.yml`, đồng hồ giả chỉ ở pytest, E2E ở `ai-cam-fe/e2e/`). TC-01.04 giữ nghĩa "IP không tồn tại" vì `test_m1_live.py` và `test_stations_api.py` dùng nghĩa đó; "sai mật khẩu" sang TC-01.11 | Giữ khớp docstring test hiện có; loại phương án đánh lại toàn bộ ID (làm gãy tham chiếu trong test) | khanhtt (tự quyết) |
 | DEC-59 | TC-09.04 kỳ vọng "6 thẻ = 0" ở ngày trống, nhưng 02 §6 API-32 định nghĩa `packed_not_handed_over`, `cancelled_after_pack` là số kiện hiện tại (mọi ngày); FE theo contract (FE DEC-73) | Sửa kỳ vọng TC-09.04: 4 thẻ theo ngày = 0, 2 thẻ "Chưa bàn giao", "Hủy sau khi đóng" là số hiện tại; câu trống hiện khi 4 thẻ theo ngày = 0. Cột KQ giữ ⬜ (chạy ở G4) | Contract là nguồn sự thật (DEC-10); kiện đã đóng chưa bàn giao vẫn cần xử lý bất kể chọn ngày nào. Loại: đổi API-32 thành đếm theo ngày (mất mục đích "việc còn tồn") | khanhtt (tự quyết) |
 | DEC-64 | Code M4 chốt hành vi khác kỳ vọng cũ (02 v0.5 DEC-62; BE DEC-121, DEC-124 trong 02a; FE DEC-91 trong 02b-admin) | Sửa kỳ vọng, không đổi kết quả: TC-05.09 thêm dạng `last_error` `SYNC_FAILED`, shop vẫn `CONNECTED`; TC-05.10 tách từ chối token (`EXPIRED` + `AUTH_EXPIRED`) với lỗi tạm (`REFRESH_FAILED`, giữ `CONNECTED`); TC-05.15 `counts` đếm theo đơn, D5 khóa nút Nhập khi mọi đơn bị bỏ qua (chữ theo FE). Mã mới: `403 FORBIDDEN` khi commit bởi người không tạo (`test_imports_api.py::test_permissions_and_template`) và `409 SHOP_NOT_CONNECTED` của API-73 (`test_shops_api.py::test_sync_now`) có test integration BE; `409 IMPORT_CONFLICT` (ghi đồng thời) **chưa có test** — khó dựng đụng độ ổn định. Chưa thêm TC riêng | Kỳ vọng cũ viết trước khi có code; bản chốt có lý do ở DEC-124 (lỗi mạng không bắt Admin kết nối lại) và DEC-121 (D5 "Nhập N đơn" theo đơn). Thêm TC cho mã mới để G4 quyết nếu cần | khanhtt (tự quyết) |
+| DEC-70 | G4 lần 2: nhiều case Cách `E2E` có phần BE pass trên stack thật / `INT` và phần UI pass ở Playwright MSW hoặc vitest, nhưng chưa có E2E với BE thật | Tính ✅ "ghép" khi (a) phần BE của kỳ vọng có test pass ở `API` (stack thật) hoặc `INT` (HTTP vào app, Postgres / Redis thật) **và** (b) phần UI có test pass (Playwright mock hoặc vitest); 04a §1 liệt kê riêng các case ghép. **Không** tính ghép cho case phụ thuộc trình duyệt thật (nhịp phím máy quét, mất mạng, phát video, hết hạn token theo thời gian thật): TC-03.30, 03.31, 03.32, 10.05, 02.13 giữ ⬜. Case `API` chấp nhận test `INT` gọi HTTP vào app. Case `HW` / `MAN` cần thiết bị hoặc tài khoản ngoài → ⛔ dù bản giả lập pass | BUG-G4-1 cho thấy test component không bắt được lỗi nhịp phím trên trình duyệt thật → nhóm đó bắt buộc E2E. Loại: chỉ nhận E2E BE thật (để ⬜ ~20 case đã có bằng chứng hai phía, không thêm thông tin cho G4); nhận mọi vitest thay E2E (bỏ sót loại lỗi như BUG-G4-1) | khanhtt (tự quyết) |
 | DEC-65 | T-19 thêm test song song API-51 (BE DEC-133 02a); DEC-64 ghi `409 IMPORT_CONFLICT` chưa có test | Thêm TC-05.22 (hai bản xem trước của cùng file → một 200, một 409, không trùng) và TC-05.23 (cùng bản xem trước bấm 2 lần đồng thời → cả hai 200 cùng kết quả). Cách `INT`, P2, KQ ✅ theo test BE đã pass (`test_import_concurrency.py`, BE 466 pass). NFR TC-N.01, N.04 ghi số máy dev, cột kết quả không đánh đạt | TC-05.23 sửa giả định cũ "xác nhận lặp → 409": khóa `FOR UPDATE` tuần tự hóa, lần sau thấy `COMMITTED` → trả kết quả cũ (02 DEC-62 c). Ngưỡng NFR là ngưỡng phần cứng kho; số máy dev chỉ cho biết code không phải nút thắt. Loại: chạy lại hai case trên stack thật ở QA (đụng độ phụ thuộc thời điểm, không ổn định ngoài barrier) | khanhtt (tự quyết) |
+| DEC-78 | Chốt G4 lần 2 (Phase 1). Sau khi bổ sung, 10 case ⬜ đều ✅ (BE `3035bbc`, FE `833b1e9`); TC-03.30, 03.31, 03.32, 10.05, 02.13 chạy E2E BE thật như DEC-70 yêu cầu. Còn 28 case ⛔ và 7 AC chưa đạt đủ, chỉ vì thiếu tài nguyên ngoài. Số DEC-71 đã dùng ở 02b-admin nên lấy số trống tiếp theo trong cả item | G4 **đạt có điều kiện**: mọi TC Phase 1 chạy được trên máy dev đều ✅ (132/160, 0 ❌, 0 bug mở). Điều kiện go-live thật: (1) bàn thử T-4 với camera thật và máy quét USB: AC-04, AC-17, AC-10 / AC-02 bản thật, ICE UDP trong LAN, nhịp phím máy quét thật (TC-03.30, 03.31 mới chạy bằng máy quét giả); (2) Shopee partner T-3: TC-05.01, 05.02, AC-01 đơn thật; (3) server kho: AC-08 (1080p H.265 **không đạt** trên máy dev), AC-09, tải 1 giờ (NFR-05), NFR-01/03/04 trên phần cứng, restore backup, NAS, UPS; (4) điện thoại iOS / Android, Safari. Kết quả các mục trên ghi vào 04a lần chạy sau | Phần mềm không còn case fail hay case chưa có bằng chứng trong phạm vi chạy được; phần còn lại không làm được trên máy dev, giữ đến lúc có tài nguyên thì chặn release vô thời hạn mà không thêm thông tin. Loại: chốt G4 "đạt" (che việc AC-04, 08, 09, 17 chưa test); giữ G4 "chưa đạt" (chặn staging local và Q&A nghiệp vụ dù không còn việc QA làm được) | khanhtt (tự quyết) |
 
 ## Chốt G4
-- [ ] Mọi AC và FR mức M có ≥ 1 TC pass, có bằng chứng
-- [ ] Ma trận quyền đã chạy
-- [ ] NFR có ngưỡng đã đo
-- [ ] Bug Critical/High = 0 (hoặc có DEC chấp nhận)
-- [ ] Regression vùng bị chạm đã chạy
+<!-- Lần chạy 2 (2026-10-05), cập nhật sau khi bổ sung 10 case ⬜. ✓ đạt · ✗ chưa đạt. Kết luận: G4 đạt có điều kiện (DEC-78). -->
+- [ ] ✗ Mọi AC và FR mức M có ≥ 1 TC pass, có bằng chứng — mọi FR mức M có ≥ 1 TC ✅; AC đạt 12/19; AC-01, 02, 10 chỉ đạt trên máy dev / giả lập; AC-04, 08, 09, 17 chưa test — thiếu tài nguyên (04a §1) → điều kiện go-live
+- [x] ✓ Ma trận quyền đã chạy — TC-P.01..P.10 ✅ (P.10 ghép, DEC-70)
+- [ ] ✗ NFR có ngưỡng đã đo — đo trên máy dev: NFR-01 (TC-N.02 ✅ p95 1,58 giây; TC-N.01 ⛔ có số máy dev p95 26 ms), NFR-04 (TC-N.05 ✅ 1 triệu kiện, p95 ≤ 812 ms), NFR-05 10 phút; NFR-03, 05 (1 giờ), 09, 10, 31, AC-08 chưa đo trên server kho → điều kiện go-live
+- [x] ✓ Bug Critical/High = 0 — BUG-G4-1 (High), BUG-G4-2 (Medium) đã sửa, chạy lại pass; không bug mở (04a §2)
+- [x] ✓ Regression vùng bị chạm đã chạy — BE 528 passed / 98 skipped, FE 310 pass, QA API 94 pass, E2E BE thật 37/37 hai lần (run2, run3) + 5/5 hai lần (bài G4), sau mọi sửa G3 + G4
+- [ ] ✗ Mọi case P1 ✅ — mọi case P1 chạy được trên máy dev đều ✅ (TC-03.32, 02.13 đã ✅); còn case P1 ⛔ thiếu tài nguyên (04a §3) → điều kiện go-live
+- [x] ✓ Không còn case ⬜ trong Phase 1 — 10 case bổ sung đều ✅ (04a §1)
+- [x] ✓ Kết luận G4: **đạt có điều kiện** (DEC-78) — điều kiện là tài nguyên ngoài, liệt kê ở 04a §6
