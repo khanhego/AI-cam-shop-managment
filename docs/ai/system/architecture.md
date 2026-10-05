@@ -220,7 +220,8 @@ ai-cam-be/
 │   │   ├── media/            # segment index, clip, export, retention, backup
 │   │   ├── vision/           # vòng lặp đọc mã Cam 2 (chạy trong tiến trình vision)
 │   │   ├── platforms/        # adapter Shopee, TikTok; interface chung
-│   │   ├── reconciliation/   # quy tắc BR-10..14, cảnh báo
+│   │   ├── returns/          # hồ sơ hàng hoàn, tra mã kiện hoàn — item 02 DEC-218
+│   │   ├── reconciliation/   # quy tắc BR-10..14, 19, 20, cảnh báo
 │   │   ├── approvals/        # yêu cầu duyệt từ station (lệch mã, đóng gói lại) — item 01 DEC-8
 │   │   ├── imports/          # nhập đơn từ CSV/Excel — item 01 DEC-8
 │   │   ├── claims/           # hồ sơ khiếu nại
@@ -647,6 +648,7 @@ Phiên bản theo SemVer, BE và FE gắn tag độc lập; `compose.yml` ghim c
 | ADR-006 | Một app React cho cả station và dashboard, station chạy Chromium kiosk | Accepted (2026-10-04, qua G2 item 01) |
 | ADR-007 | Sàn tích hợp qua adapter, polling là nền, webhook là bổ sung | Accepted (2026-10-04, qua G2 item 01) |
 | ADR-008 | Clip gốc bất biến + SHA-256; overlay chỉ trên bản xuất; bật OSD thời gian của camera | Accepted (2026-10-04, qua G2 item 01) |
+| ADR-009 | Bằng chứng giữ theo hồ sơ khiếu nại chưa đóng, thay cờ "giữ clip" | Proposed (2026-10-05, item 02) |
 
 Mỗi ADR có file riêng trong [decisions/](decisions/).
 

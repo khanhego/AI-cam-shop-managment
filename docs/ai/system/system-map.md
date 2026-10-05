@@ -4,6 +4,7 @@
 > Ai làm thay đổi hệ thống thì cập nhật file này. Last update: 2026-10-05 · Dev (M5 Hoàn thiện xong: T-19)
 
 **Hiện trạng (2026-10-05):** item 01 xong M0–M5 (trừ T-4 camera thật, T-3 tài khoản Shopee partner) trên nhánh `feat/01-packing-mvp` của `ai-cam-be`, `ai-cam-fe` (đã push, chưa merge `main`). BE: auth, station/camera, phiên quét, realtime, vision đọc khay Cam 2 (chạy trên camera giả), duyệt, cắt clip, tra cứu, giữ clip, xuất MP4, báo cáo ngày, cài đặt, health, nhập đơn CSV / xlsx, adapter Shopee (chỉ chạy trên HTTP giả + adapter mock) + đồng bộ J-04/05/06/12. FE: station S0–S6, dashboard D1, D2, D3, D4 (+ xuất), D5, D6 (+ vùng đọc mã), D7–D10, D11, D12, D13. Triển khai: compose production + Caddy HTTPS nội bộ + sao lưu hằng ngày, đã chạy staging local (chưa lên server kho). Chưa có: Shopee thật (T-3), token bucket rate limit (ADR-007), CI đẩy image (build tại chỗ), CSP / HSTS (DEC-137 02a).
+**Item 02 (Phase 2 — hàng hoàn, đối soát, khiếu nại) đang ở bước spec (2026-10-05) — chưa đổi code.** Thay đổi dự kiến: module mới `returns`, `reconciliation`, `claims`; phiên `RETURN` trong `sessions`; bảng `snapshot`; migration 0003 / 0004; API-82, API-100..138 ([02 item 02](../items/02-returns-reconciliation/02-tech-spec.md) §3, §6). Bảng dưới vẫn là hệ thống đang chạy — cập nhật khi implement.
 Kiến trúc: [architecture.md](architecture.md).
 
 ## Module / component
