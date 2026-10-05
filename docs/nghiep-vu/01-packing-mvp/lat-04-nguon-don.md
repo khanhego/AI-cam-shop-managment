@@ -5,12 +5,12 @@
 | Item / lát | `01-packing-mvp` · lát 4 (milestone M4 Nguồn đơn, [03-plan §4](../../ai/items/01-packing-mvp/03-plan.md)) |
 | Yêu cầu | FR-05.01..05.04, 05.06..05.10; FR-10.01..10.03; BR-01, BR-04, BR-17; EX-P10, EX-P11; AC-05, AC-12 — [01-srs](../../ai/items/01-packing-mvp/01-srs.md) |
 | Task | BE: T-17, T-16, T-22 (T-3 chờ Shopee duyệt partner) · FE: T-56, T-58, T-59, T-61 |
-| Code | `ai-cam-be`: `90a16c6`, `d5f7e05`, `2375a2e` · `ai-cam-fe`: `b09e0f3`, `83cc236`, `c1cb076`, `ac017c0`, `3533ff3` (nhánh `feat/01-packing-mvp`) |
+| Code | `ai-cam-be`: `90a16c6`, `d5f7e05`, `2375a2e` · `ai-cam-fe`: `b09e0f3`, `83cc236`, `c1cb076`, `ac017c0`, `3533ff3`; sửa review G3: be `fd1f2b7` (F4, F5), `01c9f02` (P2-6), `05aeb7e` (P2-12), `409b65d` (N7) (nhánh `feat/01-packing-mvp`) |
 | Người đọc | Dev mới vào dự án, reviewer, QA |
 | Tác giả | khanhtt (agent soạn) |
 | Reviewer | PO (đúng nghiệp vụ) · Tech lead (đúng code) |
 | Trạng thái | Draft |
-| Last update | 2026-10-05 · Dev |
+| Last update | 2026-10-05 · Dev (đối chiếu code sau G3: FR-05.07, 10.02 vào thân bài, nhập file không cướp kiện, tra sàn giới hạn, `FERNET_KEY` sai) |
 
 ## TL;DR
 
@@ -56,7 +56,7 @@
 - Mỗi 15 phút hệ thống cũng hỏi Shopee trạng thái vận chuyển (đã lấy hàng, đã giao) cho các kiện đã đóng, để dòng thời gian của kiện đủ mốc.
 
 ### Bước 5 — Nhập đơn từ file khi chưa nối Shopee
-- Làm gì: quản lý mở trang "Nhập đơn", tải file mẫu, điền hoặc dán danh sách đơn, tải file lên (tối đa 5 MB, 5.000 dòng). Hệ thống cho xem trước: bao nhiêu đơn mới, bao nhiêu đơn cập nhật, bao nhiêu bỏ qua, 20 dòng đầu. Bấm "Nhập 495 đơn" mới thật sự ghi.
+- Làm gì: quản lý mở trang "Nhập đơn", tải file mẫu, điền hoặc dán danh sách đơn, tải file lên (tối đa 5 MB, 5.000 dòng). Hệ thống cho xem trước: bao nhiêu đơn mới, bao nhiêu đơn cập nhật, bao nhiêu bỏ qua, 20 dòng đầu. Bấm "Nhập N đơn" mới thật sự ghi (N = mới + cập nhật; ví dụ file 500 đơn, 5 đơn đã có từ Shopee bị bỏ qua → "Nhập 495 đơn").
 - File có dù chỉ 1 dòng lỗi (bỏ trống mã vận đơn, số lượng không phải số, một mã vận đơn cho 2 đơn…) → không nhập dòng nào. Màn ghi rõ dòng nào, cột nào, lý do gì. Vì sao: nhập một nửa thì không ai biết đơn nào đã vào, đơn nào chưa.
 - Bản xem trước giữ 30 phút. Chỉ người tải file lên mới bấm nhập được, để nhật ký ghi đúng người chịu trách nhiệm.
 - File gốc được lưu 90 ngày và tải lại được từ "Lịch sử nhập", để đối chiếu khi có tranh chấp.
@@ -65,17 +65,20 @@
 - Đơn đã lấy từ Shopee → dòng trong file bị bỏ qua, ghi "Bỏ qua (đã có từ Shopee)". Vì sao: dữ liệu Shopee là bản gốc; file do người gõ có thể sai.
 - Đơn nhập từ file, sau đó Shopee cũng trả về → bản Shopee ghi đè. Bản cũ từ file vẫn giữ trong nhật ký để xem lại.
 - Kiện đã đóng không bị đẩy lùi trạng thái khi đơn được cập nhật. Chỉ thông tin đơn đổi.
+- File không "cướp" kiện của đơn khác: mã vận đơn đã thuộc đơn khác trong hệ thống → báo lỗi dòng ngay ở bước xem trước. Nếu trong lúc chờ bấm Nhập, mã đó vừa bị gắn vào đơn khác (do đồng bộ Shopee hoặc quét), lần nhập bị hủy cả file với thông báo "Dữ liệu đơn vừa thay đổi trong lúc nhập. Bấm Nhập lại.".
 
 ### Bước 7 — Người dùng và nhật ký
 - Admin tạo tài khoản, đổi vai, đặt lại mật khẩu, khóa / mở khóa. Hệ thống không cho khóa hay hạ vai Admin cuối cùng: "Phải còn ít nhất một Admin.".
 - Máy trạm bị mất hay đổi máy → Admin bấm "Thu hồi phiên đăng nhập" ở tài khoản bàn đó. Trong tối đa 15 phút, bàn tự về màn đăng nhập.
+- Mỗi vai chỉ thấy menu và màn của mình; mở đường dẫn không đủ quyền → trang "Không có quyền" (D12). Máy chủ cũng chặn (403), nên giấu nút không phải lớp bảo vệ duy nhất.
 - Trang "Nhật ký thao tác" liệt kê ai làm gì lúc nào: đăng nhập, xem / xuất clip, duyệt, nhập file, đổi cài đặt, kết nối Shopee. Nhật ký chỉ đọc, không ai sửa hay xóa được.
 
 **Ví dụ một vòng đầy đủ.** Thứ Hai, shop chưa được Shopee cấp quyền. 8:00, chị Hoa (quản lý) xuất danh sách 500 đơn từ trang người bán, vào trang "Nhập đơn", tải file lên. Trong 1 giây màn hiện "Mới 500 · Cập nhật 0 · Bỏ qua 0 (đã có từ Shopee) · Lỗi 0". Chị bấm "Nhập 500 đơn", màn báo "Đã nhập 500 đơn.". 8:05, chị Lan ở bàn số 1 quét phiếu "SPXCSV0000250", phiên mở bình thường. Thứ Tư, Shopee duyệt quyền. Anh Tuấn (Admin) bấm "Kết nối Shopee", đồng ý trên Shopee, thẻ shop hiện "Đã kết nối". 5 phút sau, lần đồng bộ đầu lấy đơn 3 ngày gần nhất. Đơn của phiếu "SPXCSV0000250" có trên Shopee, nên bản Shopee ghi đè bản từ file, nhật ký giữ bản cũ. 10:20, chị Lan quét "SPX0000999", một đơn khách vừa đặt 2 phút trước. Sổ chưa có, hệ thống hỏi Shopee và có kết quả sau 0,8 giây, phiên mở ngay. 14:00, khách của đơn chị Lan đóng lúc 8:05 bấm hủy. Lần đồng bộ 14:05 thấy đơn hủy. Kiện chuyển "hủy sau khi đóng", trang Tổng quan của chị Hoa hiện "⚠ 1 đơn bị hủy sau khi đóng". Chị rút kiện ra trước giờ bên vận chuyển tới lấy.
 
 **Lưu ý.**
 - **Chưa thử với Shopee thật.** Shop chưa có tài khoản đối tác của Shopee. Toàn bộ phần Shopee chạy với một "Shopee giả" trả lời theo tài liệu công khai. Đăng nhập Shopee thật, câu báo lỗi thật, tên các trạng thái vận chuyển và giới hạn số lần hỏi mỗi phút đều chưa kiểm.
-- Shopee không công bố cách tìm đơn theo mã vận đơn. Tạm thời, khi quét phiếu chưa có, hệ thống dò các đơn đổi trong 60 phút gần nhất. Đơn cũ hơn sẽ thành "chưa xác minh" rồi được kiểm lại sau. Cách này cần xác nhận khi có tài khoản thật.
+- Shopee không công bố cách tìm đơn theo mã vận đơn. Tạm thời, khi quét phiếu chưa có, hệ thống dò các đơn đổi trong 60 phút gần nhất — mỗi lần quét chỉ đọc 1 trang danh sách và hỏi tối đa 10 đơn, để không tốn hạn mức. Đơn cũ hơn sẽ thành "chưa xác minh" rồi được kiểm lại sau. Cách này cần xác nhận khi có tài khoản thật.
+- Khôi phục máy chủ mà dùng sai khóa mã hóa (`FERNET_KEY`) → hệ thống không đọc được token Shopee đã lưu. Quét vẫn chạy (kiện "chưa xác minh"); thẻ shop chuyển "Hết hạn", Admin bấm "Kết nối lại".
 - Nhập file Excel thật trên trình duyệt chưa thử, mới thử file CSV (file bảng tính dạng chữ, mỗi dòng một sản phẩm).
 - Thu hồi phiên đăng nhập bàn mới kiểm tới bước hệ thống nhận lệnh. Chưa đợi đủ 15 phút để xem bàn tự về màn đăng nhập.
 
@@ -117,6 +120,11 @@ Không có sổ đơn thì quét chỉ biết "một mã vận đơn", không bi
 | 10 | Đồng bộ Shopee đang ghi đúng đơn đó lúc bấm Nhập | 409 `IMPORT_CONFLICT` "Dữ liệu đơn vừa thay đổi trong lúc nhập. Bấm Nhập lại." | Không ghi đè lẫn nhau, không 500 |
 | 11 | Refresh token bị Shopee từ chối | Shop `EXPIRED`, `last_error AUTH_EXPIRED`; D7 "Hết hạn" + "Kết nối lại"; D2 dòng lỗi đồng bộ | Cần người cấp quyền lại |
 | 12 | Refresh lỗi do mạng | Giữ `CONNECTED`, `last_error REFRESH_FAILED`, 30 phút sau thử lại | Không bắt Admin kết nối lại vì mạng chập chờn (DEC-124) |
+| 13 | File có mã vận đơn đã thuộc đơn khác trong hệ thống | Lỗi dòng ở xem trước; commit bị chặn | Không cướp kiện của đơn khác (G3-F5) |
+| 14 | Sau xem trước, J-04 / quét gắn mã vận đơn đó vào đơn khác; rồi mới bấm Nhập | Commit đọc lại kiện `FOR UPDATE`, thấy đã thuộc đơn khác → rollback cả lần nhập, 409 `IMPORT_CONFLICT`; deadlock / ghi đồng thời ở DB cũng ra 409 này | G3-F5, 02 v0.7 (DEC-67) |
+| 15 | Quét mã chưa có khi Shopee có hàng trăm đơn mới trong 60 phút | Tra chỉ đọc 1 trang danh sách (100 đơn), hỏi ≤ 10 mã vận đơn, bỏ qua đơn đã biết mã; không thấy → `UNVERIFIED`, J-05 tra lại | Giữ quét ≤ 2 giây và không đốt hạn mức (G3-P2-12, DEC-158) |
+| 16 | Khôi phục máy chủ với `FERNET_KEY` khác bản đã mã hóa token | Không giải mã được token → shop `EXPIRED`, `last_error CREDENTIALS_UNREADABLE`; quét mã lạ vẫn 200 `SESSION_OPENED` kiện `UNVERIFIED` | Quét không bao giờ 500 vì tra sàn; D7 "Kết nối lại" (DEC-159 02a, 02 v0.7) |
+| 17 | CSKH gõ `/admin/settings/shopee` | FE hiện D12 "Không có quyền"; API-70 trả 403 | FR-10.02: phân quyền theo vai, chặn ở cả server |
 
 ## 4. Luồng ví dụ từ đầu đến cuối
 
@@ -160,16 +168,19 @@ sequenceDiagram
 | Kết nối shop qua OAuth | `state` một lần, 10 phút, gắn người tạo URL; không `code` → `denied`; state sai → `error`; MVP một shop, kết nối shop khác → shop cũ `DISCONNECTED` | Chống CSRF; chủ shop phải đồng ý | FR-05.01, DEC-12, DEC-122 |
 | Tự làm mới token | J-12 30 phút, làm mới khi còn < 1 giờ; bị từ chối → `EXPIRED`; lỗi tạm → giữ `CONNECTED` | Không mất đồng bộ âm thầm; không báo động giả | FR-05.01, DEC-124 |
 | Đồng bộ đơn | J-04 5 phút; `since` = cursor − 10 phút; commit mỗi 50 đơn; lỗi cuối → `last_error SYNC_FAILED`, cursor giữ nguyên | Không sót đơn khi lệch giờ; lỗi không mất dữ liệu | FR-05.02, 05.03 |
+| Adapter theo sàn | Lõi chỉ gọi interface `PlatformAdapter` (`modules/platforms/base.py`); Shopee và mock là 2 bản cài; TikTok / Lazada sau này cài cùng interface | Thêm sàn không đổi lõi nghiệp vụ | FR-05.07 (thiết kế; adapter sàn thứ 2 → Phase 3) |
 | Thử lại khi gọi sàn | 5 lần, giãn cách 0,5 / 1 / 2 / 4 giây hoặc theo `Retry-After`; ghi log mọi lần gọi | Sàn giới hạn tần suất | FR-05.08 |
-| Tra khi quét | ≤ 2 giây, chỉ khi có shop `CONNECTED`; không kịp → "chưa xác minh" | Quét phản hồi ≤ 1–2 giây | BR-04, FR-05.06 |
+| Tra khi quét | ≤ 2 giây, chỉ khi có shop `CONNECTED`; ≤ 1 trang danh sách + ≤ 10 lần hỏi mã vận đơn; không kịp / token không đọc được / lỗi bất ngờ → "chưa xác minh" | Quét phản hồi ≤ 1–2 giây; không 500 vì sàn | BR-04, FR-05.06, DEC-158, DEC-159 |
 | Xác minh lại | J-05 10 phút, ≤ 50 kiện chưa xác minh, chưa gắn đơn, trong 7 ngày | Gỡ chip khi sàn đã có đơn | BR-04 |
 | Đơn hủy | Áp cho mọi kiện đã gắn đơn: `NEW` → `CANCELLED`, `PACKED` → `CANCELLED_AFTER_PACK` | Chặn đóng đơn hủy; kịp rút kiện đã đóng | BR-01, EX-P10, AC-05 |
 | Trạng thái vận chuyển | J-06 15 phút, ≤ 1.000 kiện `PACKED` / `HANDED_OVER`, lô 50 | Dòng thời gian cho CSKH | FR-05.04 |
 | Nhập file | ≤ 5 MB, ≤ 5.000 dòng, `.csv` / `.xlsx`; 1 dòng lỗi → từ chối cả file; xem trước 30 phút; chỉ người tạo commit | Không nhập một phần; rõ người chịu trách nhiệm | FR-05.09, EX-P11, AC-12 |
 | Ưu tiên nguồn | Đơn `API` không bị file ghi đè; đơn `CSV` bị API ghi đè, audit giữ bản cũ | Sàn là nguồn gốc | BR-17, FR-05.10 |
+| Không cướp kiện | Mã vận đơn đã thuộc đơn khác → lỗi dòng (xem trước) / 409 `IMPORT_CONFLICT` (commit) | Một kiện chỉ thuộc một đơn | BR-17, G3-F5 |
 | Kiện đã có giữ trạng thái kho | Nhập file / đồng bộ chỉ đổi thông tin đơn | Không đẩy lùi kiện đã đóng | UC-09 ngoại lệ |
 | File gốc | Giữ 90 ngày, J-11 xóa; sau đó 410 | Đối chiếu tranh chấp | FR-05.09 |
 | Người dùng | Phải còn ≥ 1 Admin; đổi vai / khóa / đổi mật khẩu → thu hồi phiên; thu hồi station hiệu lực ≤ 15 phút | Không tự khóa ngoài hệ thống | FR-10.01, DEC-55 |
+| Phân quyền theo vai | Ma trận 01 §5.1; server kiểm mọi API (403); FE drawer theo vai, route cấm → D12 | Giấu nút chưa đủ — chặn ở server | FR-10.02 |
 | Nhật ký | Chỉ INSERT; D10 chỉ đọc | Bằng chứng không sửa được | FR-10.03 |
 
 ## 6. Điểm dễ hiểu nhầm
@@ -194,7 +205,9 @@ sequenceDiagram
 | Đọc file CSV / xlsx, lỗi theo dòng / cột | `modules/imports/parser.py`, `imports/template.csv` | `unit/test_imports_parser.py`: `test_reads_rows_upper_tracking_and_skips_blank_lines`, `test_cell_errors_reported_per_row_and_column`, `test_whole_file_invalid`, `test_extension` |
 | Xem trước, commit, BR-17, file gốc (API-50..54) | `modules/imports/service.py`, `imports/router.py`, `imports/schemas.py`, `imports/models.py` | `integration/test_imports_api.py`: `test_ok_500_preview_commit_history`, `test_one_error_rejects_whole_file`, `test_missing_column`, `test_too_big_and_too_many_rows`, `test_overlap_api_orders_are_skipped`, `test_update_csv_order_keeps_package_status_and_links_unverified`, `test_tracking_conflicts_are_row_errors`, `test_preview_expires`, `test_original_file_and_expiry`, `test_xlsx_and_semicolon_csv`, `test_permissions_and_template` |
 | Upsert đơn sàn, đơn hủy, ghi đè CSV (BR-17, EX-P10) | `modules/orders/service.py` (`upsert_platform_order`, `transition`) | `integration/test_imports_api.py::test_api_overwrites_csv_order_keeps_history`, `integration/test_platform_jobs.py::test_j04_overwrites_csv_order`, `test_j04_cancel_after_pack` |
-| Interface adapter, mock | `modules/platforms/base.py`, `platforms/mock/adapter.py` | (dùng trong mọi test job) |
+| Interface adapter, mock (FR-05.07) | `modules/platforms/base.py`, `platforms/mock/adapter.py` | (dùng trong mọi test job) |
+| Nhập file không cướp kiện (G3-F5) | `modules/orders/service.py` (`CsvWriteConflict`), `imports/service.py` | `integration/test_imports_api.py`: `test_tracking_conflicts_are_row_errors`, `test_commit_does_not_steal_package_claimed_after_classify` |
+| Tra sàn giới hạn / `FERNET_KEY` sai | `platforms/shopee/adapter.py` (`LOOKUP_MAX_CANDIDATES`), `platforms/service.py` (`CREDENTIALS_UNREADABLE`), `sessions/service.py` (`_lookup_platform`) | `unit/test_shopee_adapter.py::test_find_by_tracking_bounded_per_scan`; `integration/test_station_scan_api.py`: `test_unreadable_shop_token_does_not_break_scan`, `test_unexpected_lookup_error_falls_back_to_unverified` |
 | Adapter Shopee: ký, OAuth, thử lại, ánh xạ trạng thái | `modules/platforms/shopee/client.py`, `shopee/adapter.py`, `shopee/mapping.py` | `unit/test_shopee_adapter.py`: `test_auth_partner_url_signed_with_public_base`, `test_exchange_code_and_shop_call_signature`, `test_refresh_rejected_is_auth_error`, `test_retry_503_twice_then_ok`, `test_rate_limit_respects_retry_after_and_error_code`, `test_gives_up_after_max_attempts`, `test_find_by_tracking_scans_recent_then_caches`, `test_shipping_statuses`, `test_warehouse_hint_mapping` |
 | Kết nối shop, đồng bộ ngay, tra 2 giây khi quét (API-70..73) | `modules/platforms/service.py`, `platforms/router.py`, `platforms/schemas.py`, `modules/sessions/service.py` (`_lookup_platform`) | `integration/test_shops_api.py`: `test_not_configured`, `test_connect_flow`, `test_callback_denied_and_bad_state`, `test_reconnect_other_shop_disconnects_old`, `test_sync_now`, `test_scan_lookup_with_shopee_adapter`, `test_scan_lookup_shopee_slow_cut_at_2s`, `test_scan_without_connected_shop_does_not_call_shopee` |
 | J-04, J-05, J-06, J-12 | `modules/platforms/sync.py`, `workers/tasks.py`, lịch beat `workers/celery_app.py` | `integration/test_platform_jobs.py`: `test_j04_new_orders`, `test_j04_since_cursor_minus_10_minutes`, `test_j04_platform_error_sets_last_error`, `test_j04_shopee_503_twice_then_ok`, `test_j04_lock_and_disabled`, `test_j04_auth_error_refreshes_once_then_expired`, `test_j05_verify_unverified`, `test_j06_shipping`, `test_j06_packed_straight_to_delivered_and_cancel`, `test_j12_refresh` |

@@ -3,14 +3,14 @@
 | Trường | Giá trị |
 |---|---|
 | Item / lát | `01-packing-mvp` · lát 3 (milestone M3 Cam 2 + duyệt, [03-plan §4](../../ai/items/01-packing-mvp/03-plan.md)) |
-| Yêu cầu | FR-03.06, 03.07, 03.10, 03.12; FR-01.04, 01.05; BR-03, BR-06, BR-16 (v0.4, DEC-60), BR-18; AC-04, 14, 19, 21 — [01-srs](../../ai/items/01-packing-mvp/01-srs.md) |
+| Yêu cầu | FR-03.06, 03.07, 03.10, 03.12; FR-01.04, 01.05; BR-03, BR-06, BR-16 (v0.4, DEC-60), BR-18; AC-04, 10, 14, 17, 19, 21 — [01-srs](../../ai/items/01-packing-mvp/01-srs.md) |
 | Task | BE: T-12, T-13 (T-4 chờ camera thật) · FE: T-55, T-62, T-60, T-38 (T-37 đã làm ở M1) |
 | Code | `ai-cam-be`: `771f61d`, `9b7c26e`, `97abd2e` · `ai-cam-fe`: `aeca76e`, `5e25242`, `310de20`, `fafd6b7` (nhánh `feat/01-packing-mvp`) |
 | Người đọc | Dev mới vào dự án, reviewer, QA |
 | Tác giả | khanhtt (agent soạn) |
 | Reviewer | PO (đúng nghiệp vụ) · Tech lead (đúng code) |
 | Trạng thái | Draft |
-| Last update | 2026-10-05 · Dev |
+| Last update | 2026-10-05 · Dev (thêm AC-10, AC-17, FR-03.10 vào thân bài sau G3) |
 
 ## TL;DR
 
@@ -121,9 +121,11 @@ Vấn đề gốc là P5 (dán nhầm phiếu → giao nhầm hàng, mất tiề
 | 6 | Cam 2 rớt khi phiên đang mở | Sau > 3 giây khay `UNAVAILABLE`; đóng vẫn được, cờ `CAM2_UNVERIFIED` | BR-18: Cam 2 là kiểm tra bổ sung, không được làm dừng kho |
 | 7 | Gửi MISMATCH, rồi bỏ phiếu sai trong lúc chờ | `context.tray_match` cập nhật, WS-02 `approval.updated`; D13 mở nút "Đóng phiên có ghi chú" | Quản lý quyết theo khay hiện tại |
 | 8 | Hai Supervisor bấm cùng lúc | Một 200, một 409 `ALREADY_RESOLVED` kèm `decided_by`, `decided_at` | Khóa station + `FOR UPDATE`; không quyết hai lần |
-| 9 | Quét kiện `PACKED`, xin đóng gói lại, được duyệt | Mở phiên `REPACK`; phiên cũ `SUPERSEDED` chỉ khi phiên mới `COMPLETED` | BR-03, AC-14 |
+| 9 | Quét kiện `PACKED`, xin đóng gói lại, được duyệt | Mở phiên `REPACK`; phiên cũ `SUPERSEDED` chỉ khi phiên mới `COMPLETED` | FR-03.10, BR-03, AC-14 |
 | 10 | Chờ duyệt 40 phút rồi "Cho tiếp tục" | Không nhắc, không bỏ dở; `abandon_at` = lúc duyệt + 30 phút | DEC-60 |
 | 11 | Supervisor "Hủy phiên" | Phiên `CANCELLED` lý do `SUPERVISOR`, kiện về `NEW`; WS-01 `alert` `SESSION_CANCELLED_BY_SUPERVISOR` | Station biết vì sao phiên biến mất |
+| 12 | Rút cáp Cam 2 khi phiên đang mở | J-08 không thấy byte mới > 6 giây → camera `OFFLINE`; WS `camera.status` → thanh trạng thái station và ô D11 báo mất hình, D2 "Cần xử lý" có `CAMERA_OFFLINE`; phiên đang mở gắn cờ `VIDEO_INCOMPLETE` | AC-10 (≤ 10 giây), FR-01.02, 01.03, EX-P7 |
+| 13 | Đồng hồ Cam 1 lệch 2 giây so với máy chủ | J-09 đo lệch qua ONVIF → `clock_offset_ms`; > 1.000 ms → D2 "Cần xử lý" `CLOCK_DRIFT` kèm tên station, vai camera | AC-17, FR-01.06, BR-15: giờ trên clip phải tin được |
 
 ## 4. Luồng ví dụ từ đầu đến cuối
 
@@ -175,10 +177,12 @@ sequenceDiagram
 | Không đóng có ghi chú khi khay sai | `TRAY_STILL_DIFFERENT` | Đóng lúc đó là chấp nhận dán nhầm | BR-06 |
 | Ghi tên người duyệt | Audit `APPROVAL_DECISION` | Tài khoản bàn dùng chung; trách nhiệm nằm ở quản lý | FR-03.12, AC-19, DEC-5 |
 | Hiện và phản hồi nhanh | Yêu cầu lên D13 ≤ 2 giây; station về S2 ≤ 2 giây | Người đứng bàn không chờ mù | AC-19 |
-| Đóng gói lại | Chỉ kiện `PACKED`; phiên cũ `SUPERSEDED` khi phiên mới `COMPLETED`; hủy / bỏ dở → kiện `PACKED`, phiên cũ còn hiệu lực | Không mất bằng chứng chính thức | BR-03, AC-14, AC-21, DEC-24 |
+| Đóng gói lại (FR-03.10) | Chỉ kiện `PACKED`; phiên cũ `SUPERSEDED` khi phiên mới `COMPLETED`; hủy / bỏ dở → kiện `PACKED`, phiên cũ còn hiệu lực | Không mất bằng chứng chính thức | BR-03, AC-14, AC-21, DEC-24 |
 | Chờ duyệt không tính quá giờ | `timer_base` = max(`started_at`, `decided_at` gần nhất); rút yêu cầu cũng ghi `decided_at`; nhắc 15 phút bật lại | Người đứng bàn không chịu lỗi khi quản lý chậm | BR-16 (01 v0.4), DEC-60 |
 | ROI | 0 ≤ x, y; x + w ≤ 1; y + h ≤ 1; w, h ≥ 0,05; chỉ Cam 2 | Khung quá nhỏ không đọc được phiếu | FR-01.04 |
 | Live view | Chỉ ADMIN, SUPERVISOR; URL qua API-65 | Hình kho là dữ liệu nội bộ | FR-01.05 |
+| Báo camera mất hình | Không có byte mới > 6 giây → `OFFLINE`; báo ở station, D2, D11 ≤ 10 giây; phiên đang mở gắn `VIDEO_INCOMPLETE` | Quản lý biết ngay bàn nào đang không có bằng chứng | AC-10, FR-01.02, 01.03 |
+| Báo lệch giờ camera | `abs(clock_offset_ms)` > 1.000 → D2 `CLOCK_DRIFT` | Clip cắt theo giờ máy chủ; camera lệch giờ thì cắt hụt khoảnh khắc | AC-17, FR-01.06, BR-15 (camera không ONVIF → không đo được, DEC-33) |
 
 ## 6. Điểm dễ hiểu nhầm
 
@@ -208,6 +212,7 @@ sequenceDiagram
 | D13 + badge + âm báo | FE `features/approvals/ApprovalsPage.tsx`, `ApprovalCard.tsx`, `ApprovalBadge.tsx`, `usePendingApprovals.ts`, `chime.ts`, `decision.ts`, `lib/api/approvals.ts` | `features/approvals/ApprovalsPage.test.tsx` (TC-03.40, 03.41/03.42, 03.43/03.44, 03.45, 03.47, 03.48, 03.51, 03.54, TC-P); E2E `real/admin-d13.spec.ts` ("TC-03.51…", "TC-03.40…") |
 | Station S3–S5 với BE thật | FE `features/station/` | E2E `real/station.spec.ts` |
 | Vẽ ROI (D6) | FE `features/admin/RoiEditor.tsx`, `features/admin/roi.ts`, `api.blob` trong `lib/api/client.ts` | `features/admin/RoiEditor.test.tsx` (TC-01.05, 01.06, 01.12, VALIDATION_ERROR), `roi.test.ts`; E2E `real/admin-roi.spec.ts` |
+| Camera mất hình / lệch giờ (AC-10, AC-17) | `modules/stations/health.py` (J-08), `stations/probe.py` (J-09), `modules/reports/service.py` (`CLOCK_DRIFT_MS`); FE `features/liveview/CameraTile.tsx`, `features/reports/AttentionList.tsx` | `unit/test_stations_logic.py::test_camera_offline_after_six_seconds_without_new_bytes`, `integration/test_media_clips.py::test_camera_offline_flags_open_session`, `qa/test_m1_live.py::test_tc_01_07_simulated_camera_loss`; lệch giờ thật chưa test (camera giả không có ONVIF, T-4) |
 | Live view WHEP (D11) | FE `features/liveview/LivePage.tsx`, `CameraTile.tsx`, `useLiveStream.ts`, `shared/media/whep.ts`, `lib/api/live.ts`; proxy `/live` trong `ai-cam-fe/vite.config.ts`; ICE 8189 trong `ai-cam-be/docker/mediamtx.yml` | `shared/media/whep.test.ts` (TC-01.10, 01.14, `sessionUrl`), `features/liveview/LivePage.test.tsx`; E2E `real/admin-live.spec.ts` ("TC-01.10 (bắt tay)…", "TC-01.10 (khung hình)…") |
 
 ## 8. Giới hạn hiện tại và giả định

@@ -5,12 +5,12 @@
 | Item / lát | `01-packing-mvp` · lát 1 (milestone M1 Quét đóng gói, [03-plan §4](../../ai/items/01-packing-mvp/03-plan.md)) |
 | Yêu cầu | FR-03.01..09, 03.11; FR-01.01..03, 01.06; FR-05.07; FR-10.01..03; BR-01..06, BR-16, BR-18; EX-P1..P7, EX-P9; AC-01, 03, 13 — [01-srs](../../ai/items/01-packing-mvp/01-srs.md) |
 | Task | BE: T-7, T-8, T-9, T-10, T-20, T-11 · FE: T-34, T-35, T-36, T-50, T-57 · làm sớm phần FE của T-37, T-40 (DEC-50) |
-| Code | Nhánh `feat/01-packing-mvp` trong `ai-cam-be`, `ai-cam-fe` — chưa commit (sau `9efb3b2` / `73c46f8`) |
+| Code | Nhánh `feat/01-packing-mvp` trong `ai-cam-be` (`a92afb2`), `ai-cam-fe` (`9f54206`), cùng các bản sửa sau review |
 | Người đọc | Dev mới vào dự án, reviewer, QA |
 | Tác giả | khanhtt (agent soạn) |
 | Reviewer | PO (đúng nghiệp vụ) · Tech lead (đúng code) |
-| Trạng thái | Draft (code M1 đang sửa theo review — đối chiếu lại trước G3) |
-| Last update | 2026-10-05 · Dev (thêm §0 theo template mới) |
+| Trạng thái | Draft (đã đối chiếu code sau sửa review G3, 2026-10-05) |
+| Last update | 2026-10-05 · Dev (sửa sai lệch tên hàm / test, cập nhật §8 theo code sau G3) |
 
 ## TL;DR
 
@@ -18,7 +18,7 @@
 - Mọi lần quét đi qua một API (`POST /station/scan`). API luôn trả 200 kèm `outcome`; station chọn màn S1–S6 và âm thanh theo `outcome` đó.
 - Quy tắc chặn dán nhầm phiếu: quét đóng bằng mã khác → **lệch mã** (S3). Cam 2 thấy phiếu khác trên khay → không đóng được phiên dù quét đúng mã (BR-06).
 - Một bàn chỉ có một phiên mở; mọi lần quét của một bàn được xử lý **tuần tự** (khóa theo station). Lần quét gửi lại do mạng chập không bị xử lý hai lần.
-- Cần nhớ: Cam 2 (vision), cắt clip và duyệt của quản lý **chưa có ở BE** — xem §8.
+- Cần nhớ: lúc viết lát 1, Cam 2 (vision), cắt clip và duyệt của quản lý chưa có ở BE; nay đã có ở lát 2 (clip), lát 3 (Cam 2, duyệt), lát 4 (Shopee) — xem §8.
 
 ## 0. Giải thích đơn giản
 
@@ -215,15 +215,15 @@ sequenceDiagram
 | Đăng nhập, refresh, khóa, đúng client | `modules/users/service.py`, `modules/users/router.py`, `core/security.py` | `integration/test_auth_users_api.py`: `test_station_login_returns_station_and_sets_station_cookie`, `test_wrong_client`, `test_station_account_on_dashboard_is_wrong_client`, `test_lock_after_ten_failures_then_unlock_after_15_minutes`, `test_ip_rate_limit`, `test_refresh_reuse_revokes_whole_chain`, `test_refresh_cookie_is_per_client`, `test_inactive_station` |
 | Vai trò, quyền, Admin cuối, audit | `modules/users/permissions.py`, `core/deps.py`, `core/audit.py` | `test_me_returns_permissions`, `test_users_api_is_admin_only`, `test_cannot_disable_last_admin`, `test_disable_user_revokes_sessions_and_audits`, `test_password_change_masked_in_audit`, `test_audit_logs_filter` |
 | Station, camera, kiểm tra kết nối, live | `modules/stations/service.py`, `stations/router.py`, `stations/probe.py`, `stations/mediamtx.py` | `integration/test_stations_api.py`: `test_station_name_taken_case_insensitive`, `test_account_in_use_and_wrong_role`, `test_set_camera_registers_mediamtx_path_and_hides_password`, `test_set_camera_saves_even_if_mediamtx_down`, `test_update_camera_without_password_keeps_old_one`, `test_probe_unreachable_camera`, `test_live_and_snapshot_forbidden_for_cskh` |
-| Camera online/offline (J-08) | `modules/stations/health.py`, `modules/vision/health_loop.py`, `modules/stations/listeners.py` | `unit/test_stations_logic.py`: `test_camera_goes_online_when_bytes_flow`, `test_camera_offline_after_six_seconds_without_new_bytes`; `test_apply_camera_health` |
+| Camera online/offline (J-08) | `modules/stations/health.py`, `modules/vision/health_loop.py`, `modules/stations/listeners.py` | `unit/test_stations_logic.py`: `test_camera_goes_online_when_bytes_flow`, `test_camera_offline_after_six_seconds_without_new_bytes`; `integration/test_stations_api.py`: `test_apply_camera_health` |
 | Lệch giờ camera (J-09) | `modules/stations/probe.py` (`onvif_clock_offset_ms`), `workers/tasks.py` | `test_parse_onvif_utc` |
 | Trạng thái kho, chuyển hợp lệ | `modules/orders/service.py` (`transition`, `ALLOWED_TRANSITIONS`) | `unit/test_order_transitions.py`: `test_valid_transition_writes_history`, `test_invalid_transition_raises`, `test_handed_over_cannot_be_repacked` |
 | Đơn sàn, hủy, BR-17, chưa xác minh | `modules/orders/service.py` (`upsert_platform_order`, `is_cancelled`, `create_unverified_package`), `modules/platforms/base.py`, `platforms/mock/adapter.py` | `integration/test_orders.py`: `test_cancelled_on_platform_before_pack`, `test_cancelled_after_pack`, `test_api_overwrites_csv_order_and_keeps_snapshot`, `test_unverified_package_and_later_verification` |
 | Xử lý quét (API-11), state (API-10) | `modules/sessions/service.py` (`scan`, `_open_session_unsafe`, `_continue_session`, `complete_session`, `build_state`), `sessions/router.py` | `integration/test_station_scan_api.py`: `test_open_then_close`, `test_scan_mismatch_then_fix`, `test_mismatch_does_not_open_new_session`, `test_cancelled_order`, `test_already_packed`, `test_already_handed_over`, `test_invalid_code`, `test_unknown_code_opens_unverified`, `test_slow_platform_times_out`, `test_retry_same_client_scan_id` |
 | Khay Cam 2, BR-06, BR-18 | `modules/sessions/tray.py`, `sessions/service.py` | `test_tray_different_blocks_close_even_with_correct_scan`, `test_two_labels_on_tray_is_mismatch`, `test_cam2_verified_flow_has_no_cam2_flags`, `test_label_still_on_tray_flag` |
-| Khóa station, dedup | `sessions/service.py` (`_lock_station`, `_dedup`), `sessions/models.py` (`ScanDedup`, unique index) | `integration/test_scan_concurrency.py`: `test_parallel_scans_open_exactly_one_session`, `test_two_stations_same_code_one_opens_other_alerts`, `test_same_client_scan_id_in_parallel_runs_once`, `test_j07_racing_closing_scan_keeps_session_and_package_consistent` |
+| Khóa station, dedup | `sessions/service.py` (`lock_station`, `_dedup`), `sessions/models.py` (`ScanDedup`, unique index) | `integration/test_scan_concurrency.py`: `test_parallel_scans_open_exactly_one_session`, `test_two_stations_same_code_one_opens_other_alerts`, `test_same_client_scan_id_in_parallel_runs_once`, `test_j07_racing_closing_scan_keeps_session_and_package_consistent` |
 | Chờ duyệt → IGNORED; station bị tắt / đổi tài khoản | `sessions/service.py` (`scan`, `require_station`), `modules/approvals/queries.py` | `test_scan_ignored_while_waiting_approval`, `test_invalid_code_ignored_while_waiting_approval`, `test_station_moved_to_other_account_rejects_old_token`, `test_inactive_station_rejected`, `test_dashboard_account_cannot_scan` |
-| Hủy phiên, đóng gói lại, phiên gần đây, J-07 | `sessions/service.py` (`cancel`, `end_without_packing`, `recent`, `check_timeouts`), `workers/celery_app.py`, `workers/tasks.py` | `integration/test_session_lifecycle.py`: `test_cancel_returns_package_to_new`, `test_cancel_other_requires_note`, `test_cancel_repack_keeps_old_session`, `test_complete_repack_supersedes_old`, `test_recent_sessions_today`, `test_timeouts_warn_once_then_abandon`, `test_waiting_approval_is_not_abandoned`; `test_state_shows_warn_and_abandon_times` |
+| Hủy phiên, đóng gói lại, phiên gần đây, J-07 | `sessions/service.py` (`cancel`, `end_without_packing`, `recent`, `check_timeouts`), `workers/celery_app.py`, `workers/tasks.py` | `integration/test_session_lifecycle.py`: `test_cancel_returns_package_to_new`, `test_cancel_other_requires_note`, `test_cancel_repack_keeps_old_session`, `test_complete_repack_supersedes_old`, `test_recent_sessions_today`, `test_timeouts_warn_once_then_abandon`, `test_waiting_approval_is_not_abandoned`; `integration/test_station_scan_api.py`: `test_state_shows_warn_and_abandon_times` |
 | Realtime WS-01 / WS-02 | `realtime/hub.py`, `realtime/publish.py`, `realtime/bus.py` | `integration/test_ws_hub.py`: `test_station_receives_its_channel_and_pong`, `test_invalid_token_closed_4401`, `test_cskh_does_not_get_approvals`, `test_token_expiry_closes_4401` |
 | QA chạy trên stack thật | — | `qa/test_m1_live.py`: `test_tc_03_03_fifty_scans_p95`, `test_tc_03_04_05_06_mismatch`, `test_tc_01_07_simulated_camera_loss`, `test_tc_p_matrix` |
 | S0, EX-P9, guard theo vai | `features/station/StationLoginPage.tsx`, `features/auth/RequireRole.tsx`, `features/auth/useAuth.ts`, `app/routes.tsx` | `features/station/StationLoginPage.test.tsx`: "EX-P9: quét mã khi chưa đăng nhập → nhắc đăng nhập, không gọi API"; `app/routes.test.tsx`: "tài khoản station mở /admin bị chuyển sang /station" |
@@ -235,18 +235,18 @@ sequenceDiagram
 
 ## 8. Giới hạn hiện tại và giả định
 
-**Phần còn giả lập / mock**
+**Phần còn giả lập / mock** *(ghi lúc viết lát 1; Cam 2 đọc mã đã có ở lát 3, adapter Shopee và J-05 ở lát 4 — còn thiếu camera thật T-4 và tài khoản partner T-3)*
 - **Cam 2 chưa đọc mã thật.** Tiến trình vision (T-12) chưa ghi Redis `tray:{station_id}`. Trên stack thật, khay luôn `UNAVAILABLE`, nên **mọi phiên đóng đều có cờ `CAM2_UNVERIFIED`**, và BR-06 chưa bao giờ chặn. Test BE ghi Redis trực tiếp để giả lập khay.
 - **Shopee:** `PLATFORM_ADAPTER=mock`, `SHOPEE_ENABLED=false`. MockAdapter có 30 đơn `SPXTST…`. Giới hạn tra sàn 2 giây được kiểm bằng độ trễ giả của mock (`delay_s`, test `test_slow_platform_times_out`). Adapter thật và J-05 xác minh lại đơn `UNVERIFIED` chưa có (T-16, T-22, M4).
 - **Camera:** chỉ có `fake-cams`. Camera giả không có ONVIF, nên J-09 trả `clock_offset_ms = null`. Tỉ lệ đọc ≥ 95% (AC-04) chưa đo (T-4).
 - **FE `pnpm dev:mock`:** `mocks/stationSim.ts` mô phỏng state machine của BE (kể cả duyệt). Video xem lại là file mẫu `public/mock/clip-cam*.mp4`.
 
-**Để lát sau**
+**Để lát sau** *(ghi lúc viết lát 1; các mục dưới đã làm ở lát 2–4 — xem tài liệu lát tương ứng)*
 - **Clip (T-14, M2):** chưa cắt clip. Trên BE thật, "Phiên gần đây" luôn hiện "Đang cắt clip" thay nút Xem. Phiên `ABANDONED`/`CANCELLED` "vẫn có clip" (BR-16, TC-03.18) chưa kiểm được. Cờ `VIDEO_INCOMPLETE` khi camera mất giữa phiên chưa gắn.
 - **Duyệt (T-13, M3 — FR-03.10, FR-03.12):** chưa có API-13/14/20/21. Trên BE thật, nút "Yêu cầu đóng gói lại" / "Gọi quản lý" gọi `/station/approval-requests` → 404 → toast. Nhánh `IGNORED` và "J-07 bỏ qua phiên chờ duyệt" đã có, nhưng chỉ kiểm bằng dữ liệu tạo tay trong test. D13 là T-55.
 - **Vision cập nhật phiên theo khay (`on_tray_changed`, T-12):** chưa có. Lệch mã do Cam 2 hiện chỉ xảy ra **lúc quét**, chưa tự bật S3 trong ≤ 2 giây.
 - **D2 dashboard (T-51):** server đã đẩy `report.updated`, `camera.status` nhưng chưa có màn nào nhận. D9 người dùng, D10 nhật ký (T-59): hiện chỉ có API.
-- **J-11 dọn `scan_dedup` sau 10 phút (T-18):** chưa có, nên bảng tăng dần.
+- **J-11 dọn `scan_dedup` sau 10 phút (T-18):** đã có (`workers/tasks.py`, chạy 5 phút một lần, `sessions.purge_scan_dedup`), bảng không còn tăng dần.
 
 **Giả định chưa xác nhận / câu hỏi mở**
 - AS-06: mỗi bàn chỉ một người đứng tại một thời điểm. AS-07: video Cam 1 đủ để nhận ra người đóng gói. Nếu sai → đảo DEC-1.

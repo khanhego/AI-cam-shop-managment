@@ -110,7 +110,7 @@ Kiến trúc: [architecture.md](architecture.md).
 |---|---|---|
 | BE unit + integration | `cd ai-cam-be && uv run pytest` (Postgres :55432, Redis :56379 db15) | `ai-cam-be/tests/{unit,integration}` |
 | QA API trên stack thật | `ai-cam-be/scripts/qa-reset.sh && QA_BASE_URL=http://localhost:8180 uv run pytest -m qa tests/qa` (qa-reset dọn cả volume video) | `ai-cam-be/tests/qa/test_m1_live.py`, `test_m2_live.py`, `test_m3_live.py` (cần `fake-cam2` + vision), `test_m4_live.py` (CSV fixtures `tests/qa/fixtures/csv/`; phần Shopee chạy riêng với `SHOPEE_ENABLED=true`, adapter mock) |
-| Contract test (OpenAPI ↔ 02 §6) | `cd ai-cam-be && uv run pytest tests/contract` (119 test: 52 API, route thừa, snapshot `openapi.json`, runtime giờ `Z` + khung lỗi trên Postgres / Redis dev, khung WS) | `ai-cam-be/tests/contract/` (`spec.py` bảng hợp đồng rút từ 02 §6) |
+| Contract test (OpenAPI ↔ 02 §6) | `cd ai-cam-be && uv run pytest tests/contract` (119 test: 48 mục / 42 mã API-xx, route thừa, snapshot `openapi.json`, runtime giờ `Z` + khung lỗi trên Postgres / Redis dev, khung WS) | `ai-cam-be/tests/contract/` (`spec.py` bảng hợp đồng rút từ 02 §6) |
 | Test tải (locust, stack dev) | `LOAD_PROFILE=nfr05` (2 station × 120 quét/giờ + CSKH) hoặc `stress` · `LOAD_STATIONS=4 uvx --from locust locust -f tests/load/locustfile.py --host http://localhost:8180 --headless -u 5 -r 5 -t 5m`; tạo station `LOAD Station 0n` (tắt sau đo, `qa-reset.sh` dọn) | `ai-cam-be/tests/load/locustfile.py` |
 | Song song API-51 | `uv run pytest tests/integration/test_import_concurrency.py` (TC-05.22, 05.23) | `ai-cam-be/tests/integration/test_import_concurrency.py` |
 | FE unit/integration (MSW) | `cd ai-cam-fe && pnpm test` | `ai-cam-fe/src/**/*.test.ts(x)` |

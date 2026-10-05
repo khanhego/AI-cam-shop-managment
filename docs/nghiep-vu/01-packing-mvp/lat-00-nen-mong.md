@@ -10,7 +10,7 @@
 | Tác giả | khanhtt (agent soạn) |
 | Reviewer | PO (đúng nghiệp vụ) · Tech lead (đúng code) |
 | Trạng thái | Draft |
-| Last update | 2026-10-05 · Dev (thêm §0 theo template mới) |
+| Last update | 2026-10-05 · Dev (§4: MediaMTX dev giữ 1 giờ, prod `0s` — đối chiếu code sau G3) |
 
 ## TL;DR
 
@@ -108,7 +108,7 @@ flowchart LR
 | Quy tắc | Con số / điều kiện | Vì sao | ID |
 |---|---|---|---|
 | Ghi hình liên tục, không theo phiên | Segment 60 giây, mảnh 1 giây | Không mất bằng chứng khi phần mềm phiên lỗi; clip cắt sau theo giờ | FR-02.01, ADR-003 |
-| MediaMTX không tự xóa video | `recordDeleteAfter: 0s`; job retention xóa | Xóa theo setting Admin đổi được (30/90 ngày) và tôn trọng cờ "giữ" | FR-02.06, DEC-30 |
+| Production: MediaMTX không tự xóa video | `docker/mediamtx.prod.yml` `recordDeleteAfter: 0s`; job retention J-02 xóa. Dev (`docker/mediamtx.yml`) giữ video thô **1 giờ** (`recordDeleteAfter: 1h`, chống đầy ổ máy dev) — trên dev clip của phiên quá 1 giờ không cắt lại được | Xóa theo setting Admin đổi được (30/90 ngày) và tôn trọng cờ "giữ" | FR-02.06, DEC-30 |
 | Camera giả không ghi | Path `cam-fake*` `record: no` | Camera trong DB trỏ tới đây qua path `cam-<id>`; tránh ghi trùng hai lần | T-2 |
 | Một phiên đang mở mỗi station | Partial unique index trên `session(station_id)` khi status ∈ OPEN/MISMATCH/WAITING_APPROVAL | Hai phiên trên một bàn → không biết video thuộc kiện nào | BR-02 |
 | Một kiện không mở ở hai bàn | Partial unique index trên `session(package_id)` | Hai bàn cùng đóng một kiện → hai video, một kiện | BR-02 (mở rộng) |

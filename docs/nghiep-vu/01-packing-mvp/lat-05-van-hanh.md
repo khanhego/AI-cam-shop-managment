@@ -5,12 +5,12 @@
 | Item / lát | `01-packing-mvp` · lát 5 (milestone M5 Hoàn thiện, [03-plan §4](../../ai/items/01-packing-mvp/03-plan.md)) |
 | Yêu cầu | NFR-01, NFR-05, NFR-09, NFR-10, NFR-30; BR-09 (retention); AC-01, AC-09 — [01-srs](../../ai/items/01-packing-mvp/01-srs.md), NFR-10 / NFR-30 theo [SRS hệ thống](../../ai/system/SRS.md) |
 | Task | BE: T-19 (contract test + test tải + compose production + Caddyfile + README vận hành) |
-| Code | `ai-cam-be`: `e2a88a5`, `5d83c09`, `f1cf83a`, `cd5183a` (nhánh `feat/01-packing-mvp`) |
+| Code | `ai-cam-be`: `e2a88a5`, `5d83c09`, `f1cf83a`, `cd5183a`; sửa review G3 về log `1bdd617`, `608d5bc` (nhánh `feat/01-packing-mvp`) |
 | Người đọc | Dev mới vào dự án, reviewer, QA, người cài đặt tại kho |
 | Tác giả | khanhtt (agent soạn) |
 | Reviewer | PO (đúng nghiệp vụ) · Tech lead (đúng code) |
 | Trạng thái | Draft |
-| Last update | 2026-10-05 · Dev |
+| Last update | 2026-10-05 · Dev (đối chiếu code sau G3: chặn `seed-demo` ở CLI, che token cả log api, số contract test) |
 
 ## TL;DR
 
@@ -91,7 +91,7 @@ Video đóng gói là bằng chứng khi khách khiếu nại hoặc khi đối 
 | Caddy `tls internal`, chỉ mở 80 / 443 / ICE 8189, header bảo mật, che query nhạy cảm trong access log | CSP, HSTS (DEC-137) — sau MVP, cần thử với FE |
 | `/live` chỉ ADMIN / SUPERVISOR qua `forward_auth` | Đóng FE vào image Caddy (MVP mount `dist`) |
 | Sao lưu `pg_dump` hằng ngày + file nhập; README vận hành `docs/ops.md` | Metric Prometheus đầy đủ, Loki, Sentry (architecture §13) |
-| Contract test so 52 API với 02 §6, snapshot `openapi.json`; giờ `Z` thống nhất (RB-11) | Script nạp 1 triệu kiện cho NFR-04 (TC-N.05) |
+| Contract test so 48 mục / 42 mã API-xx với 02 §6, snapshot `openapi.json`; giờ `Z` thống nhất (RB-11) | Script nạp 1 triệu kiện cho NFR-04 (TC-N.05) |
 | Test tải locust profile `nfr05` / `stress` | Đo trên server kho với camera thật (G4 / G5) |
 
 ## 2. Ai dùng, ở đâu, khi nào
@@ -112,7 +112,7 @@ Video đóng gói là bằng chứng khi khách khiếu nại hoặc khi đối 
 | 2 | Mất Internet giữa ca | Quét, phiên, ghi hình vẫn chạy trên LAN; tra Shopee cắt ở 2 giây → kiện "chưa xác minh"; J-05 xác minh lại khi có mạng | NFR-09: kho không được đứng vì WAN |
 | 3 | Dev đổi tên một trường response, quên báo FE | Contract test đỏ (thiếu trường so với 02 §6) hoặc snapshot `openapi.json` lệch | FE sinh client từ `openapi.json`; lệch im lặng = màn hình sai ở kho |
 | 4 | CSKH tự gõ `/live/cam-…/whep` | Caddy hỏi `/api/v1/live` → 403; không token → 401 | Ma trận quyền: live view chỉ ADMIN / SUPERVISOR (DEC-136) |
-| 5 | Dev mở log Caddy để tìm lỗi WS | Thấy `/ws/station?token=REDACTED`; log app che `password`, `token`, `secret`, `user:pass@` trong URL | Ai đọc log cũng không chiếm được phiên |
+| 5 | Dev mở log Caddy để tìm lỗi WS | Thấy `/ws/station?token=REDACTED` (Caddy). Log app: uvicorn không ghi access log; mọi logger stdlib (uvicorn, httpx, Celery) qua `RedactQueryFilter` → `/ws/station?[token đã che]`; httpx / httpcore chỉ ghi từ WARNING; structlog che `password`, `token`, `secret`, `user:pass@` | Ai đọc log cũng không chiếm được phiên |
 | 6 | Nâng cấp bản có migration | `migrate` chạy `alembic upgrade head`, Exited (0) rồi `api` mới lên | API mới không chạy trên schema cũ |
 
 ## 4. Luồng ví dụ từ đầu đến cuối
@@ -161,7 +161,7 @@ sequenceDiagram
 | HTTPS bắt buộc | `tls internal`; cookie refresh `Secure` | Không HTTPS thì không đăng nhập được, mật khẩu đi trần | DEC-135 (1) |
 | Chỉ mở 3 cổng | 80 (→ 443), 443, ICE 8189 UDP + TCP | DB, Redis, API MediaMTX không lộ ra LAN | DEC-135 (3), DEC-53 |
 | Live view theo quyền | ADMIN / SUPERVISOR; chỉ path WHEP; còn lại `/live/*` 404 | Camera quay nhân viên và hàng — dữ liệu nhạy cảm | DEC-136 |
-| Log không lộ bí mật | Caddy che `sig`, `token`; app che khóa nhạy cảm và `user:pass@` | Log được nhiều người đọc | DEC-137, review M1 #16 |
+| Log không lộ bí mật | Caddy che `sig`, `token`; api tắt access log uvicorn, che query `token`, `sig`, `exp`, `uid`, `code`, `state`, `access_token`, `sign` trong log stdlib của api và Celery; app che khóa nhạy cảm và `user:pass@` | Log được nhiều người đọc; trước sửa G3-F3, access log uvicorn của api vẫn in nguyên `sig` / `token` | DEC-137, review M1 #16, G3-F3 / G3-N1 (`1bdd617`, `608d5bc`) |
 | Secret thật trên production | Thiếu → compose dừng; dạng dev → api không lên | Khóa mẫu = ai cũng giả mạo được | DEC-53, 02a §9 |
 | Hợp đồng API | Mọi API-xx trong 02 §6 có trong OpenAPI, không route thừa, giờ có `Z` | FE / BE làm song song dựa vào một hợp đồng | DEC-131, DEC-132 |
 
@@ -189,9 +189,9 @@ sequenceDiagram
 | MediaMTX prod: không tự xóa, ghi fMP4 60 giây, quyền chỉ mạng nội bộ | `docker/mediamtx.prod.yml` | Staging local bước 12 |
 | Retention 30 / 90 ngày (J-02) | `src/aicam/workers/tasks.py` (`enforce_retention`), `src/aicam/modules/media/service.py` | `integration/test_media_retention.py`: `test_retention_keeps_held_clip_deletes_others`, `test_retention_uses_current_setting`, `test_retention_raw_video` |
 | Sao lưu DB + file nhập | `docker/backup/pg-backup.sh`, service `backup` trong `docker/compose.yml` | Staging local bước 13 (`once`); chưa có test khôi phục |
-| Từ chối secret dev trên production, chặn `seed-demo` | `src/aicam/core/settings.py` | `unit/test_core_primitives.py`: `test_production_rejects_dev_secrets`, `test_production_accepts_real_secrets`, `test_staging_requires_real_secrets`; `unit/test_entrypoints_load_models.py::test_seed_demo_refuses_production` |
-| Log không lộ bí mật | `src/aicam/core/logging.py` (`redact`) | `unit/test_core_primitives.py::test_log_redacts_secrets_and_url_credentials` |
-| Hợp đồng API (52 mục API-01..92) | `tests/contract/spec.py`, snapshot `openapi.json`, `scripts/export_openapi.py` | `contract/test_openapi_contract.py`: `test_path_method_and_status`, `test_response_fields`, `test_response_enums`, `test_request_fields`, `test_no_undocumented_api`, `test_datetime_fields_are_date_time`, `test_openapi_snapshot_up_to_date` |
+| Từ chối secret dev trên production, chặn `seed-demo` | `src/aicam/core/settings.py` (secret); `src/aicam/entrypoints/cli.py` (`seed-demo` thoát lỗi khi production) | `unit/test_core_primitives.py`: `test_production_rejects_dev_secrets`, `test_production_accepts_real_secrets`, `test_staging_requires_real_secrets`; `unit/test_entrypoints_load_models.py::test_seed_demo_refuses_production` |
+| Log không lộ bí mật | `src/aicam/core/logging.py` (`redact`, `redact_query`, `RedactQueryFilter`, `install_stdlib_redaction`); `docker/Dockerfile` (`--no-access-log`) | `unit/test_core_primitives.py::test_log_redacts_secrets_and_url_credentials`; `unit/test_log_redaction.py`: `test_redact_query_masks_known_params_only`, `test_uvicorn_access_formatter_output_redacted`, `test_shopee_client_http_logs_hide_token_and_sign`, `test_celery_logger_signal_installs_redaction`, `test_dockerfile_disables_uvicorn_access_log` |
+| Hợp đồng API (48 mục / 42 mã API-xx trong API-01..92) | `tests/contract/spec.py`, snapshot `openapi.json`, `scripts/export_openapi.py` | `contract/test_openapi_contract.py`: `test_path_method_and_status`, `test_response_fields`, `test_response_enums`, `test_request_fields`, `test_no_undocumented_api`, `test_datetime_fields_are_date_time`, `test_openapi_snapshot_up_to_date` |
 | Giờ UTC có `Z`, khung lỗi thống nhất (RB-11) | `src/aicam/core/clock.py` (`iso_z`) | `contract/test_runtime_contract.py`: `test_main_flow_responses_follow_contract`, `test_error_envelope`; `contract/test_ws_contract.py`: `test_ws_message_envelope_uses_utc_z`, `test_iso_z_converts_to_utc` |
 | Nhập đơn song song (DEC-133) | `src/aicam/modules/imports/service.py` | `integration/test_import_concurrency.py`: `test_two_previews_committed_at_once_one_conflicts` (TC-05.22), `test_same_preview_committed_twice_at_once_is_idempotent` (TC-05.23) |
 | Quét không chờ Shopee khi mất mạng (NFR-09 phần code) | `src/aicam/modules/sessions/service.py` (`_lookup_platform`) | `integration/test_shops_api.py`: `test_scan_lookup_shopee_slow_cut_at_2s`, `test_scan_without_connected_shop_does_not_call_shopee` |
