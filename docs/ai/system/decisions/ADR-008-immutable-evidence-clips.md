@@ -6,7 +6,7 @@
 | Tác giả | khanhtt (Architect, agent soạn) |
 | Reviewer | khanhtt |
 | Người chốt | khanhtt (tự quyết theo ủy quyền, DEC-15 trong [00-status item 01](../../items/01-packing-mvp/00-status.md)) |
-| Ngày | 2026-10-04 (cấu trúc lại 2026-10-05) |
+| Ngày | 2026-10-04 (cấu trúc lại 2026-10-05; thời hạn bản xuất 24 giờ 2026-10-05 — DEC-58 item 01) |
 | Work item / yêu cầu | Thiết kế tổng thể ([architecture.md §1 P3–P4, §6.3, §11](../architecture.md)); áp dụng ở item 01 ([02-tech-spec item 01](../../items/01-packing-mvp/02-tech-spec.md) §8, API-43..45) · CO-02, NFR-08, NFR-13..16, AC-02, AC-08, AC-11, RK-06 |
 
 > **TL;DR** — Clip gốc cắt bằng stream copy, chỉ đọc, lưu SHA-256; bản xuất encode H.264 có overlay `drawtext` kèm file JSON hash; camera bật OSD thời gian.
@@ -44,7 +44,7 @@
 
 ## Quyết định
 
-Chọn **clip gốc bất biến**: clip gốc chỉ đọc trên đĩa, lưu SHA-256 trong bảng `clip`. Bản xuất (`media.export_clip`) encode lại H.264 có `drawtext` (mã vận đơn, mã đơn sàn, thời gian, station, nhân viên), tùy chọn ghép Cam 1 + Cam 2 (`hstack`, `SIDE_BY_SIDE`), kèm file `.json` (hash clip gốc, hash bản xuất, thời gian, người xuất). Camera bật OSD thời gian.
+Chọn **clip gốc bất biến**: clip gốc chỉ đọc trên đĩa, lưu SHA-256 trong bảng `clip`. Bản xuất (`media.export_clip`) encode lại H.264 có `drawtext` (mã vận đơn, mã đơn sàn, thời gian, station), tùy chọn ghép Cam 1 + Cam 2 (`hstack`, `SIDE_BY_SIDE`), kèm file `.json` (hash clip gốc, hash bản xuất, thời gian, người xuất). Camera bật OSD thời gian.
 
 | Phương án bị loại | Lý do |
 |---|---|
@@ -56,7 +56,7 @@ Chọn **clip gốc bất biến**: clip gốc chỉ đọc trên đĩa, lưu SH
 |---|---|
 | Tốt | Hai lớp bằng chứng thời gian độc lập (OSD camera + overlay phần mềm); hash kiểm được bất kỳ lúc nào |
 | Xấu / đánh đổi | Bản xem nội bộ không có chữ mã đơn; mỗi lần xuất tốn CPU encode |
-| Phải làm thêm | Audit log mọi lần xem / xuất (`VIEW_CLIP`, `EXPORT_CLIP` theo `uid`); URL ký HMAC hạn 10 phút (02-tech-spec §8); `audit_log` chặn sửa bằng trigger DB (DEC-40 item 01); bản xuất giữ 30 ngày (architecture.md §8.2) |
+| Phải làm thêm | Audit log mọi lần xem / xuất (`VIEW_CLIP`, `EXPORT_CLIP` theo `uid`); URL ký HMAC hạn 10 phút (02-tech-spec §8); `audit_log` chặn sửa bằng trigger DB (DEC-40 item 01); bản xuất giữ **24 giờ** (architecture.md §8.2) — đổi từ 30 ngày ngày 2026-10-05 (DEC-58 item 01): bản xuất là bản dẫn xuất, tạo lại được khi clip gốc còn, người dùng tải về ngay; tránh đầy ổ. Quyết định chính không đổi |
 
 ## Câu hỏi mở & điều kiện xem lại
 

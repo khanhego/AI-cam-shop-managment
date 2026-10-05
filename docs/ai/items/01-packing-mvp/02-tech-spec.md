@@ -4,11 +4,11 @@
 |---|---|
 | Tác giả (Architect) | khanhtt |
 | Reviewer | BE lead · FE lead (khanhtt, solo) |
-| Trạng thái | Approved (G2 2026-10-04, có điều kiện DEC-33) |
+| Trạng thái | Approved (G2 2026-10-04, có điều kiện DEC-33) · **v0.3** — đổi contract sau G2, chỉ thêm, tương thích ngược (DEC-57, DEC-58) |
 | SRS | [01-srs.md](01-srs.md) v0.3 · FR phủ: FR-01.01–01.06, FR-02.01–02.07, 02.09, FR-03.01–03.12, FR-05.01–05.04, 05.06–05.10, FR-07.01–07.04, FR-09.01, FR-10.01–10.03 |
 | Spec con | BE: [02a-be-spec.md](02a-be-spec.md) · FE: [02b-fe-spec-station.md](02b-fe-spec-station.md), [02b-fe-spec-admin.md](02b-fe-spec-admin.md) |
 | Kiến trúc nền | [architecture.md](../../system/architecture.md) · ADR-001..008 |
-| Last update | 2026-10-04 · Architect |
+| Last update | 2026-10-05 · Architect (chốt contract M2: DEC-57, DEC-58) |
 
 > **TL;DR** — Dựng mới toàn bộ: `ai-cam-be` (FastAPI + Celery + vision + MediaMTX, chạy tại kho) và `ai-cam-fe` (React, 2 client: station kiosk, dashboard).
 > Quét mã đi qua một API duy nhất `POST /station/scan`. API này luôn trả `200` kèm `outcome` để station tự chọn màn và âm thanh (DEC-7). Cập nhật realtime (Cam 2, duyệt, camera) đi qua WebSocket.
@@ -388,11 +388,14 @@ Luôn trả **200** cho mọi kết quả nghiệp vụ (DEC-7). 4xx chỉ cho l
              "buyer_note": "…", "source": "API", "items": [ { "product_name": "…", "variation": "…", "quantity": 2, "image_url": "…" } ] },
   "sessions": [ { "id": "…", "status": "COMPLETED", "station_name": "Station 01",
                   "started_at": "…", "ended_at": "…", "duration_s": 134, "flags": [],
+                  "cancel_reason": null, "note": null,                                   // v0.3 (DEC-57)
                   "clips": [ { "id": "…", "camera_role": "CAM1", "status": "READY", "sha256": "9f2c…",
-                               "duration_s": 144, "held": false, "retention_until": "2027-01-02T00:00:00Z" } ] } ],
-  "timeline": [ { "at": "…", "source": "WAREHOUSE", "to_status": "PACKED", "actor": "Station 01" } ] }
+                               "duration_s": 144, "held": false, "retention_until": "2027-01-02T00:00:00Z",
+                               "deleted_at": null, "flags": [] } ] } ],                 // v0.3: deleted_at, flags (DEC-57)
+  "timeline": [ { "at": "…", "source": "WAREHOUSE", "from_status": "PACKING", "to_status": "PACKED", "actor": "Station 01" } ] }
+// retention_until: READY không giữ → ngày sẽ xóa; held = true → null; DELETED → ngày đã xóa (= deleted_at, v0.3 — DEC-57)
 ```
-Lỗi: chung (`404 NOT_FOUND`). Ngày lọc theo giờ Việt Nam, API nhận `YYYY-MM-DD`.
+Lỗi: chung (`404 NOT_FOUND`). Ngày lọc theo giờ Việt Nam, API nhận `YYYY-MM-DD`, khoảng ngày ≤ 92 ngày.
 </details>
 
 <details><summary><b>API-32</b> — GET /reports/daily?date=2026-10-04</summary>
@@ -400,12 +403,17 @@ Lỗi: chung (`404 NOT_FOUND`). Ngày lọc theo giờ Việt Nam, API nhận `Y
 ```json
 { "date": "2026-10-04",
   "counts": { "packed": 312, "had_mismatch": 3, "abandoned": 1, "cancelled": 4, "packed_not_handed_over": 27, "cancelled_after_pack": 2 },
-// packed: phiên COMPLETED trong ngày · had_mismatch: phiên bắt đầu trong ngày có flag HAD_MISMATCH · abandoned / cancelled: phiên kết thúc trong ngày với status đó
+// packed: phiên COMPLETED kết thúc trong ngày (phiên SUPERSEDED không đếm) · had_mismatch: phiên bắt đầu trong ngày có flag HAD_MISMATCH · abandoned / cancelled: phiên kết thúc trong ngày với status đó
 // packed_not_handed_over: kiện đang PACKED (mọi ngày) · cancelled_after_pack: kiện đang CANCELLED_AFTER_PACK
-  "stations": [ { "id": "…", "name": "Station 01", "state": "READY", "cameras": [ { "role": "CAM1", "status": "ONLINE" } ], "last_scan_at": "…" } ],
+  "stations": [ { "id": "…", "name": "Station 01", "state": "PACKING", "tracking_number": "SPX…789",   // tracking_number: tùy chọn, v0.3
+                  "cameras": [ { "role": "CAM1", "status": "ONLINE" } ], "last_scan_at": "…" } ],
+// stations[]: chỉ station đang bật; state = WAITING_APPROVAL khi có yêu cầu PENDING; tracking_number = kiện đang đóng gói (null khi không có phiên mở)
   "attention": [ { "kind": "CANCELLED_AFTER_PACK", "count": 2 }, { "kind": "CAMERA_OFFLINE", "camera_id": "…", "station_name": "Station 02", "role": "CAM2" },
-                 { "kind": "CLOCK_DRIFT", "camera_id": "…", "offset_ms": 1400 }, { "kind": "APPROVAL_PENDING", "count": 1 },
+                 { "kind": "CLOCK_DRIFT", "camera_id": "…", "offset_ms": 1400, "station_name": "Station 01", "role": "CAM1" },   // station_name, role: tùy chọn, v0.3
+                 { "kind": "APPROVAL_PENDING", "count": 1 }, { "kind": "CLIP_FAILED", "count": 1 },                            // CLIP_FAILED: v0.3
                  { "kind": "SYNC_ERROR", "shop_id": "…", "at": "…" }, { "kind": "DISK_USAGE", "percent": 83 } ] }
+// CLIP_FAILED: số clip FAILED tạo trong 7 ngày gần nhất · DISK_USAGE: khi ổ video ≥ 80 % · client bỏ qua kind không biết
+// Cache 5 giây theo ngày, xóa cache trước khi phát WS report.updated
 ```
 </details>
 
@@ -422,8 +430,8 @@ Lỗi: chung (`404 NOT_FOUND`). Ngày lọc theo giờ Việt Nam, API nhận `Y
 ```
 | HTTP | Mã lỗi | Khi nào | FE xử lý |
 |---|---|---|---|
-| 409 | CLIP_NOT_READY | `status=PENDING` | EmptyState "Clip đang được cắt…" |
-| 410 | CLIP_DELETED | Đã xóa theo retention | "Clip đã bị xóa ngày … theo chính sách lưu trữ …" |
+| 409 | CLIP_NOT_READY | Clip chưa phát được; `details.status` = `PENDING` (đang cắt) hoặc `FAILED` (cắt lỗi — v0.3) | `PENDING`: EmptyState "Clip đang được cắt…" · `FAILED`: "Không cắt được clip" + "Thử lại" (API-46) cho ADMIN, SUPERVISOR |
+| 410 | CLIP_DELETED | Đã xóa theo retention; `details.deleted_at`, `details.retention_clip_days` | "Clip đã bị xóa ngày … theo chính sách lưu trữ …" |
 | 403 | SIGNATURE_INVALID | API-41 chữ ký sai / hết hạn | lấy lại API-40 một lần |
 </details>
 
@@ -434,14 +442,16 @@ Lỗi: chung (`404 NOT_FOUND`). Ngày lọc theo giờ Việt Nam, API nhận `Y
 { "layout": "SIDE_BY_SIDE" }   // CAM1 | CAM2 | SIDE_BY_SIDE
 // 202
 { "id": "0192…", "status": "QUEUED", "progress": 0 }
-// API-44 (FE poll mỗi 2 giây hoặc nghe WS export.updated)
-{ "id": "…", "status": "READY", "progress": 100, "sha256": "…", "source_clip_sha256": { "CAM1": "…", "CAM2": "…" },
+// API-44 (FE poll mỗi 2 giây hoặc nghe WS export.updated). Chỉ người tạo và ADMIN; người khác nhận 404 (v0.3)
+{ "id": "…", "session_id": "…", "layout": "SIDE_BY_SIDE", "status": "READY", "progress": 100, "sha256": "…", "source_clip_sha256": { "CAM1": "…", "CAM2": "…" },
   "files": { "video": "/api/v1/media/exports/…/video.mp4?uid=…&exp=…&sig=…", "info": "/api/v1/media/exports/…/info.json?uid=…&exp=…&sig=…" },
-  "expires_at": "…" }
+  "expires_at": "…" }   // hạn link ký: 10 phút
+// File xuất giữ 24 giờ kể từ khi tạo (EXPORT_TTL_HOURS, DEC-58); sau đó file và bản ghi bị xóa → API-44 404, tạo bản xuất mới khi cần
 ```
 | HTTP | Mã lỗi | Khi nào | FE xử lý |
 |---|---|---|---|
-| 409 | CLIP_NOT_READY | Một clip nguồn chưa READY | "Clip đang được cắt…" |
+| 404 | NOT_FOUND | API-44: bản xuất không tồn tại, đã quá 24 giờ, hoặc người gọi không phải người tạo / ADMIN (không lộ sự tồn tại) | đóng theo dõi, cho xuất lại |
+| 409 | CLIP_NOT_READY | Một clip nguồn chưa READY (`details.status` như API-40) | "Clip đang được cắt…" |
 | 410 | CLIP_DELETED | Clip nguồn đã xóa | thông báo đã xóa |
 | — | `status=FAILED` | Encode lỗi | "Không tạo được file xuất. Bấm Thử lại…" |
 </details>
@@ -518,7 +528,7 @@ Cột mẫu: `platform_order_sn`, `tracking_number`, `sku`, `product_name`, `var
 ```
 | HTTP | Mã lỗi | Khi nào | FE xử lý |
 |---|---|---|---|
-| 422 | VALIDATION_ERROR | ngày 1–365; `retention_clip_days ≥ retention_raw_days`; `session_abandon_minutes > session_warn_minutes` | lỗi theo field |
+| 422 | VALIDATION_ERROR | PUT gửi đủ 4 trường; ngày 1–365; phút 1–1440; `retention_clip_days ≥ retention_raw_days`; `session_abandon_minutes > session_warn_minutes` | lỗi theo field |
 </details>
 
 <details><summary><b>API-90..92</b> — người dùng và nhật ký</summary>
@@ -577,7 +587,8 @@ Kết nối: `wss://<host>/ws/station?token=<access_token>` (tương tự `/ws/d
 | WS-02 | `approval.created` / `approval.resolved` | như item API-20 | Chỉ gửi cho ADMIN, SUPERVISOR |
 | WS-02 | `report.updated` | `{ "date" }` → client gọi lại API-32 (tối đa 1 lần / 5 giây) | Phiên đóng / đổi trạng thái |
 | WS-02 | `camera.status` | `{ "camera_id", "status" }` | |
-| WS-02 | `export.updated` | như API-44 (chỉ gửi cho người tạo) | |
+| WS-02 | `export.updated` | như API-44 (chỉ gửi cho người tạo) | Tiến độ tăng ≥ 5 %, READY, FAILED |
+| WS-02 | `session.clip_ready` | `{ "session_id", "clip_ids": [] }` (như WS-01) | Clip của một phiên vừa READY → dashboard làm mới D3 / D4 (v0.3, DEC-57) |
 </details>
 
 ## 7. Luồng chính (end-to-end)
@@ -719,6 +730,8 @@ sequenceDiagram
 | DEC-29 | Response khi `client_scan_id` trùng | Trả nguyên outcome/alert cũ, state mới | Retry an toàn, station vẫn phản hồi đúng | khanhtt (tự quyết) | 2026-10-04 |
 | DEC-33 | Duyệt G2 sau 2 vòng review (subagent `ai-lead-review`) | Duyệt có điều kiện: AC-17 (camera không ONVIF) là rủi ro spike T-4/T-5; nếu camera không hỗ trợ ONVIF → đổi cách đo lệch giờ (OSD + OCR hoặc chọn camera có ONVIF) bằng change request | Mọi blocker/major đã đóng; còn rủi ro phần cứng chưa kiểm được | khanhtt (tự quyết, ủy quyền DEC-15) | 2026-10-04 |
 | DEC-10 | Nguồn sự thật contract | `02` §6 cho tới khi có `/openapi.json`; sau đó OpenAPI | Repo chưa có code | khanhtt (architect) | 2026-10-04 |
+| DEC-57 | Đổi contract sau G2 (v0.3) — **chỉ thêm, tương thích ngược**. Gom lệch BE/FE ghi khi làm M2: FE DEC-71, 72, 76 ([02b-admin](02b-fe-spec-admin.md#decisions)); BE DEC-102, 104, 105 ([02a](02a-be-spec.md#decisions)) | Chốt vào §6: (1) WS-02 thêm `session.clip_ready` `{session_id, clip_ids}` (BE đã phát cả WS-01 và WS-02). (2) API-32: trường tùy chọn `stations[].tracking_number`, `CLOCK_DRIFT.station_name`, `CLOCK_DRIFT.role`, `CAMERA_OFFLINE.role`; attention kind mới `CLIP_FAILED {count}` (clip FAILED trong 7 ngày); ghi rõ `packed` không đếm phiên SUPERSEDED, `stations[]` chỉ station đang bật, `WAITING_APPROVAL` khi có yêu cầu chờ, `DISK_USAGE` ≥ 80 %, cache 5 giây. (3) API-40/41/43: clip FAILED → `409 CLIP_NOT_READY` kèm `details.status = FAILED` (không thêm mã mới); `410 CLIP_DELETED` kèm `details.deleted_at`, `retention_clip_days`. (4) API-31: clip DELETED có `retention_until` = ngày đã xóa (FE DEC-76); `clips[]` thêm `deleted_at`, `flags`; phiên thêm `cancel_reason`, `note`; timeline thêm `from_status`. (5) API-44: người không phải người tạo và không phải ADMIN → 404; response thêm `session_id`, `layout`. (6) API-80 PUT gửi đủ 4 trường, phút 1–1440 (ghi rõ ràng buộc đã có trong code) | Code M2 đã chạy theo các điểm này và qua E2E BE thật 20/20, QA API live 78/78. Chỉ thêm trường / kind / sự kiện; client cũ bỏ qua trường lạ, nên không cần `/v2`. Phương án loại: thêm mã lỗi riêng `CLIP_FAILED` cho API-40 (phá nhánh xử lý `CLIP_NOT_READY` FE đã có); 403 ở API-44 (lộ sự tồn tại bản xuất của người khác) | khanhtt (architect, tự quyết theo ủy quyền DEC-15) | 2026-10-05 |
+| DEC-58 | Thời hạn giữ file xuất: 02a / code giữ 24 giờ, architecture §8.2 và ADR-008 ghi 30 ngày (BE DEC-104 nêu lệch) | **24 giờ** (`EXPORT_TTL_HOURS`), sau đó J-10 xóa file và bản ghi `export`; sửa architecture §8.2 và ADR-008 (phần Hệ quả) cho khớp | File xuất tạo lại được bất cứ lúc nào khi clip gốc còn (clip giữ 90 ngày, "Giữ clip" khi có khiếu nại — BR-09). Người dùng tải file về máy ngay để gửi sàn. Giữ 30 ngày tốn ổ vô ích; dev vừa có sự cố đầy ổ 64 GB. Phương án loại: 30 ngày (tốn ổ, không thêm bằng chứng — clip gốc mới là bằng chứng); 7 ngày (vẫn tốn ổ, không có nhu cầu tải lại sau 1 ngày) | khanhtt (architect, tự quyết theo ủy quyền DEC-15) | 2026-10-05 |
 
 ## Chốt G2 (áp cho bộ 02 + 02a + 02b)
 - [x] Mọi FR/BR/NFR trong phạm vi có chỗ trong spec (bảng FR coverage)

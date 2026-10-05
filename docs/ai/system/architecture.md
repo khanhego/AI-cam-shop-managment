@@ -9,7 +9,7 @@
 | Trạng thái | Approved — làm nền cho item 01 (G2 2026-10-04) |
 | Đầu vào | [SRS.md](SRS.md) · ADR: [decisions/](decisions/) · áp dụng: [02-tech-spec item 01](../items/01-packing-mvp/02-tech-spec.md) |
 | Repo | `ai-cam-be` (backend + worker), `ai-cam-fe` (station app + dashboard), repo gốc chứa tài liệu |
-| Last update | 2026-10-05 |
+| Last update | 2026-10-05 (§8.2 theo code M2, DEC-58) |
 
 > **TL;DR** — Modular monolith Python 3.12 / FastAPI (tiến trình `api`, `worker`, `beat`, `vision`) + MediaMTX + PostgreSQL 16 + Redis 7 + Caddy, chạy tại kho bằng Docker Compose; FE một app React cho `/station` (Chromium kiosk) và `/admin`.
 > Quyết định chính (ADR-001..008): on-premise, cloud chỉ sao lưu; ghi liên tục fMP4 segment 60 giây, cắt clip `-c copy`; logic phiên trong `api` để quét ≤ 1 giây; Cam 2 đọc mã bằng zxing-cpp; sàn qua adapter + polling; clip gốc bất biến + SHA-256.
@@ -307,7 +307,7 @@ ai-cam-fe/
 | Nhận cập nhật | WebSocket `/ws/station/{id}`: trạng thái phiên, mã Cam 2 đọc được, cảnh báo camera |
 | Trạng thái màn hình | Một state machine ở FE (Zustand) phản chiếu trạng thái server: `READY`, `PACKING`, `RETURN_INSPECTING`, `MISMATCH`, `WARNING`, `OFFLINE` |
 | Mất kết nối tới server | Hiện nền đỏ "Mất kết nối server", chặn quét. (Mất Internet thì không ảnh hưởng vì server ở LAN) |
-| Kiosk | Chromium `--kiosk`, tự đăng nhập bằng device token của station, nhân viên đăng nhập bằng thẻ / PIN |
+| Kiosk | Chromium `--kiosk`; đăng nhập một lần bằng tài khoản chung của station (refresh 30 ngày trượt), không có đăng nhập nhân viên (item 01 DEC-2, DEC-55) |
 
 ### 5.3 Dashboard
 
@@ -342,7 +342,7 @@ Nếu phiên đóng khi segment hiện tại chưa ghi xong, job tự hẹn lạ
 
 ### 6.3 Xuất bằng chứng
 
-`media.export_clip` tạo bản dẫn xuất, **encode lại H.264** với overlay `drawtext`: mã vận đơn, mã đơn sàn, station, nhân viên, và thời gian chạy theo mốc thực. Tùy chọn ghép Cam 1 + Cam 2 cạnh nhau (`hstack`). Kết quả kèm file `.json` thông tin (hash clip gốc, hash bản xuất, thời gian, người xuất). Clip gốc không bao giờ bị sửa.
+`media.export_clip` tạo bản dẫn xuất, **encode lại H.264** với overlay `drawtext`: mã vận đơn, mã đơn sàn, station và thời gian chạy theo mốc thực (không có tên nhân viên — station dùng tài khoản chung, item 01 DEC-2). Tùy chọn ghép Cam 1 + Cam 2 cạnh nhau (`hstack`). Kết quả kèm file `.json` thông tin (hash clip gốc, hash bản xuất, thời gian, người xuất). Clip gốc không bao giờ bị sửa.
 
 ### 6.4 Vision Cam 2
 
@@ -454,13 +454,14 @@ Nếu sàn hỗ trợ push/webhook thì endpoint `POST /api/v1/webhooks/{platfor
 
 ```
 /data/video/
-├── raw/{camera_id}/YYYY/MM/DD/HH-MM-SS.mp4     # MediaMTX ghi, giữ 30 ngày
-├── clips/YYYY/MM/DD/{session_id}_{cam}.mp4     # clip gốc, chỉ đọc, giữ 90–180 ngày
-├── exports/YYYY/MM/DD/{export_id}.mp4|.json    # bản xuất, giữ 30 ngày
-└── snapshots/YYYY/MM/DD/{session_id}_{n}.jpg   # ảnh chụp phiên hoàn
+├── raw/cam-{camera_id}/YYYY/MM/DD/HH-MM-SS-ffffff.mp4   # MediaMTX ghi (giờ UTC), giữ 30 ngày (dev: 1 giờ)
+├── clips/YYYY/MM/DD/{session_id}-{CAM1|CAM2}.mp4       # clip gốc, chỉ đọc, giữ 90 ngày (cấu hình được), "giữ" thì không xóa
+├── exports/{export_id}/video.mp4|info.json             # bản xuất, giữ 24 giờ (DEC-58 item 01)
+└── snapshots/YYYY/MM/DD/{session_id}_{n}.jpg           # ảnh chụp phiên hoàn (Phase 2)
 ```
 
 - DB chỉ lưu đường dẫn tương đối, gốc `/data/video` cấu hình qua env.
+- Bản xuất chỉ giữ 24 giờ: tạo lại được bất cứ lúc nào khi clip gốc còn; người dùng tải về máy ngay (DEC-58 trong [02-tech-spec item 01](../items/01-packing-mvp/02-tech-spec.md), 2026-10-05 — trước đó ghi 30 ngày).
 - Backup DB: `pg_dump` hằng ngày lên NAS + S3, giữ 30 bản.
 
 ### 8.3 Ước tính dung lượng
@@ -545,7 +546,7 @@ class PlatformAdapter(Protocol):
 | Chủ đề | Thiết kế |
 | --- | --- |
 | Xác thực web | JWT access (15 phút) + refresh (7 ngày, lưu cookie httpOnly, xoay vòng) |
-| Xác thực station | Device token cấp khi Admin đăng ký station, lưu trong máy kiosk; nhân viên đăng nhập trên station bằng mã nhân viên + PIN, hoặc quét thẻ |
+| Xác thực station | Một tài khoản chung cho mỗi station do Admin cấp (item 01 DEC-2); JWT access 15 phút + refresh cookie `rt_station` 30 ngày trượt; Admin thu hồi được (hiệu lực ≤ 15 phút, DEC-55). Người đóng gói nhận diện qua video Cam 1 |
 | Phân quyền | RBAC theo ma trận SRS 5.11, kiểm tra bằng dependency FastAPI ở từng router |
 | Mật khẩu / PIN | Argon2id |
 | Bí mật | Token sàn mã hóa bằng Fernet, khóa trong env / Docker secret. Không commit `.env` |

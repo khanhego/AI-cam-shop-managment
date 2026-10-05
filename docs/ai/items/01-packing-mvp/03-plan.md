@@ -6,7 +6,7 @@
 | Reviewer | PO · Tech lead (khanhtt) |
 | Trạng thái | Approved (Plan 2026-10-04, tự quyết DEC-15) |
 | Spec | [02-tech-spec.md](02-tech-spec.md) · [02a §12](02a-be-spec.md#12-task) · [02b-station §14](02b-fe-spec-station.md#14-task) · [02b-admin §14](02b-fe-spec-admin.md#14-task) |
-| Last update | 2026-10-05 · PM (chuẩn hoá template 2026-10-05) |
+| Last update | 2026-10-05 · PM (M2 xong) |
 
 > **TL;DR** — 46 task (22 BE, 24 FE), ≈ 70 ngày công cho một dev, 6 milestone M0–M5; mỗi milestone demo được end-to-end.
 > Đường găng BE: T-1 → T-6 → T-7 → T-10 → T-14 → T-15 (≈ 11 ngày); nhánh Cam 2 T-10 → T-11 → T-12 chờ thêm camera thật (T-4).
@@ -33,7 +33,7 @@ Owner tất cả: khanhtt (profile §7). Ticket: chưa tạo (§7). Trạng thá
 | T-2 | MediaMTX + `fake-cams` (RTSP từ file mẫu có barcode), record fMP4 60 giây | be | FR-02.01 | 02a §12 | T-1 | 1 | | ✅ |
 | T-3 | Spike S1 Shopee (đăng ký partner, endpoint, ký, trạng thái, rate limit) | be | FR-05.* | 02a §12 | — (bắt đầu ngày 1) | 2 + chờ duyệt | | ⬜ |
 | T-4 | Spike S2 vision với camera thật (vị trí, ROI, tỉ lệ đọc, CPU, ONVIF — DEC-33) | be | FR-03.06, AC-04, AC-17 | 02a §12 | T-2, có camera | 2 | | ⬜ |
-| T-5 | Spike S3 cắt clip + đo encode export (AC-08) | be | FR-02.02, AC-08 | 02a §12 | T-2 | 1 | | ⬜ |
+| T-5 | Spike S3 cắt clip + đo encode export (AC-08) | be | FR-02.02, AC-08 | 02a §12 | T-2 | 1 | be `4caa414` | ✅ (AC-08 với 1080p H.265 chưa đạt trên nguồn giả — RB-7, đo lại ở T-4) |
 | T-6 | core + migration `0001_initial` + CLI `create-admin` (`seed-demo` dời T-10, DEC-39) | be | — | 02a §12 | T-1 | 2 | | ✅ |
 | T-7 | users + auth: API-01..04, 90..92 | be | FR-10.*, FR-03.01 | 02a §12 | T-6 | 2 | | ✅ |
 | T-8 | stations + camera: API-60..65, path MediaMTX, J-08 (trong vision), J-09 | be | FR-01.01..06 | 02a §12 | T-6, T-2 | 2 | | ✅ |
@@ -43,13 +43,13 @@ Owner tất cả: khanhtt (profile §7). Ticket: chưa tạo (§7). Trạng thá
 | T-11 | realtime hub: WS-01, WS-02, `ws:approvals`, after_commit | be | FR-03.06, 09.01 | 02a §12 | T-10 | 1 | | ✅ |
 | T-12 | vision process + `on_tray_changed` + `camera.health` subscriber | be | FR-03.06, 03.07, 01.04, BR-06, 18 | 02a §12 | T-4, T-11 | 2 | | ⬜ |
 | T-13 | approvals: API-13, 14, 20, 21 | be | FR-03.10, 03.12 | 02a §12 | T-11, T-20 | 1,5 | | ⬜ |
-| T-14 | media: J-10 index segment, J-01 cắt clip, API-40, 41 | be | FR-02.01..05, 07.02 | 02a §12 (tách) | T-5, T-10 | 2 | | ⬜ |
-| T-21 | media: API-42 giữ clip, API-46 cắt lại, J-02 retention | be | FR-02.06, 02.09, BR-09, AC-15, AC-20 | tách từ T-14 | T-14 | 1 | | ⬜ |
-| T-15 | export: API-43..45, J-03 (overlay, side-by-side, queue `export`) | be | FR-07.04, 02.07 | 02a §12 | T-14 | 2 | | ⬜ |
+| T-14 | media: J-10 index segment, J-01 cắt clip, API-40, 41 | be | FR-02.01..05, 07.02 | 02a §12 (tách) | T-5, T-10 | 2 | be `74a3aea` | ✅ (làm thêm API-30/31 — 03 không có task nào giữ; DEC-102 02a) |
+| T-21 | media: API-42 giữ clip, API-46 cắt lại, J-02 retention | be | FR-02.06, 02.09, BR-09, AC-15, AC-20 | tách từ T-14 | T-14 | 1 | be `ebcc635` | ✅ |
+| T-15 | export: API-43..45, J-03 (overlay, side-by-side, queue `export`) | be | FR-07.04, 02.07 | 02a §12 | T-14 | 2 | be `dadf93c` | ✅ |
 | T-16 | Shopee adapter + API-70..73 + tra 2 giây trong scan | be | FR-05.01, 05.06, 05.08, BR-04 | 02a §12 (tách) | T-3, T-9, T-10 | 2 | | ⬜ |
 | T-22 | Shopee jobs J-04, J-05, J-06, J-12 | be | FR-05.02..04 | tách từ T-16 | T-16 | 1 | | ⬜ |
 | T-17 | imports: API-50..54, BR-17 | be | FR-05.09, 05.10 | 02a §12 | T-9 | 1,5 | | ⬜ |
-| T-18 | reports API-32, settings API-80, health API-81, J-11 | be | FR-09.01, 02.06 | 02a §12 | T-14 | 1 | | ⬜ |
+| T-18 | reports API-32, settings API-80, health API-81, J-11 | be | FR-09.01, 02.06 | 02a §12 | T-14 | 1 | be `e9ef363`, fix `1926eb6` | ✅ |
 | T-19 | Contract test, locust, compose.yml prod, Caddyfile, README vận hành. Checklist từ review M1 (DEC-53): đặt `FORWARDED_ALLOW_IPS` = IP Caddy; không phục vụ `*.map`; secret thật cho staging/prod | be | NFR-01, 05, 09 | 02a §12 | T-10..T-22 | 2 | | ⬜ |
 | T-30 | Khung repo FE: Vite, React, TS, pnpm, ESLint, Prettier, Vitest, Playwright, CI | fe | — | 02b-st §14 | — | 1 | | ✅ |
 | T-31 | Design tokens → `tokens.css`, Tailwind theo vai trò màu, font, `system.css` | fe | — | 02b-st §14 | T-30 | 1 | | ✅ |
@@ -63,10 +63,10 @@ Owner tất cả: khanhtt (profile §7). Ticket: chưa tạo (§7). Trạng thá
 | T-37 | S4, S5 (MISMATCH / ASSIST / REPACK), S6, CancelSessionDialog | fe | S4–S6, FR-03.08, 03.10, 03.12 | 02b-st §14 | T-36; API-12..14 | 2 | | ✅ (FE; API-13/14 thật ở T-13) |
 | T-38 | Test integration + E2E station; chạy với BE thật | fe | UC-01, UC-08 | 02b-st §14 | T-37, T-13 | 1,5 | | ⬜ |
 | T-50 | AppShell, drawer theo role, theme, D1, D12, guard | fe | D1, D12, FR-10.02 | 02b-ad §14 | T-34, T-39 | 1,5 | | ✅ |
-| T-51 | D2 Tổng quan + WS-02 invalidate | fe | D2, FR-09.01 | 02b-ad §14 | T-50; API-32 | 1,5 | | ⬜ |
-| T-52 | D3 Tra cứu | fe | D3, FR-07.01, 07.03 | 02b-ad §14 | T-50; API-30 | 1,5 | | ⬜ |
-| T-53 | D4 Chi tiết + ClipPlayer + Giữ clip + cắt lại | fe | D4, FR-07.02, 02.09 | 02b-ad §14 | T-52, T-40; API-31, 40, 42, 46 | 2 | | ⬜ |
-| T-54 | ExportDialog | fe | D4, FR-07.04, 02.07 | 02b-ad §14 | T-53; API-43..45 | 1 | | ⬜ |
+| T-51 | D2 Tổng quan + WS-02 invalidate | fe | D2, FR-09.01 | 02b-ad §14 | T-50; API-32 | 1,5 | fe `83b459e` | ✅ |
+| T-52 | D3 Tra cứu | fe | D3, FR-07.01, 07.03 | 02b-ad §14 | T-50; API-30 | 1,5 | fe `3323be6` | ✅ |
+| T-53 | D4 Chi tiết + ClipPlayer + Giữ clip + cắt lại | fe | D4, FR-07.02, 02.09 | 02b-ad §14 | T-52, T-40; API-31, 40, 42, 46 | 2 | fe `4befee3` | ✅ |
+| T-54 | ExportDialog | fe | D4, FR-07.04, 02.07 | 02b-ad §14 | T-53; API-43..45 | 1 | fe `555d891` (+ E2E BE thật `272c9dc`) | ✅ |
 | T-55 | D13 Yêu cầu duyệt + badge + âm báo | fe | D13, FR-03.12 | 02b-ad §14 | T-50; API-20, 21 | 1,5 | | ⬜ |
 | T-56 | D5 Nhập đơn | fe | D5, FR-05.09 | 02b-ad §14 | T-50; API-50..54 | 1,5 | | ⬜ |
 | T-57 | D6 Station, camera, kiểm tra kết nối | fe | D6, FR-01.01 | 02b-ad §14 (tách) | T-50; API-60..63 | 1,5 | | ✅ |
@@ -110,7 +110,7 @@ Ngày mục tiêu tính từ thứ Hai 2026-10-05, 1 dev, 5 ngày/tuần, chưa 
 |---|---|---|---|---|
 | M0 Nền móng | T-1, T-2, T-6, T-30, T-31, T-32, T-39, T-33 | 11,5 | 2026-10-20 | Hai repo chạy `compose.dev` + `pnpm dev`, CI xanh, camera giả phát RTSP, UI kit xem được |
 | M1 Quét đóng gói | T-7, T-8, T-9, T-10, T-20, T-11, T-34, T-35, T-36, T-50, T-57 | 17 | 2026-11-11 | Đăng nhập station, quét mở / đóng phiên với đơn seed, lệch mã do quét, Admin tạo station + camera (AC-01, 03, 13) |
-| M2 Video bằng chứng | T-5, T-14, T-21, T-15, T-18, T-40, T-51, T-52, T-53, T-54 | 14 | 2026-12-01 | Clip Cam 1 + Cam 2 sau khi đóng, tra cứu, xem, giữ, xuất MP4 có overlay, dashboard ngày (AC-02, 08, 11, 15, 16, 18, 20) |
+| M2 Video bằng chứng | T-5, T-14, T-21, T-15, T-18, T-40, T-51, T-52, T-53, T-54 | 14 | 2026-12-01 · **xong 2026-10-05** (code + E2E BE thật) | Clip Cam 1 + Cam 2 sau khi đóng, tra cứu, xem, giữ, xuất MP4 có overlay, dashboard ngày (AC-02, 08, 11, 15, 16, 18, 20) |
 | M3 Cam 2 + duyệt | T-4, T-12, T-13, T-37, T-55, T-62, T-60 | 13 | 2026-12-18 | Phiếu sai trên khay bị bắt, gửi duyệt → Supervisor duyệt trên dashboard, đóng gói lại, live view (AC-04, 10, 14, 17, 19, 21) |
 | M4 Nguồn đơn | T-3, T-16, T-22, T-17, T-56, T-58, T-59 | 11 | 2027-01-06 | Kết nối Shopee (hoặc CSV khi chưa có quyền), đơn hủy bị chặn, người dùng + nhật ký (AC-05, 12) |
 | M5 Hoàn thiện | T-19, T-38, T-61 | 5,5 | 2027-01-14 | Contract test, test tải, E2E, compose production; sẵn sàng G3 (AC-09, NFR-01, 05) |
@@ -124,6 +124,7 @@ Ngày mục tiêu tính từ thứ Hai 2026-10-05, 1 dev, 5 ngày/tuần, chưa 
 | Cam 2 đọc < 95% (AC-04) | T-4 trước T-12; nếu không đạt → change request (đổi camera / ánh sáng / vị trí) trước khi làm tiếp M3 |
 | Một dev, 70 ngày công, ước lượng chưa có dữ liệu | Theo dõi sau M0, M1; cắt phạm vi theo thứ tự: D11 live view, D10, SIDE_BY_SIDE export (đều không phải AC chặn) |
 | Contract lệch khi code | T-33 MSW theo 02 §6; T-19 contract test so `/openapi.json` với 02 |
+| AC-08 (bản xuất ≤ 20 giây p95; tới điện thoại ≤ 30 giây) chưa test trên phần cứng thật. Spike S3 nguồn giả 720p sát ngưỡng (1 camera ≤ 16,4 giây; ghép 17,8–19,3 giây khi máy rảnh, 28,4 giây khi bận); nguồn giả 1080p H.265 ghép 106–167 giây — **không đạt** (RB-7 trong 02a) | Đo lại trên server kho + camera thật ở T-4 (M3), trước G4; hạ `EXPORT_PRESET` / `EXPORT_SIDE_SCALE` (DEC-101); vẫn vượt → camera ghi thêm sub-stream 720p cho xuất hoặc server có tăng tốc phần cứng (change request) |
 
 ## 6. Bảng phủ FR → task
 

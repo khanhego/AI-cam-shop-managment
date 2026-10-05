@@ -7,7 +7,7 @@
 | Trạng thái | Executing (lần 1 — M1) |
 | Nguồn | SRS [01-srs.md](01-srs.md) v0.3 · Tech Spec [02](02-tech-spec.md), [02a](02a-be-spec.md), [02b-station](02b-fe-spec-station.md), [02b-admin](02b-fe-spec-admin.md) · Plan [03](03-plan.md) |
 | Build / môi trường | Stack dev `ai-cam-be/docker/compose.dev.yml` (api :8180) + FE `pnpm dev` (:5180) · bàn thử phần cứng chưa có (T-4) |
-| Last update | 2026-10-05 · QA |
+| Last update | 2026-10-05 · QA (TC-09.04 theo DEC-59) |
 
 > **TL;DR** — 157 case: 138 chức năng (8 module), 10 phân quyền, 9 NFR; 53 case chức năng P1 + 9 case phân quyền P1 chặn release.
 > 113 case chức năng chạy tự động được (API 33, INT 28, E2E 52); 25 case thủ công (HW 15, MAN 9, API + MAN 1) cần camera thật, máy quét thật hoặc Shopee thật.
@@ -465,7 +465,7 @@ Trên stack thật: đặt `session_warn_minutes=1`, `session_abandon_minutes=2`
 | TC-09.01 | Số liệu đúng | FR-09.01, AC-18 | Happy | P1 | INT | PRE-6 | Xem chi tiết bên dưới | `counts` = `packed 12, had_mismatch 3, abandoned 1, cancelled 2, packed_not_handed_over 4, cancelled_after_pack 1` | ⬜ |
 | TC-09.02 | Thẻ dẫn đúng bộ lọc | N2, 02b-admin KpiCard | Regression | P2 | E2E | Dữ liệu như TC-09.01 trên stack (cách nạp cần xác nhận); `tst_sup` ở D2 | 1. Bấm thẻ "Đã đóng gói" 2. Đếm dòng D3 3. Lặp với 5 thẻ còn lại | Mỗi thẻ: D3 mở với bộ lọc tương ứng + ngày; số dòng = số trên thẻ | ⬜ |
 | TC-09.03 | Tự cập nhật | WS-02 | Happy | P2 | E2E | PRE-4 (cửa sổ dashboard mở D2 `/admin`) | 1. Ghi số thẻ "Đã đóng gói" = N 2. Station quét mở + đóng `SPXTST0000001` 3. Bấm đồng hồ, không tải lại D2 | Thẻ "Đã đóng gói" = N + 1 trong ≤ 5 giây | ⬜ |
-| TC-09.04 | Ngày trống | D2 empty | Negative | P3 | E2E | PRE-3 | 1. D2 đổi ngày sang 01/01/2026 | 6 thẻ = 0; "Chưa có phiên đóng gói nào trong ngày." | ⬜ |
+| TC-09.04 | Ngày trống | D2 empty | Negative | P3 | E2E | PRE-3 | 1. D2 đổi ngày sang 01/01/2026 | 4 thẻ theo ngày ("Đã đóng gói", "Từng lệch mã", "Bỏ dở", "Hủy phiên") = 0; 2 thẻ "Chưa bàn giao", "Hủy sau khi đóng" giữ số hiện tại (không theo ngày, = `packed_not_handed_over`, `cancelled_after_pack` của API-32); hiện "Chưa có phiên đóng gói nào trong ngày." (DEC-59) | ⬜ |
 | TC-09.05 | Ổ đĩa > 80% | NFR-30 | Boundary | P2 | MAN | PRE-3; volume `video` gắn đĩa nhỏ lấp > 80% (cách giả lập cần xác nhận) | 1. Gọi API-81 2. Mở D2 3. Mở D8 | API-81 `disk.percent` > 80; D2 "Cần xử lý" có dòng ổ đĩa kèm % (chữ cần xác nhận); D8 LinearProgress màu cảnh báo | ⬜ |
 
 <details><summary>TC-09.01 — chi tiết</summary>
@@ -582,6 +582,7 @@ TC-P.01..P.09: `API`, P1, mọi ô của bảng (đã tự động cho P.01, P.0
 |---|---|---|---|---|
 | DEC-38 | Tự động hóa case P1 | Viết test API (`tests/qa/`) và E2E (`tests/e2e/`) trong T-19, T-38, T-61; case HW thủ công có quay màn hình | Repo chưa có code; gắn vào task đã có trong 03 | khanhtt (tự quyết) |
 | DEC-52 | Chuẩn hoá theo CONVENTIONS §9 bản 2026-10-05 | Mỗi kịch bản một case (tách 20 case mới, 118 → 138 case chức năng, giữ ID cũ cho kịch bản test code đang tham chiếu); bước đánh số; tiền điều kiện chuẩn PRE-1..7; case phức tạp viết trong `<details>`; sửa thông tin lỗi thời theo code (seed `aicam seed-demo`, `qa-reset.sh`, `compose.dev.yml`, đồng hồ giả chỉ ở pytest, E2E ở `ai-cam-fe/e2e/`). TC-01.04 giữ nghĩa "IP không tồn tại" vì `test_m1_live.py` và `test_stations_api.py` dùng nghĩa đó; "sai mật khẩu" sang TC-01.11 | Giữ khớp docstring test hiện có; loại phương án đánh lại toàn bộ ID (làm gãy tham chiếu trong test) | khanhtt (tự quyết) |
+| DEC-59 | TC-09.04 kỳ vọng "6 thẻ = 0" ở ngày trống, nhưng 02 §6 API-32 định nghĩa `packed_not_handed_over`, `cancelled_after_pack` là số kiện hiện tại (mọi ngày); FE theo contract (FE DEC-73) | Sửa kỳ vọng TC-09.04: 4 thẻ theo ngày = 0, 2 thẻ "Chưa bàn giao", "Hủy sau khi đóng" là số hiện tại; câu trống hiện khi 4 thẻ theo ngày = 0. Cột KQ giữ ⬜ (chạy ở G4) | Contract là nguồn sự thật (DEC-10); kiện đã đóng chưa bàn giao vẫn cần xử lý bất kể chọn ngày nào. Loại: đổi API-32 thành đếm theo ngày (mất mục đích "việc còn tồn") | khanhtt (tự quyết) |
 
 ## Chốt G4
 - [ ] Mọi AC và FR mức M có ≥ 1 TC pass, có bằng chứng
