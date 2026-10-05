@@ -7,7 +7,7 @@
 | Lane | feature (chạy bằng `ai-solo-build-feature`) |
 | Quy mô | M |
 | Component bị chạm | ai-cam-be (be), ai-cam-fe (fe: station, admin) |
-| Last update | 2026-10-05 · Flow (M4 xong, trừ T-3) |
+| Last update | 2026-10-05 · Flow (M5 xong; sang bước 10 review code) |
 
 Phạm vi dự kiến: M01, M02, M03, M05 (Shopee: đơn + trạng thái), M07 cơ bản, M10 của [SRS hệ thống](../../system/SRS.md).
 Spike S1–S5 và dựng khung repo ([architecture.md §17](../../system/architecture.md)) sẽ thành task đầu trong `03-plan`.
@@ -37,17 +37,17 @@ Số item: 01 (chưa có item nào; `git ls-remote --heads` của 3 repo không 
 | 5 | Review bộ spec | ✅ | 2026-10-04 | Vòng 1 Chưa đạt (28), vòng 2 Đạt có điều kiện (12 minor/nit, đã sửa) |
 | 6 | Kế hoạch | ✅ | 2026-10-04 | 03-plan.md |
 | 7 | Test cases | ✅ | 2026-10-04 | CP7 tự duyệt; 04 Ready: 137 case, DEC-38 |
-| 8 | Implement | ▶ đang làm | 2026-10-05 | M0–M4 xong (trừ T-3, T-4 chờ tài nguyên ngoài); M5: T-19. M4: BE 345 pass / 97 skip, QA live 94 pass + 2 skip (Shopee chạy riêng với cờ bật + adapter mock); FE 274 unit, E2E mock 9, E2E BE thật 37/37; contract chốt 02 v0.5 (DEC-62, DEC-63) |
+| 8 | Implement | ✅ | 2026-10-05 | Implement xong M0–M5 (trừ T-3 Shopee partner, T-4 camera thật — chưa test). M5 T-19: BE 466 pass / 97 skip, contract test 119, locust máy dev, staging local 15/15 bước |
 | 8c | Tài liệu nghiệp vụ (mỗi lát) | ▶ đang làm | 2026-10-05 | Bắt buộc trước G3. Lát 0–4 đã viết ở `docs/nghiep-vu/01-packing-mvp/` (Draft, có §0 Giải thích đơn giản); lát 5 sau M5; chờ CP8c |
-| 9 | Commit / PR | ⬜ | | |
-| 10 | Review code | ⬜ | | |
+| 9 | Commit / PR | ✅ | 2026-10-05 | Commit + push từng task; PR mở khi merge cuối phase (DEC-56) |
+| 10 | Review code | ▶ | 2026-10-05 | G3: review code toàn Phase 1 bằng subagent |
 | 11 | Chạy test | ⬜ | | |
 | 12 | Release | ⬜ | | |
 
 ## NOW
 | Owner tiếp | Việc tiếp | Skill |
 |---|---|---|
-| Dev BE → Lead review → QA → Ops | M5: T-19 (contract test, locust, compose production, Caddyfile, README vận hành, checklist DEC-53) → bước 10 review code toàn Phase 1 (G3) → bước 11 QA (G4) → bước 12 release staging local (G5) → PR + merge `main`. T-3 chờ Shopee duyệt partner, T-4 chờ camera thật | ai-be-implement → ai-lead-review → ai-qa-run-tests → ai-ops-release |
+| Lead review → QA → Ops | Bước 10 G3 (review code subagent, toàn Phase 1 cả `ai-cam-be`, `ai-cam-fe`) → bước 11 G4 (QA, gồm TC-05.22, 05.23) → bước 12 G5 (release staging local; khôi phục sao lưu phải thử trước go-live — 03 §5) → PR + merge `main`. T-3 chờ Shopee duyệt partner, T-4 chờ camera thật. Tài liệu nghiệp vụ lát 5 (bước 8c) trước G3 | ai-lead-review → ai-qa-run-tests → ai-ops-release |
 
 ## Phản hồi giữa các vai
 | Từ | Tới | Nội dung | Trạng thái |
@@ -65,6 +65,7 @@ Số item: 01 (chưa có item nào; `git ls-remote --heads` của 3 repo không 
 ## Lịch sử
 | Ngày | Role | Việc |
 |---|---|---|
+| 2026-10-05 | BE, QA, Architect, PM | **M5 Hoàn thiện xong**: BE T-19 `e2a88a5` (contract test `tests/contract/` 119 test so 52 API của 02 §6 với OpenAPI, snapshot `openapi.json`, giờ `Z` qua `clock.iso_z` — đóng RB-11; test song song API-51), `5d83c09` (locust: NFR-05 2 station × 120 quét/giờ + CSKH 10 phút → API-11 p95 mở 80 ms / đóng 50 ms, 0 lỗi; stress 4 station ≈ 13.400 quét/giờ 5 phút → p95 26 ms, max 149 ms, 0 lỗi — máy dev, không phải server kho), `f1cf83a` (`docker/compose.yml` production: `migrate`, `backup`, `caddy`; Caddyfile `tls internal`, `forward_auth` `/live` → `/api/v1/live`, chặn `*.map`; `mediamtx.prod.yml`; `.env.production.example`), `cd5183a` (`docs/ops.md`). Staging local 15/15 bước (compose `-p aicam-staging`, sau đó `down -v`). BE 466 pass / 97 skip; DEC-131..137 (02a). Architect 02 v0.6 (DEC-66); 04 TC-05.22, 05.23 + số tải §4 (DEC-65); 03 §5 thêm rủi ro triển khai; system-map; architecture §14.2. Chưa test: WHEP qua LAN / ICE UDP, cài root cert Caddy trên máy station, `pg_restore`, lịch sao lưu theo giờ, NAS override, nâng cấp / rollback trên dữ liệu thật, tải đủ 1 giờ trên server kho với camera thật |
 | 2026-10-05 | BE, FE, QA, Architect, PO | **M4 Nguồn đơn xong (trừ T-3)**: BE T-17 `90a16c6` (API-50..54 nhập CSV / xlsx, BR-17, fixtures `tests/qa/fixtures/csv/`, volume `imports`), T-16 `d5f7e05` (adapter Shopee v2 HMAC, OAuth, refresh, thử lại theo `Retry-After`, API-70..73, tra 2 giây khi quét ngoài lock), T-22 `2375a2e` (J-04/05/06/12, queue `sync`, beat 5/10/15/30 phút; tắt khi `SHOPEE_ENABLED=false`); FE T-56 `b09e0f3` D5, T-58 `83cc236` D7 + D8, T-59 `c1cb076` D9 + D10, T-61 bộ `e2e/real` 37 bài. Kết quả: BE 345 pass / 97 skip, QA live 94 pass + 2 skip (+ adapter mock 8/8), TC-05.11 nhập 500 đơn 1,1 giây (AC-12 ≤ 30 giây); FE 274 unit, E2E mock 9, E2E BE thật 37/37 (`evidence/m4-e2e-real.txt`). Sửa 2 lỗi test FE `ac017c0`: EX-P9 chập chờn (helper `src/test/scan.ts` `hidScan`), `pnpm test` thoát mã 1 do thay `FormData` toàn cục (nay `src/test/nodeFormData.ts` chỉ trong test upload). Sửa lỗi D11 màn đen `3533ff3` (track WebRTC tới muộn của kết nối đã đóng). Architect 02 v0.5 (DEC-62, DEC-63); 04 DEC-64; system-map; tài liệu nghiệp vụ lát 4. Chưa test (thiếu tài khoản partner, T-3): OAuth thật, `state` trong redirect, mã lỗi thật, bảng trạng thái vận chuyển, rate limit (token bucket ADR-007 chưa làm), tra đơn theo mã vận đơn (DEC-123, tạm dò 60 phút); TC-10.06 mới kiểm tới API 204; `.xlsx` thật ở FE |
 | 2026-10-05 | BE, FE, QA, Architect, PO | **M3 Cam 2 + duyệt xong (trừ T-4)**: BE T-12 `771f61d` (vision OpenCV + zxing-cpp đọc mã trong ROI Cam 2, 4 khung/giây, `tray:{station_id}` TTL 5 giây, `tray.changed` → `on_tray_changed`), T-13 `9b7c26e` (API-13/14/20/21, WS `approval.*`), `97abd2e` (DEC-60 đồng hồ quá giờ sau duyệt; MediaMTX dev ICE 8189 UDP+TCP); FE T-55 `aeca76e` D13, T-62 `5e25242` RoiEditor, T-60 `310de20` D11 WHEP + `fafd6b7` E2E khung hình thật; T-38 E2E station + D13 BE thật. Kết quả: BE 294 pass / 89 skip, QA live 88/88, FE 224 unit, E2E mock 6, E2E BE thật 25/25 (+2 live). Architect chốt 02 v0.4 (DEC-61); PO SRS v0.4 (DEC-60, đóng RB-14); 04 TC-01.06 + TC-03.57; tài liệu nghiệp vụ lát 3. Chưa test (thiếu camera thật, T-4): tỉ lệ đọc ≥ 95%, trễ thật, CPU 4MP, ánh sáng, phiếu nhăn; âm báo D13 chưa nghe thật; live view LAN kho (UDP) |
 | 2026-10-05 | BE, FE, QA, Architect | **M2 Video bằng chứng xong**: BE T-5 `4caa414`, T-14 `74a3aea` (+ API-30/31), T-21 `ebcc635`, T-15 `dadf93c`, T-18 `e9ef363`; FE T-51 `83b459e`, T-52 `3323be6`, T-53 `4befee3`, T-54 `555d891`, E2E UC-03 BE thật `272c9dc`. Kết quả: BE 257 pass / 79 skip, FE 185 unit, E2E BE thật 20/20, QA API live 78/78. Sự cố: ổ dev đầy 64 GB (MediaMTX giữ path camera mồ côi + video thô) → `7adb72f` dev giữ video 1 giờ, qa-reset dọn volume, J-10 xóa path mồ côi (DEC-102). Lỗi E2E thật bắt: D2 không tăng sau đóng phiên do cache API-32 → `1926eb6` xóa cache trước khi phát `report.updated` (TC-09.03). Architect chốt 02 v0.3 (DEC-57 contract, DEC-58 bản xuất 24 giờ; sửa architecture §8.2, ADR-008); 04 DEC-59 (TC-09.04); tài liệu nghiệp vụ lát 2. Rủi ro mở: AC-08 với 1080p H.265 thật (RB-7) |

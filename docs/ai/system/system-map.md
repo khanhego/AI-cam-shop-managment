@@ -1,9 +1,9 @@
 # System map
 
 > Bản đồ hệ thống đang chạy — nền cho reuse-first. Mỗi dòng có nguồn (file/lệnh).
-> Ai làm thay đổi hệ thống thì cập nhật file này. Last update: 2026-10-05 · Dev (M4 Nguồn đơn xong, trừ T-3 Shopee thật)
+> Ai làm thay đổi hệ thống thì cập nhật file này. Last update: 2026-10-05 · Dev (M5 Hoàn thiện xong: T-19)
 
-**Hiện trạng (2026-10-05):** item 01 xong M0–M4 (trừ T-4 camera thật, T-3 tài khoản Shopee partner) trên nhánh `feat/01-packing-mvp` của `ai-cam-be`, `ai-cam-fe` (đã push, chưa merge `main`). BE: auth, station/camera, phiên quét, realtime, vision đọc khay Cam 2 (chạy trên camera giả), duyệt, cắt clip, tra cứu, giữ clip, xuất MP4, báo cáo ngày, cài đặt, health, nhập đơn CSV / xlsx, adapter Shopee (chỉ chạy trên HTTP giả + adapter mock) + đồng bộ J-04/05/06/12. FE: station S0–S6, dashboard D1, D2, D3, D4 (+ xuất), D5, D6 (+ vùng đọc mã), D7–D10, D11, D12, D13. Chưa có: Shopee thật (T-3), token bucket rate limit (ADR-007), M5 (T-19).
+**Hiện trạng (2026-10-05):** item 01 xong M0–M5 (trừ T-4 camera thật, T-3 tài khoản Shopee partner) trên nhánh `feat/01-packing-mvp` của `ai-cam-be`, `ai-cam-fe` (đã push, chưa merge `main`). BE: auth, station/camera, phiên quét, realtime, vision đọc khay Cam 2 (chạy trên camera giả), duyệt, cắt clip, tra cứu, giữ clip, xuất MP4, báo cáo ngày, cài đặt, health, nhập đơn CSV / xlsx, adapter Shopee (chỉ chạy trên HTTP giả + adapter mock) + đồng bộ J-04/05/06/12. FE: station S0–S6, dashboard D1, D2, D3, D4 (+ xuất), D5, D6 (+ vùng đọc mã), D7–D10, D11, D12, D13. Triển khai: compose production + Caddy HTTPS nội bộ + sao lưu hằng ngày, đã chạy staging local (chưa lên server kho). Chưa có: Shopee thật (T-3), token bucket rate limit (ADR-007), CI đẩy image (build tại chỗ), CSP / HSTS (DEC-137 02a).
 Kiến trúc: [architecture.md](architecture.md).
 
 ## Module / component
@@ -28,6 +28,13 @@ Kiến trúc: [architecture.md](architecture.md).
 | CLI | `aicam create-admin`, `aicam seed-demo` (TST…, mật khẩu matkhau123) | `ai-cam-be/src/aicam/entrypoints/cli.py` | BE |
 | MediaMTX + camera giả | Relay RTSP, ghi fMP4 60 giây, chạy uid 10001; dev chỉ giữ video thô 1 giờ (`recordDeleteAfter: 1h`, sau sự cố đầy ổ 64 GB); WebRTC ICE cổng 8189 UDP + TCP (TCP cho máy dev Docker/Colima không chuyển UDP), `webrtcAdditionalHosts: [127.0.0.1]` (dev); `fake-cam1/2` cho dev (`fake-cam2` phát vòng 60 giây có phiếu SPXTST…01 / …02 / …03) | `ai-cam-be/docker/mediamtx.yml`, `docker/compose.dev.yml` | BE |
 | Compose dev | `postgres`, `redis`, `video-init` (tạo `/data/video/{raw,clips,exports}`, chown uid 10001 cả `/data/imports`), volume `video`, `imports` (api, worker); `SHOPEE_ENABLED` (mặc định `false`), `PLATFORM_ADAPTER` (mặc định `mock`) đọc từ biến môi trường, `mediamtx`, `api`, `vision`, `worker` (`-Q default,video,sync`), `worker-export` (`-Q export -c 1`), `beat`, camera giả | `ai-cam-be/docker/compose.dev.yml` | BE |
+| Compose production | Stack kho (DEC-135 02a): `postgres`, `redis` (AOF), `volume-init`, `mediamtx`, `migrate` (`alembic upgrade head`, chạy xong mới tới `api`), `api` (`FORWARDED_ALLOW_IPS` = `CADDY_IP`), `vision`, `worker` (`-Q default,video,sync`), `worker-export` (`-Q export -c 1`), `beat`, `caddy` (IP tĩnh trong subnet `AICAM_SUBNET`), `backup`; `restart: unless-stopped`, log json-file 20 MB × 5; chỉ publish 80, 443, ICE 8189 UDP + TCP; secret bắt buộc `${VAR:?}`; image BE build tại chỗ (`AICAM_IMAGE`), FE mount `ai-cam-fe/dist` (`FE_DIST_DIR`) | `ai-cam-be/docker/compose.yml` | BE |
+| Caddy | `tls internal` theo `SITE_ADDRESS` (máy station cài `root.crt`), HTTP → HTTPS 308, FE tĩnh + SPA fallback, `/api`, `/ws`, `/live` WHEP qua `forward_auth` → `/api/v1/live` (chỉ ADMIN / SUPERVISOR, DEC-136), `*.map` 404, header bảo mật, access log che `sig` / `token` (DEC-137) | `ai-cam-be/docker/Caddyfile` | BE |
+| MediaMTX production | Không quyền publish (camera kéo bằng `source`), read / playback / api / metrics chỉ mạng nội bộ Docker, `recordDeleteAfter: 0s` (J-02 lo retention), `LAN_IP` + cổng ICE qua biến `MTX_*` | `ai-cam-be/docker/mediamtx.prod.yml` | BE |
+| Sao lưu | Service `backup`: `pg_dump -Fc` + nén file nhập, 01:00 giờ VN (`BACKUP_HOUR`), giữ 14 ngày (`BACKUP_KEEP_DAYS`), ra `BACKUP_DIR`; khôi phục theo `docs/ops.md` §6 (**chưa thử `pg_restore`**) | `ai-cam-be/docker/backup/pg-backup.sh` | BE |
+| Mẫu cấu hình production | Biến bắt buộc: `SITE_ADDRESS`, `LAN_IP`, `POSTGRES_PASSWORD`, `JWT_SECRET`, `FERNET_KEY`, `MEDIA_SIGNING_KEY`; Shopee `SHOPEE_*`; chép thành `docker/.env` (không commit). Secret dev bị validator từ chối khi `APP_ENV=production` | `ai-cam-be/docker/.env.production.example` | BE |
+| Tài liệu vận hành | Cài đặt, admin đầu tiên, máy station (cert), station / camera, Shopee / CSV, sao lưu / khôi phục, nâng cấp, log, dọn đĩa, sự cố, checklist bảo mật DEC-53 | `ai-cam-be/docs/ops.md`, `ai-cam-be/README.md` | BE |
+| Contract OpenAPI cho FE | Snapshot OpenAPI sinh từ FastAPI — nguồn sinh client FE (architecture §14.3); cập nhật: `uv run python scripts/export_openapi.py` | `ai-cam-be/openapi.json`, `scripts/export_openapi.py` | BE |
 | Spike S3 | Đo cắt clip, encode bản xuất (T-5) | `ai-cam-be/scripts/spike_s3.py`, `spike_s3_encode.sh` | BE |
 
 ## Data
@@ -103,6 +110,9 @@ Kiến trúc: [architecture.md](architecture.md).
 |---|---|---|
 | BE unit + integration | `cd ai-cam-be && uv run pytest` (Postgres :55432, Redis :56379 db15) | `ai-cam-be/tests/{unit,integration}` |
 | QA API trên stack thật | `ai-cam-be/scripts/qa-reset.sh && QA_BASE_URL=http://localhost:8180 uv run pytest -m qa tests/qa` (qa-reset dọn cả volume video) | `ai-cam-be/tests/qa/test_m1_live.py`, `test_m2_live.py`, `test_m3_live.py` (cần `fake-cam2` + vision), `test_m4_live.py` (CSV fixtures `tests/qa/fixtures/csv/`; phần Shopee chạy riêng với `SHOPEE_ENABLED=true`, adapter mock) |
+| Contract test (OpenAPI ↔ 02 §6) | `cd ai-cam-be && uv run pytest tests/contract` (119 test: 52 API, route thừa, snapshot `openapi.json`, runtime giờ `Z` + khung lỗi trên Postgres / Redis dev, khung WS) | `ai-cam-be/tests/contract/` (`spec.py` bảng hợp đồng rút từ 02 §6) |
+| Test tải (locust, stack dev) | `LOAD_PROFILE=nfr05` (2 station × 120 quét/giờ + CSKH) hoặc `stress` · `LOAD_STATIONS=4 uvx --from locust locust -f tests/load/locustfile.py --host http://localhost:8180 --headless -u 5 -r 5 -t 5m`; tạo station `LOAD Station 0n` (tắt sau đo, `qa-reset.sh` dọn) | `ai-cam-be/tests/load/locustfile.py` |
+| Song song API-51 | `uv run pytest tests/integration/test_import_concurrency.py` (TC-05.22, 05.23) | `ai-cam-be/tests/integration/test_import_concurrency.py` |
 | FE unit/integration (MSW) | `cd ai-cam-fe && pnpm test` | `ai-cam-fe/src/**/*.test.ts(x)` |
 | E2E mock / BE thật | `pnpm e2e` (MSW, :5180) · `pnpm e2e:real` (dev server :5181 → api :8180, reset dữ liệu mỗi test; 37 bài sau M4) | `ai-cam-fe/e2e/{mock,real}`, `playwright.real.config.ts` |
 | Helper test FE | `hidScan(code)` gõ phím như máy quét HID (sửa test chập chờn EX-P9); `withNodeFormData()` đặt `FormData` của Node chỉ trong test upload (thay toàn cục từng làm `pnpm test` thoát mã 1) | `ai-cam-fe/src/test/scan.ts`, `src/test/nodeFormData.ts` |
@@ -127,7 +137,7 @@ Kiến trúc: [architecture.md](architecture.md).
 | FFmpeg / ffprobe (trong image BE) | Cắt clip `-c copy`, đo thời lượng, encode bản xuất H.264 + `drawtext` (font Be Vietnam Pro) | subprocess, `modules/media/ffmpeg.py` | `VIDEO_ROOT`, `CLIP_*`, `EXPORT_*` (02a §9) |
 | Camera ONVIF | `GetSystemDateAndTime` (J-09) | SOAP qua httpx | — |
 | zxing-cpp, opencv-python-headless, numpy | Đọc khung RTSP Cam 2, giải mã Code128 / QR (tiến trình `vision`) | thư viện Python, `modules/vision/` | `ai-cam-be/pyproject.toml` |
-| MediaMTX WebRTC (WHEP) | Live view D11 | trình duyệt POST SDP tới `/live/cam-<id>/whep` | ICE 8189 UDP + TCP (`docker/mediamtx.yml`) |
+| MediaMTX WebRTC (WHEP) | Live view D11 | trình duyệt POST SDP tới `/live/cam-<id>/whep`; production qua Caddy `forward_auth` → `/api/v1/live` | ICE 8189 UDP + TCP (`docker/mediamtx.yml`, `docker/mediamtx.prod.yml`); **chưa test qua LAN kho** |
 | Shopee Open Platform v2 | Kết nối shop (OAuth), đồng bộ đơn, mã vận đơn, trạng thái vận chuyển. **Chưa thử với Shopee thật** — chờ tài khoản partner (T-3) | httpx ký HMAC-SHA256, `modules/platforms/shopee/client.py` | `SHOPEE_*` (Config) |
 | openpyxl, python-multipart | Đọc `.xlsx`, nhận multipart API-50 | thư viện Python | `ai-cam-be/pyproject.toml` |
 
@@ -138,7 +148,7 @@ Kiến trúc: [architecture.md](architecture.md).
 | `require_roles(...)`, `CurrentPrincipal` | Phân quyền API | `core/deps.py` |
 | `audit.record()` | Ghi nhật ký thao tác | `core/audit.py` |
 | `after_commit()`, `commit()`, `rollback()` | Publish sự kiện sau commit | `core/db.py` |
-| `clock.now()` / `freeze` / `advance` | Giờ hệ thống, test tua giờ | `core/clock.py` |
+| `clock.now()` / `freeze` / `advance`, `clock.iso_z()` | Giờ hệ thống, test tua giờ; chuỗi giờ UTC `Z` cho JSON tự ghép (WS `at`, `details.*`, `last_error.at` — DEC-132 02a) | `core/clock.py` |
 | `enum_check()` | CHECK enum cho cột text | `core/db.py` |
 | `uuid7()` tăng đơn điệu | Khóa chính; sắp theo id = thứ tự tạo | `core/ids.py` |
 | `orders.transition()` | Mọi thay đổi `warehouse_status` | `modules/orders/service.py` |
@@ -146,7 +156,7 @@ Kiến trúc: [architecture.md](architecture.md).
 | Token + class design system (`card`, `md-input`, `md-table`, `state-layer`, `icon`…) | Mọi màn FE | `ai-cam-fe/src/design/` (`pnpm tokens` để sinh lại) |
 | `api.get/post/...`, `api.blob` (`responseType: "blob"`, ảnh API-63), `ApiError`, `onUnauthenticated` | Gọi API (token, refresh 401 một lần, lỗi 02 §6) | `ai-cam-fe/src/lib/api/client.ts`, `errors.ts` |
 | `whep.ts` | WHEP tự viết: RTCPeerConnection recvonly, POST SDP kèm Bearer (401 → refresh 1 lần), ghép `Location` thiếu tiền tố `/live`, DELETE khi đóng | `ai-cam-fe/src/shared/media/whep.ts` |
-| Proxy Vite `/live` | Dev: `/live/*` → MediaMTX WebRTC (bỏ tiền tố); production qua Caddy | `ai-cam-fe/vite.config.ts` |
+| Proxy Vite `/live` | Dev: `/live/*` → MediaMTX WebRTC (bỏ tiền tố); production qua Caddy (`ai-cam-be/docker/Caddyfile`) | `ai-cam-fe/vite.config.ts` |
 | `useSession`, `login/logout/fetchMe` | Phiên đăng nhập (access token trong bộ nhớ) | `ai-cam-fe/src/lib/api/session.ts`, `auth.ts` |
 | `connectWs()` | WebSocket backoff + ping + 4401 | `ai-cam-fe/src/lib/ws.ts` |
 | MSW handlers + dữ liệu mock (`tst_*`, mật khẩu `matkhau123`), `StationSim` (state machine phiên), mock WS | `pnpm dev:mock`, test | `ai-cam-fe/src/mocks/` |

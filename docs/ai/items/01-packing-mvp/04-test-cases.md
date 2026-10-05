@@ -7,10 +7,10 @@
 | Trạng thái | Executing (lần 1 — M1) |
 | Nguồn | SRS [01-srs.md](01-srs.md) v0.4 · Tech Spec [02](02-tech-spec.md), [02a](02a-be-spec.md), [02b-station](02b-fe-spec-station.md), [02b-admin](02b-fe-spec-admin.md) · Plan [03](03-plan.md) |
 | Build / môi trường | Stack dev `ai-cam-be/docker/compose.dev.yml` (api :8180) + FE `pnpm dev` (:5180) · bàn thử phần cứng chưa có (T-4) |
-| Last update | 2026-10-05 · QA (TC-05.09, 05.10, 05.15 theo DEC-62 của 02 — DEC-64) |
+| Last update | 2026-10-05 · QA (M5: TC-05.22, 05.23, số tải máy dev ở §4 — DEC-65) |
 
-> **TL;DR** — 158 case: 139 chức năng (8 module), 10 phân quyền, 9 NFR; 53 case chức năng P1 + 9 case phân quyền P1 chặn release.
-> 113 case chức năng chạy tự động được (API 33, INT 29, E2E 52); 25 case thủ công (HW 15, MAN 9, API + MAN 1) cần camera thật, máy quét thật hoặc Shopee thật.
+> **TL;DR** — 160 case: 141 chức năng (8 module), 10 phân quyền, 9 NFR; 53 case chức năng P1 + 9 case phân quyền P1 chặn release.
+> 115 case chức năng chạy tự động được (API 33, INT 31, E2E 52); 25 case thủ công (HW 15, MAN 9, API + MAN 1) cần camera thật, máy quét thật hoặc Shopee thật.
 > Phủ AC-01..05, AC-08..21, BR-01..06, 09, 15..18, EX-P1..P11, ma trận quyền 4 vai, NFR-01, 03, 04, 05, 09, 10, 31.
 > Rủi ro: M2..M5 chưa có code (clip, tra cứu, CSV, Shopee) → kỳ vọng các module đó theo spec, chỗ chưa chắc ghi "(cần xác nhận)".
 > Lần chạy 1 (phạm vi M1, 2026-10-05): ✅ 38 · ❌ 0 · ⛔ 13 (chờ phần cứng T-4) · ⬜ 87 (80 ngoài phạm vi M1, 7 chưa chạy / chưa đủ) — kết quả và bug: [04a](04a-test-report.md).
@@ -36,7 +36,7 @@ bởi người khác mà không cần hỏi: tiền điều kiện (PRE-x ở §
 | Integration đồng hồ giả | Case Cách `INT` (tua giờ, sàn mock trễ / lỗi) | `cd ai-cam-be && uv run pytest tests/integration` — `aicam.core.clock.freeze/advance` chỉ bật khi `app_env=test` (`fake_clock_allowed`) | ✔ |
 | E2E / UI | Case Cách `E2E` | `cd ai-cam-fe && pnpm e2e` (Playwright, thư mục `ai-cam-fe/e2e/`; mặc định MSW, đặt `E2E_BASE_URL=http://localhost:5180` để chạy với BE thật); máy quét giả = `keyboard.type(code, {delay: 5})` + Enter. Hiện chỉ có `smoke.spec.ts`; spec station / admin thuộc T-38, T-61 | một phần |
 | Phần cứng | Case Cách `HW` | Thủ công tại bàn thử, quay màn hình làm bằng chứng | ✗ |
-| NFR | §4 | locust: chưa có, task NFR T-19 · đo p95 bằng `test_tc_03_03` · đồng hồ bấm | một phần |
+| NFR | §4 | locust `ai-cam-be/tests/load/locustfile.py` (`LOAD_PROFILE=nfr05\|stress`, lệnh trong README BE) · đo p95 bằng `test_tc_03_03` · đồng hồ bấm | một phần |
 
 Cột **Cách**: `API` (HTTP trên stack dev) · `INT` (pytest integration) · `E2E` (trình duyệt) · `HW` (thủ công có phần cứng) · `MAN` (thủ công khác).
 
@@ -82,6 +82,7 @@ Cột **Cách**: `API` (HTTP trên stack dev) · `INT` (pytest integration) · `
 | `ai-cam-be/tests/integration/test_scan_concurrency.py` | 03.16 |
 | `ai-cam-be/tests/integration/test_auth_users_api.py` | 10.04, 10.06 (phần BE), 10.07, P.09 |
 | `ai-cam-be/tests/integration/test_ws_hub.py` | 03.56 |
+| `ai-cam-be/tests/integration/test_import_concurrency.py` | 05.22, 05.23 |
 | `ai-cam-fe/src/features/admin/StationsAdmin.test.tsx` | 01.01–01.04, 01.11 (chữ lỗi theo `reason`) |
 
 **Vào:** G3 ✅; PRE-1 chạy đủ service; QA reset xong; `fake-cam1`, `fake-cam2` ONLINE; bàn thử phần cứng có cho case `HW`.
@@ -446,6 +447,8 @@ Trên stack thật: đặt `session_warn_minutes=1`, `session_abandon_minutes=2`
 | TC-05.19 | Vận chuyển: giao thành công (tách từ TC-05.06) | FR-05.04 | State | P2 | INT | Sau TC-05.06, kiện …10 `HANDED_OVER` | 1. `MockAdapter.shipping["SPXTST0000010"] = "DELIVERED"` 2. Chạy J-06 | Kiện `DELIVERED`; dòng thời gian có mốc mới | ⬜ |
 | TC-05.20 | CSV > 5.000 dòng (tách từ TC-05.14) | API-50 | Boundary | P3 | API | PRE-5; file CSV 5.001 dòng dữ liệu, < 5 MB | 1. `tst_sup` POST /imports | 422 `FILE_INVALID` | ⬜ |
 | TC-05.21 | File gốc hết hạn 90 ngày (tách từ TC-05.18) | API-54 | Boundary | P3 | INT | PRE-6, `clock.freeze`; lần nhập `COMMITTED` | 1. `clock.advance(91 ngày)` 2. GET /imports/{id}/file | 410 `FILE_EXPIRED` | ⬜ |
+| TC-05.22 | Hai bản xem trước của cùng file xác nhận đồng thời | API-51 IMPORT_CONFLICT, BR-17 | Error | P2 | INT | PRE-6, engine commit thật; cùng file 3 đơn tải lên 2 lần → 2 bản `PREVIEW` của cùng người tạo | 1. Gọi API-51 commit cả hai bản cùng lúc (barrier sau bước phân loại) 2. Đếm đơn / kiện theo mã | Một bản 200 `COMMITTED`, bản kia `409 IMPORT_CONFLICT` và vẫn `PREVIEW`; 3 đơn / 3 kiện, không trùng. Test: `ai-cam-be/tests/integration/test_import_concurrency.py::test_two_previews_committed_at_once_one_conflicts` (DEC-65) | ✅ |
+| TC-05.23 | Cùng bản xem trước xác nhận hai lần đồng thời | API-51, DEC-62 (c) commit lặp → 200 | Boundary | P2 | INT | PRE-6, engine commit thật; một bản `PREVIEW` 3 đơn | 1. Gọi API-51 commit cùng `id` hai lần cùng lúc 2. So hai response, đếm đơn / kiện | Cả hai 200 cùng `counts` (khóa `FOR UPDATE` tuần tự hóa — không phải 409); 3 đơn / 3 kiện, không trùng. Test: `ai-cam-be/tests/integration/test_import_concurrency.py::test_same_preview_committed_twice_at_once_is_idempotent` (DEC-65) | ✅ |
 
 <details><summary>TC-05.11 — chi tiết</summary>
 
@@ -508,10 +511,10 @@ TC-P.01..P.09: `API`, P1, mọi ô của bảng (đã tự động cho P.01, P.0
 
 | ID | NFR | Kịch bản & tải | Ngưỡng đạt | Kết quả đo |
 |---|---|---|---|---|
-| TC-N.01 | NFR-01 | PRE-1; 100 lần quét đơn đã có, 2 station (`tst_station01`, `tst_station02`) song song | p95 ≤ 1 giây (thời gian client; metric server cần xác nhận) | |
+| TC-N.01 | NFR-01 | PRE-1; 100 lần quét đơn đã có, 2 station (`tst_station01`, `tst_station02`) song song | p95 ≤ 1 giây (thời gian client; metric server cần xác nhận) | Máy dev (Colima, adapter mock, locust cùng máy — DEC-134 02a): stress 4 station ≈ 13.400 quét/giờ 5 phút → API-11 p95 26 ms, max 149 ms, 0 lỗi. **Chưa đo trên server kho** — chưa kết luận đạt |
 | TC-N.02 | NFR-01 | `INT`: 20 lần quét mã phải tra sàn, `MockAdapter(delay_s=1.5)` | p95 ≤ 3 giây | |
 | TC-N.03 | NFR-03 | PRE-2; 50 phiên dài 1–5 phút | Clip `READY` p95 ≤ 60 giây sau đóng | |
-| TC-N.04 | NFR-05 | locust (chưa có, task NFR T-19) 1 giờ: 2 station × 120 quét/giờ + 1 CSKH tra cứu 1 lần/10 giây + 2 xuất clip/giờ | NFR-01, 03, 04 vẫn đạt; CPU server < 80% | |
+| TC-N.04 | NFR-05 | locust (`tests/load/locustfile.py`, profile `nfr05`) 1 giờ: 2 station × 120 quét/giờ + 1 CSKH tra cứu 1 lần/10 giây + 2 xuất clip/giờ | NFR-01, 03, 04 vẫn đạt; CPU server < 80% | Máy dev, 10 phút (không phải 1 giờ), không xuất clip, không camera: 2 station × 120 quét/giờ + CSKH → API-11 p95 mở 80 ms / đóng 50 ms, API-30 26 ms, API-32 46 ms, 0 / 182 lỗi; CPU không đo. **Chưa đo trên server kho với camera thật, đủ 1 giờ** — chưa kết luận đạt |
 | TC-N.05 | NFR-04 | 1.000.000 kiện giả lập trong DB (script nạp chưa có — T-19) | API-30 theo mã ≤ 2 giây | |
 | TC-N.06 | NFR-09, AC-09 | PRE-7; rút WAN 30 phút khi đang đóng gói; cắm lại | Quét, phiên, ghi hình chạy bình thường suốt 30 phút; đồng bộ lại ≤ 10 phút sau khi có mạng | |
 | TC-N.07 | NFR-31 | PRE-7; đo bitrate thực 4 camera trong 1 giờ | Dung lượng dự báo 30 ngày thô + 90 ngày clip < 80% NAS | |
@@ -549,7 +552,7 @@ TC-P.01..P.09: `API`, P1, mọi ô của bảng (đã tự động cho P.01, P.0
 | FR-03.10, 03.12 | TC-03.40..03.57 | ⬜ |
 | FR-03.11 | TC-03.03, 03.31, 03.34 | ⬜ |
 | FR-05.01..05.04, 05.06..05.08 | TC-05.01..05.10, 05.19, 03.12, 03.13 | ⬜ |
-| FR-05.09, 05.10 | TC-05.11..05.18, 05.20, 05.21 | ⬜ |
+| FR-05.09, 05.10 | TC-05.11..05.18, 05.20..05.23 | ⬜ |
 | FR-07.01..07.04 | TC-07.01..07.17 | ⬜ |
 | FR-09.01 | TC-09.01..09.05 | ⬜ |
 | FR-10.01..10.03 | TC-10.01..10.10, TC-P.01..P.10 | ⬜ |
@@ -562,7 +565,7 @@ TC-P.01..P.09: `API`, P1, mọi ô của bảng (đã tự động cho P.01, P.0
 | BR-09 | TC-02.06 | ⬜ |
 | BR-15 | TC-01.09, 01.13 | ⬜ |
 | BR-16 | TC-03.27..03.29, 03.53, 03.57, 02.16 | ⬜ |
-| BR-17 | TC-05.15, 05.16 | ⬜ |
+| BR-17 | TC-05.15, 05.16, 05.22 | ⬜ |
 | BR-18 | TC-03.24..03.26 | ⬜ |
 | EX-P1 | TC-03.08 | ⬜ |
 | EX-P2 | TC-03.09, 03.51 | ⬜ |
@@ -585,6 +588,7 @@ TC-P.01..P.09: `API`, P1, mọi ô của bảng (đã tự động cho P.01, P.0
 | DEC-52 | Chuẩn hoá theo CONVENTIONS §9 bản 2026-10-05 | Mỗi kịch bản một case (tách 20 case mới, 118 → 138 case chức năng, giữ ID cũ cho kịch bản test code đang tham chiếu); bước đánh số; tiền điều kiện chuẩn PRE-1..7; case phức tạp viết trong `<details>`; sửa thông tin lỗi thời theo code (seed `aicam seed-demo`, `qa-reset.sh`, `compose.dev.yml`, đồng hồ giả chỉ ở pytest, E2E ở `ai-cam-fe/e2e/`). TC-01.04 giữ nghĩa "IP không tồn tại" vì `test_m1_live.py` và `test_stations_api.py` dùng nghĩa đó; "sai mật khẩu" sang TC-01.11 | Giữ khớp docstring test hiện có; loại phương án đánh lại toàn bộ ID (làm gãy tham chiếu trong test) | khanhtt (tự quyết) |
 | DEC-59 | TC-09.04 kỳ vọng "6 thẻ = 0" ở ngày trống, nhưng 02 §6 API-32 định nghĩa `packed_not_handed_over`, `cancelled_after_pack` là số kiện hiện tại (mọi ngày); FE theo contract (FE DEC-73) | Sửa kỳ vọng TC-09.04: 4 thẻ theo ngày = 0, 2 thẻ "Chưa bàn giao", "Hủy sau khi đóng" là số hiện tại; câu trống hiện khi 4 thẻ theo ngày = 0. Cột KQ giữ ⬜ (chạy ở G4) | Contract là nguồn sự thật (DEC-10); kiện đã đóng chưa bàn giao vẫn cần xử lý bất kể chọn ngày nào. Loại: đổi API-32 thành đếm theo ngày (mất mục đích "việc còn tồn") | khanhtt (tự quyết) |
 | DEC-64 | Code M4 chốt hành vi khác kỳ vọng cũ (02 v0.5 DEC-62; BE DEC-121, DEC-124 trong 02a; FE DEC-91 trong 02b-admin) | Sửa kỳ vọng, không đổi kết quả: TC-05.09 thêm dạng `last_error` `SYNC_FAILED`, shop vẫn `CONNECTED`; TC-05.10 tách từ chối token (`EXPIRED` + `AUTH_EXPIRED`) với lỗi tạm (`REFRESH_FAILED`, giữ `CONNECTED`); TC-05.15 `counts` đếm theo đơn, D5 khóa nút Nhập khi mọi đơn bị bỏ qua (chữ theo FE). Mã mới: `403 FORBIDDEN` khi commit bởi người không tạo (`test_imports_api.py::test_permissions_and_template`) và `409 SHOP_NOT_CONNECTED` của API-73 (`test_shops_api.py::test_sync_now`) có test integration BE; `409 IMPORT_CONFLICT` (ghi đồng thời) **chưa có test** — khó dựng đụng độ ổn định. Chưa thêm TC riêng | Kỳ vọng cũ viết trước khi có code; bản chốt có lý do ở DEC-124 (lỗi mạng không bắt Admin kết nối lại) và DEC-121 (D5 "Nhập N đơn" theo đơn). Thêm TC cho mã mới để G4 quyết nếu cần | khanhtt (tự quyết) |
+| DEC-65 | T-19 thêm test song song API-51 (BE DEC-133 02a); DEC-64 ghi `409 IMPORT_CONFLICT` chưa có test | Thêm TC-05.22 (hai bản xem trước của cùng file → một 200, một 409, không trùng) và TC-05.23 (cùng bản xem trước bấm 2 lần đồng thời → cả hai 200 cùng kết quả). Cách `INT`, P2, KQ ✅ theo test BE đã pass (`test_import_concurrency.py`, BE 466 pass). NFR TC-N.01, N.04 ghi số máy dev, cột kết quả không đánh đạt | TC-05.23 sửa giả định cũ "xác nhận lặp → 409": khóa `FOR UPDATE` tuần tự hóa, lần sau thấy `COMMITTED` → trả kết quả cũ (02 DEC-62 c). Ngưỡng NFR là ngưỡng phần cứng kho; số máy dev chỉ cho biết code không phải nút thắt. Loại: chạy lại hai case trên stack thật ở QA (đụng độ phụ thuộc thời điểm, không ổn định ngoài barrier) | khanhtt (tự quyết) |
 
 ## Chốt G4
 - [ ] Mọi AC và FR mức M có ≥ 1 TC pass, có bằng chứng

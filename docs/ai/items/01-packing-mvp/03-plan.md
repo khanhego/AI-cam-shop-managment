@@ -6,11 +6,11 @@
 | Reviewer | PO · Tech lead (khanhtt) |
 | Trạng thái | Approved (Plan 2026-10-04, tự quyết DEC-15) |
 | Spec | [02-tech-spec.md](02-tech-spec.md) · [02a §12](02a-be-spec.md#12-task) · [02b-station §14](02b-fe-spec-station.md#14-task) · [02b-admin §14](02b-fe-spec-admin.md#14-task) |
-| Last update | 2026-10-05 · PM (M4 xong, trừ T-3; DEC-63 → backlog) |
+| Last update | 2026-10-05 · PM (M5 xong: T-19 ✅; thêm rủi ro triển khai chưa test) |
 
 > **TL;DR** — 46 task (22 BE, 24 FE), ≈ 70 ngày công cho một dev, 6 milestone M0–M5; mỗi milestone demo được end-to-end.
 > Đường găng BE: T-1 → T-6 → T-7 → T-10 → T-14 → T-15 (≈ 11 ngày); nhánh Cam 2 T-10 → T-11 → T-12 chờ thêm camera thật (T-4).
-> Xong dự kiến 2027-01-14 (M5), tính từ 2026-10-05, 1 dev, 5 ngày/tuần (DEC-34).
+> Xong dự kiến 2027-01-14 (M5), tính từ 2026-10-05, 1 dev, 5 ngày/tuần (DEC-34). **Thực tế: M0–M5 xong 2026-10-05** trừ T-3, T-4 (chờ tài nguyên ngoài).
 > Rủi ro tiến độ lớn nhất: Shopee duyệt partner chậm (T-3, Q11) và chưa có camera thật (T-4) — khởi động cả hai ngày đầu.
 
 <!-- Đối tượng đọc: cả đội và người duyệt Plan. Task lấy từ 02a §12 / 02b §14; không tự đặt thêm phạm vi. -->
@@ -50,7 +50,7 @@ Owner tất cả: khanhtt (profile §7). Ticket: chưa tạo (§7). Trạng thá
 | T-22 | Shopee jobs J-04, J-05, J-06, J-12 | be | FR-05.02..04 | tách từ T-16 | T-16 | 1 | be `2375a2e` | ✅ trên adapter mock / HTTP giả; queue `sync`, beat 5 / 10 / 15 / 30 phút; không chạy khi `SHOPEE_ENABLED=false` (DEC-124 02a) |
 | T-17 | imports: API-50..54, BR-17 | be | FR-05.09, 05.10 | 02a §12 | T-9 | 1,5 | be `90a16c6` | ✅ 500 đơn nhập 1,1 giây (AC-12 ≤ 30 giây; DEC-121 02a) |
 | T-18 | reports API-32, settings API-80, health API-81, J-11 | be | FR-09.01, 02.06 | 02a §12 | T-14 | 1 | be `e9ef363`, fix `1926eb6` | ✅ |
-| T-19 | Contract test, locust, compose.yml prod, Caddyfile, README vận hành. Checklist từ review M1 (DEC-53): đặt `FORWARDED_ALLOW_IPS` = IP Caddy; không phục vụ `*.map`; secret thật cho staging/prod | be | NFR-01, 05, 09 | 02a §12 | T-10..T-22 | 2 | | ⬜ |
+| T-19 | Contract test, locust, compose.yml prod, Caddyfile, README vận hành. Checklist từ review M1 (DEC-53): đặt `FORWARDED_ALLOW_IPS` = IP Caddy; không phục vụ `*.map`; secret thật cho staging/prod | be | NFR-01, 05, 09 | 02a §12 | T-10..T-22 | 2 | be `e2a88a5`, `5d83c09`, `f1cf83a`, `cd5183a` | ✅ Contract test 119 test so 52 API của 02 §6 với OpenAPI + snapshot `openapi.json`, giờ `Z` (đóng RB-11), API-51 song song (DEC-131..133 02a). Locust trên máy dev (không phải server kho): NFR-05 10 phút → API-11 p95 mở 80 ms / đóng 50 ms, 0 lỗi; stress 4 station ≈ 13.400 quét/giờ 5 phút → p95 26 ms, max 149 ms, 0 lỗi (DEC-134). `docker/compose.yml` production + Caddyfile + `docs/ops.md`; staging local 15/15 bước (DEC-135..137). BE 466 pass / 97 skip |
 | T-30 | Khung repo FE: Vite, React, TS, pnpm, ESLint, Prettier, Vitest, Playwright, CI | fe | — | 02b-st §14 | — | 1 | | ✅ |
 | T-31 | Design tokens → `tokens.css`, Tailwind theo vai trò màu, font, `system.css` | fe | — | 02b-st §14 | T-30 | 1 | | ✅ |
 | T-32 | `shared/ui` phần 1: Icon, Button, IconButton, TextField, SelectField, TextAreaField, Alert, StatusChip, AuthCard, TrackingNumber | fe | — | 02b-st §14 (tách) | T-31 | 2 | | ✅ |
@@ -113,7 +113,7 @@ Ngày mục tiêu tính từ thứ Hai 2026-10-05, 1 dev, 5 ngày/tuần, chưa 
 | M2 Video bằng chứng | T-5, T-14, T-21, T-15, T-18, T-40, T-51, T-52, T-53, T-54 | 14 | 2026-12-01 · **xong 2026-10-05** (code + E2E BE thật) | Clip Cam 1 + Cam 2 sau khi đóng, tra cứu, xem, giữ, xuất MP4 có overlay, dashboard ngày (AC-02, 08, 11, 15, 16, 18, 20) |
 | M3 Cam 2 + duyệt | T-4, T-12, T-13, T-37, T-55, T-62, T-60 (+ T-38 làm sớm) | 13 | 2026-12-18 · **xong 2026-10-05** trừ T-4 (chờ phần cứng) | Phiếu sai trên khay bị bắt, gửi duyệt → Supervisor duyệt trên dashboard, đóng gói lại, live view (AC-04, 10, 14, 17, 19, 21) |
 | M4 Nguồn đơn | T-3, T-16, T-22, T-17, T-56, T-58, T-59 (+ T-61 làm sớm) | 11 | 2027-01-06 · **xong 2026-10-05** trừ T-3 (chờ Shopee duyệt partner) | Kết nối Shopee (hoặc CSV khi chưa có quyền), đơn hủy bị chặn, người dùng + nhật ký (AC-05, 12) |
-| M5 Hoàn thiện | T-19 (T-38 xong ở M3, T-61 xong ở M4) | 5,5 | 2027-01-14 | Contract test, test tải, E2E, compose production; sẵn sàng G3 (AC-09, NFR-01, 05) |
+| M5 Hoàn thiện | T-19 (T-38 xong ở M3, T-61 xong ở M4) | 5,5 | 2027-01-14 · **xong 2026-10-05** (staging local, chưa lên server kho) | Contract test, test tải, E2E, compose production; sẵn sàng G3 (AC-09, NFR-01, 05) |
 
 ## 5. Rủi ro tiến độ
 
@@ -125,7 +125,10 @@ Ngày mục tiêu tính từ thứ Hai 2026-10-05, 1 dev, 5 ngày/tuần, chưa 
 | Chưa có camera thật khi tới M3 | Đặt mua ngày 1; T-12 phát triển trên `fake-cams` (file có barcode), chỉ T-4 cần phần cứng |
 | Cam 2 đọc < 95% (AC-04) | T-4 trước T-12; nếu không đạt → change request (đổi camera / ánh sáng / vị trí) trước khi làm tiếp M3 |
 | Một dev, 70 ngày công, ước lượng chưa có dữ liệu | Theo dõi sau M0, M1; cắt phạm vi theo thứ tự: D11 live view, D10, SIDE_BY_SIDE export (đều không phải AC chặn) |
-| Contract lệch khi code | T-33 MSW theo 02 §6; T-19 contract test so `/openapi.json` với 02 |
+| Contract lệch khi code | T-33 MSW theo 02 §6; T-19 contract test so `/openapi.json` với 02 — đã làm (DEC-131 02a); FE sinh client từ `ai-cam-be/openapi.json` |
+| **Khôi phục sao lưu chưa thử**: mới chạy `pg-backup` một lần (staging local), chưa `pg_restore` ra DB trống, chưa chạy lịch 01:00 qua đêm | Trước G5 production: khôi phục bản sao lưu vào DB trống theo `ai-cam-be/docs/ops.md` §6, đếm dòng bảng chính, đăng nhập + tra 1 kiện; ghi thời gian khôi phục. Chưa đạt thì không go-live |
+| Triển khai tại kho chưa test: WHEP qua LAN thật (ICE UDP 8189), cài root cert Caddy (`tls internal`) trên máy station / dashboard, volume video trên NAS (`compose.override.yml`), nâng cấp / rollback trên dữ liệu thật | Chạy ở G5 trên server kho theo `docs/ops.md` §3, §7: mở D11 từ máy dashboard trong LAN, kiểm cookie `Secure` sau khi cài cert, ghi thử segment lên NAS, nâng cấp bản kế tiếp có migration rồi rollback image (DB khôi phục từ sao lưu) |
+| Số tải mới đo trên máy dev (Colima, adapter mock, NFR-05 chỉ 10 phút thay 1 giờ) | Đo lại TC-N.01, N.04 trên server kho với camera thật ghi + cắt clip + xuất cùng lúc, đủ 1 giờ, trước G4 / G5 |
 | AC-08 (bản xuất ≤ 20 giây p95; tới điện thoại ≤ 30 giây) chưa test trên phần cứng thật. Spike S3 nguồn giả 720p sát ngưỡng (1 camera ≤ 16,4 giây; ghép 17,8–19,3 giây khi máy rảnh, 28,4 giây khi bận); nguồn giả 1080p H.265 ghép 106–167 giây — **không đạt** (RB-7 trong 02a) | Đo lại trên server kho + camera thật ở T-4 (M3), trước G4; hạ `EXPORT_PRESET` / `EXPORT_SIDE_SCALE` (DEC-101); vẫn vượt → camera ghi thêm sub-stream 720p cho xuất hoặc server có tăng tốc phần cứng (change request) |
 
 ## 6. Bảng phủ FR → task
