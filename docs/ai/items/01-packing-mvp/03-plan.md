@@ -6,7 +6,7 @@
 | Reviewer | PO · Tech lead (khanhtt) |
 | Trạng thái | Approved (Plan 2026-10-04, tự quyết DEC-15) |
 | Spec | [02-tech-spec.md](02-tech-spec.md) · [02a §12](02a-be-spec.md#12-task) · [02b-station §14](02b-fe-spec-station.md#14-task) · [02b-admin §14](02b-fe-spec-admin.md#14-task) |
-| Last update | 2026-10-05 · PM (M3 xong, trừ T-4) |
+| Last update | 2026-10-05 · PM (M4 xong, trừ T-3; DEC-63 → backlog) |
 
 > **TL;DR** — 46 task (22 BE, 24 FE), ≈ 70 ngày công cho một dev, 6 milestone M0–M5; mỗi milestone demo được end-to-end.
 > Đường găng BE: T-1 → T-6 → T-7 → T-10 → T-14 → T-15 (≈ 11 ngày); nhánh Cam 2 T-10 → T-11 → T-12 chờ thêm camera thật (T-4).
@@ -31,7 +31,7 @@ Owner tất cả: khanhtt (profile §7). Ticket: chưa tạo (§7). Trạng thá
 |---|---|---|---|---|---|---|---|---|
 | T-1 | Khung repo BE: uv, ruff, mypy, pytest, import-linter, Dockerfile (Python + FFmpeg + font), compose.dev, CI | be | — | 02a §12 | — | 1 | | ✅ |
 | T-2 | MediaMTX + `fake-cams` (RTSP từ file mẫu có barcode), record fMP4 60 giây | be | FR-02.01 | 02a §12 | T-1 | 1 | | ✅ |
-| T-3 | Spike S1 Shopee (đăng ký partner, endpoint, ký, trạng thái, rate limit) | be | FR-05.* | 02a §12 | — (bắt đầu ngày 1) | 2 + chờ duyệt | | ⬜ |
+| T-3 | Spike S1 Shopee (đăng ký partner, endpoint, ký, trạng thái, rate limit) | be | FR-05.* | 02a §12 | — (bắt đầu ngày 1) | 2 + chờ duyệt | | ⬜ chờ Shopee duyệt partner — chưa test (OAuth thật, `state` trong redirect, mã lỗi thật, bảng trạng thái vận chuyển, hạn mức rate limit, tra đơn theo mã vận đơn — DEC-123 02a) |
 | T-4 | Spike S2 vision với camera thật (vị trí, ROI, tỉ lệ đọc, CPU, ONVIF — DEC-33) | be | FR-03.06, AC-04, AC-17 | 02a §12 | T-2, có camera | 2 | | ⬜ chờ phần cứng — chưa test: tỉ lệ đọc ≥ 95% (AC-04, TC-03.21), trễ thật ≤ 2 giây, CPU camera 4MP, vị trí / ánh sáng, phiếu nhăn / in trùng; đo lại AC-08 (RB-7) |
 | T-5 | Spike S3 cắt clip + đo encode export (AC-08) | be | FR-02.02, AC-08 | 02a §12 | T-2 | 1 | be `4caa414` | ✅ (AC-08 với 1080p H.265 chưa đạt trên nguồn giả — RB-7, đo lại ở T-4) |
 | T-6 | core + migration `0001_initial` + CLI `create-admin` (`seed-demo` dời T-10, DEC-39) | be | — | 02a §12 | T-1 | 2 | | ✅ |
@@ -46,9 +46,9 @@ Owner tất cả: khanhtt (profile §7). Ticket: chưa tạo (§7). Trạng thá
 | T-14 | media: J-10 index segment, J-01 cắt clip, API-40, 41 | be | FR-02.01..05, 07.02 | 02a §12 (tách) | T-5, T-10 | 2 | be `74a3aea` | ✅ (làm thêm API-30/31 — 03 không có task nào giữ; DEC-102 02a) |
 | T-21 | media: API-42 giữ clip, API-46 cắt lại, J-02 retention | be | FR-02.06, 02.09, BR-09, AC-15, AC-20 | tách từ T-14 | T-14 | 1 | be `ebcc635` | ✅ |
 | T-15 | export: API-43..45, J-03 (overlay, side-by-side, queue `export`) | be | FR-07.04, 02.07 | 02a §12 | T-14 | 2 | be `dadf93c` | ✅ |
-| T-16 | Shopee adapter + API-70..73 + tra 2 giây trong scan | be | FR-05.01, 05.06, 05.08, BR-04 | 02a §12 (tách) | T-3, T-9, T-10 | 2 | | ⬜ |
-| T-22 | Shopee jobs J-04, J-05, J-06, J-12 | be | FR-05.02..04 | tách từ T-16 | T-16 | 1 | | ⬜ |
-| T-17 | imports: API-50..54, BR-17 | be | FR-05.09, 05.10 | 02a §12 | T-9 | 1,5 | | ⬜ |
+| T-16 | Shopee adapter + API-70..73 + tra 2 giây trong scan | be | FR-05.01, 05.06, 05.08, BR-04 | 02a §12 (tách) | T-3, T-9, T-10 | 2 | be `d5f7e05` | ✅ trên HTTP giả (respx) + adapter mock; Shopee thật chờ T-3. Token bucket ADR-007 chưa làm (DEC-122 02a) |
+| T-22 | Shopee jobs J-04, J-05, J-06, J-12 | be | FR-05.02..04 | tách từ T-16 | T-16 | 1 | be `2375a2e` | ✅ trên adapter mock / HTTP giả; queue `sync`, beat 5 / 10 / 15 / 30 phút; không chạy khi `SHOPEE_ENABLED=false` (DEC-124 02a) |
+| T-17 | imports: API-50..54, BR-17 | be | FR-05.09, 05.10 | 02a §12 | T-9 | 1,5 | be `90a16c6` | ✅ 500 đơn nhập 1,1 giây (AC-12 ≤ 30 giây; DEC-121 02a) |
 | T-18 | reports API-32, settings API-80, health API-81, J-11 | be | FR-09.01, 02.06 | 02a §12 | T-14 | 1 | be `e9ef363`, fix `1926eb6` | ✅ |
 | T-19 | Contract test, locust, compose.yml prod, Caddyfile, README vận hành. Checklist từ review M1 (DEC-53): đặt `FORWARDED_ALLOW_IPS` = IP Caddy; không phục vụ `*.map`; secret thật cho staging/prod | be | NFR-01, 05, 09 | 02a §12 | T-10..T-22 | 2 | | ⬜ |
 | T-30 | Khung repo FE: Vite, React, TS, pnpm, ESLint, Prettier, Vitest, Playwright, CI | fe | — | 02b-st §14 | — | 1 | | ✅ |
@@ -68,13 +68,13 @@ Owner tất cả: khanhtt (profile §7). Ticket: chưa tạo (§7). Trạng thá
 | T-53 | D4 Chi tiết + ClipPlayer + Giữ clip + cắt lại | fe | D4, FR-07.02, 02.09 | 02b-ad §14 | T-52, T-40; API-31, 40, 42, 46 | 2 | fe `4befee3` | ✅ |
 | T-54 | ExportDialog | fe | D4, FR-07.04, 02.07 | 02b-ad §14 | T-53; API-43..45 | 1 | fe `555d891` (+ E2E BE thật `272c9dc`) | ✅ |
 | T-55 | D13 Yêu cầu duyệt + badge + âm báo | fe | D13, FR-03.12 | 02b-ad §14 | T-50; API-20, 21 | 1,5 | fe `aeca76e` | ✅ (âm báo chưa nghe thử trên máy thật; DEC-81 02b-admin) |
-| T-56 | D5 Nhập đơn | fe | D5, FR-05.09 | 02b-ad §14 | T-50; API-50..54 | 1,5 | | ⬜ |
+| T-56 | D5 Nhập đơn | fe | D5, FR-05.09 | 02b-ad §14 | T-50; API-50..54 | 1,5 | fe `b09e0f3` | ✅ (DEC-91 02b-admin; `.xlsx` thật chưa thử trên trình duyệt) |
 | T-57 | D6 Station, camera, kiểm tra kết nối | fe | D6, FR-01.01 | 02b-ad §14 (tách) | T-50; API-60..63 | 1,5 | | ✅ |
 | T-62 | `RoiEditor` + lưu ROI | fe | D6, FR-01.04 | tách từ T-57 | T-57; API-63, 64 | 1 | fe `5e25242` | ✅ (DEC-82 02b-admin) |
-| T-58 | D7 Shopee, D8 Lưu trữ + sức khỏe | fe | D7, D8, FR-05.01, 02.06 | 02b-ad §14 | T-50; API-70..73, 80, 81 | 1,5 | | ⬜ |
-| T-59 | D9 Người dùng, D10 Nhật ký | fe | D9, D10, FR-10.01, 10.03 | 02b-ad §14 | T-50; API-90..92 | 1,5 | | ⬜ |
+| T-58 | D7 Shopee, D8 Lưu trữ + sức khỏe | fe | D7, D8, FR-05.01, 02.06 | 02b-ad §14 | T-50; API-70..73, 80, 81 | 1,5 | fe `83cc236` | ✅ (DEC-92 02b-admin; không có nút ngắt kết nối, không hiện số clip đang giữ — DEC-63 02) |
+| T-59 | D9 Người dùng, D10 Nhật ký | fe | D9, D10, FR-10.01, 10.03 | 02b-ad §14 | T-50; API-90..92 | 1,5 | fe `c1cb076` | ✅ (DEC-93 02b-admin; station về đăng nhập ≤ 15 phút sau thu hồi mới kiểm tới API 204 — TC-10.06) |
 | T-60 | D11 Live view (WHEP) | fe | D11, FR-01.05 | 02b-ad §14 | T-50; API-65 | 1,5 | fe `310de20`, E2E `fafd6b7` | ✅ (khung hình thật Cam 1 + Cam 2 qua ICE-TCP máy dev; LAN kho / UDP chưa test; DEC-83 02b-admin) |
-| T-61 | Test integration + E2E admin; chạy với BE thật | fe | UC-03, 07, 08, 09 | 02b-ad §14 | T-51..T-60 | 2 | | ⬜ |
+| T-61 | Test integration + E2E admin; chạy với BE thật | fe | UC-03, 07, 08, 09 | 02b-ad §14 | T-51..T-60 | 2 | fe `ac017c0`, `3533ff3` | ✅ làm cùng M4: bộ `ai-cam-fe/e2e/real` 37 bài chạy BE thật 37/37 (`evidence/m4-e2e-real.txt`); E2E mock 9 |
 
 Task nền theo spec đã có: migration (T-6), mock contract cho FE (T-33 MSW), flag `SHOPEE_ENABLED` (T-16), seed dữ liệu test (T-6 `seed-demo`), tài liệu vận hành (T-19). Done của mọi task: theo profile §8 (build / lint / test không thêm lỗi, test hành vi mới, system-map cập nhật).
 
@@ -112,14 +112,16 @@ Ngày mục tiêu tính từ thứ Hai 2026-10-05, 1 dev, 5 ngày/tuần, chưa 
 | M1 Quét đóng gói | T-7, T-8, T-9, T-10, T-20, T-11, T-34, T-35, T-36, T-50, T-57 | 17 | 2026-11-11 | Đăng nhập station, quét mở / đóng phiên với đơn seed, lệch mã do quét, Admin tạo station + camera (AC-01, 03, 13) |
 | M2 Video bằng chứng | T-5, T-14, T-21, T-15, T-18, T-40, T-51, T-52, T-53, T-54 | 14 | 2026-12-01 · **xong 2026-10-05** (code + E2E BE thật) | Clip Cam 1 + Cam 2 sau khi đóng, tra cứu, xem, giữ, xuất MP4 có overlay, dashboard ngày (AC-02, 08, 11, 15, 16, 18, 20) |
 | M3 Cam 2 + duyệt | T-4, T-12, T-13, T-37, T-55, T-62, T-60 (+ T-38 làm sớm) | 13 | 2026-12-18 · **xong 2026-10-05** trừ T-4 (chờ phần cứng) | Phiếu sai trên khay bị bắt, gửi duyệt → Supervisor duyệt trên dashboard, đóng gói lại, live view (AC-04, 10, 14, 17, 19, 21) |
-| M4 Nguồn đơn | T-3, T-16, T-22, T-17, T-56, T-58, T-59 | 11 | 2027-01-06 | Kết nối Shopee (hoặc CSV khi chưa có quyền), đơn hủy bị chặn, người dùng + nhật ký (AC-05, 12) |
-| M5 Hoàn thiện | T-19, T-61 (T-38 xong ở M3) | 5,5 | 2027-01-14 | Contract test, test tải, E2E, compose production; sẵn sàng G3 (AC-09, NFR-01, 05) |
+| M4 Nguồn đơn | T-3, T-16, T-22, T-17, T-56, T-58, T-59 (+ T-61 làm sớm) | 11 | 2027-01-06 · **xong 2026-10-05** trừ T-3 (chờ Shopee duyệt partner) | Kết nối Shopee (hoặc CSV khi chưa có quyền), đơn hủy bị chặn, người dùng + nhật ký (AC-05, 12) |
+| M5 Hoàn thiện | T-19 (T-38 xong ở M3, T-61 xong ở M4) | 5,5 | 2027-01-14 | Contract test, test tải, E2E, compose production; sẵn sàng G3 (AC-09, NFR-01, 05) |
 
 ## 5. Rủi ro tiến độ
 
 | Rủi ro | Giảm thiểu |
 |---|---|
 | Shopee duyệt partner chậm / từ chối (Q11) | Gửi đăng ký ngày 1; M4 làm CSV (T-17, T-56) trước; `SHOPEE_ENABLED=false`; T-16/T-22 có thể dời sang item sau mà MVP vẫn dùng được |
+| Adapter Shopee (T-16, T-22) chỉ chạy trên HTTP giả: chưa kiểm OAuth thật, mã lỗi thật, bảng trạng thái vận chuyển, hạn mức rate limit; tra đơn theo mã vận đơn dò đơn cập nhật 60 phút gần nhất (DEC-123 02a, cần xác nhận) | Khi có tài khoản partner (T-3): chạy lại TC-05.01, 05.02 thủ công, sửa `shopee/mapping.py` + `client.py`; làm token bucket theo hạn mức thật (ADR-007). Trước đó dùng nhập CSV |
+| Backlog sau MVP (DEC-63 02) | API ngắt kết nối shop (MVP: chủ shop thu hồi ở Shopee Seller Center, J-12 báo lỗi → D7 "Cần kết nối lại"); `held_clips` trong API-81 (MVP: xem số clip đang giữ ở D3 bằng lọc) |
 | Chưa có camera thật khi tới M3 | Đặt mua ngày 1; T-12 phát triển trên `fake-cams` (file có barcode), chỉ T-4 cần phần cứng |
 | Cam 2 đọc < 95% (AC-04) | T-4 trước T-12; nếu không đạt → change request (đổi camera / ánh sáng / vị trí) trước khi làm tiếp M3 |
 | Một dev, 70 ngày công, ước lượng chưa có dữ liệu | Theo dõi sau M0, M1; cắt phạm vi theo thứ tự: D11 live view, D10, SIDE_BY_SIDE export (đều không phải AC chặn) |

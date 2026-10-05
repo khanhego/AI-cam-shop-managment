@@ -4,11 +4,11 @@
 |---|---|
 | Tác giả (Architect) | khanhtt |
 | Reviewer | BE lead · FE lead (khanhtt, solo) |
-| Trạng thái | Approved (G2 2026-10-04, có điều kiện DEC-33) · **v0.4** — đổi contract sau G2 — chỉ thêm / làm rõ (v0.3: DEC-57, DEC-58; v0.4: DEC-61) |
+| Trạng thái | Approved (G2 2026-10-04, có điều kiện DEC-33) · **v0.5** — đổi contract sau G2 — chỉ thêm / làm rõ (v0.3: DEC-57, DEC-58; v0.4: DEC-61; v0.5: DEC-62, DEC-63) |
 | SRS | [01-srs.md](01-srs.md) v0.4 · FR phủ: FR-01.01–01.06, FR-02.01–02.07, 02.09, FR-03.01–03.12, FR-05.01–05.04, 05.06–05.10, FR-07.01–07.04, FR-09.01, FR-10.01–10.03 |
 | Spec con | BE: [02a-be-spec.md](02a-be-spec.md) · FE: [02b-fe-spec-station.md](02b-fe-spec-station.md), [02b-fe-spec-admin.md](02b-fe-spec-admin.md) |
 | Kiến trúc nền | [architecture.md](../../system/architecture.md) · ADR-001..008 |
-| Last update | 2026-10-05 · Architect (chốt contract M3: DEC-61) |
+| Last update | 2026-10-05 · Architect (chốt contract M4: DEC-62, DEC-63) |
 
 > **TL;DR** — Dựng mới toàn bộ: `ai-cam-be` (FastAPI + Celery + vision + MediaMTX, chạy tại kho) và `ai-cam-fe` (React, 2 client: station kiosk, dashboard).
 > Quét mã đi qua một API duy nhất `POST /station/scan`. API này luôn trả `200` kèm `outcome` để station tự chọn màn và âm thanh (DEC-7). Cập nhật realtime (Cam 2, duyệt, camera) đi qua WebSocket.
@@ -476,11 +476,15 @@ Lỗi: chung (`404 NOT_FOUND`). Ngày lọc theo giờ Việt Nam, API nhận `Y
 ```
 Cột mẫu: `platform_order_sn`, `tracking_number`, `sku`, `product_name`, `variation`, `quantity`, `buyer_note`. Một đơn nhiều dòng = nhiều sản phẩm; nhiều `tracking_number` = nhiều kiện.
 
+Làm rõ v0.5 (DEC-62): `counts.new` / `updated` / `skipped` đếm theo **đơn**, `counts.error` đếm **dòng** lỗi. File có dòng lỗi vẫn trả 201 `PREVIEW` (`errors` tối đa 1.000 dòng đầu), commit bị chặn. `sample` tối đa 20 dòng, `action` ∈ `NEW` / `UPDATE` / `SKIP`. Commit đọc lại file gốc và phân loại lại trong cùng transaction: đơn đã có nguồn `API` → `SKIP` (BR-17). Commit lại bản đã `COMMITTED` → 200 trả kết quả cũ.
+
 | HTTP | Mã lỗi | Khi nào | FE xử lý |
 |---|---|---|---|
 | 422 | FILE_INVALID | Sai loại / > 5 MB / > 5.000 dòng / thiếu cột bắt buộc (`details.missing_columns`) | "File thiếu cột bắt buộc: …" |
 | 409 | IMPORT_HAS_ERRORS | Commit khi `counts.error > 0` | nút Nhập đã khóa; hiện lại lỗi |
-| 409 | IMPORT_EXPIRED | Commit sau 30 phút | "Bản xem trước đã hết hạn. Tải file lại." |
+| 409 | IMPORT_EXPIRED | Commit sau 30 phút, hoặc file gốc đã mất | "Bản xem trước đã hết hạn. Tải file lại." |
+| 403 | FORBIDDEN | API-51: người commit không phải người tạo bản xem trước (v0.5, DEC-62) | Alert `message` server ("Chỉ người tải file lên mới xác nhận nhập được.") |
+| 409 | IMPORT_CONFLICT | API-51: dữ liệu đơn đổi trong lúc nhập — đồng bộ Shopee hoặc lần nhập khác ghi cùng đơn / mã vận đơn (v0.5, DEC-62) | Alert `message` server ("Dữ liệu đơn vừa thay đổi trong lúc nhập. Bấm Nhập lại.") |
 </details>
 
 <details><summary><b>API-60..65</b> — station và camera</summary>
@@ -518,7 +522,10 @@ Cột mẫu: `platform_order_sn`, `tracking_number`, `sku`, `product_name`, `var
 | HTTP | Mã lỗi | Khi nào | FE xử lý |
 |---|---|---|---|
 | 409 | SYNC_IN_PROGRESS | Đang đồng bộ | "Đang đồng bộ, thử lại sau." |
-| 503 | PLATFORM_NOT_CONFIGURED | Chưa có partner key (Q11) | Alert "Chưa cấu hình Shopee Open Platform. Dùng Nhập đơn từ file." |
+| 409 | SHOP_NOT_CONNECTED | API-73: shop không ở `CONNECTED` (hết hạn / đã thay bằng shop khác) (v0.5, DEC-62) | Alert `message` server; D7 chỉ hiện "Đồng bộ ngay" khi `CONNECTED` |
+| 503 | PLATFORM_NOT_CONFIGURED | API-71, API-73 khi `SHOPEE_ENABLED=false` hoặc chưa có partner key (Q11) | Alert "Chưa cấu hình Shopee Open Platform. Dùng Nhập đơn từ file." |
+
+Làm rõ v0.5 (DEC-62): `last_error` = `{ "code", "message", "at" }`, `code` ∈ `SYNC_FAILED` (J-04 hết lượt thử, vẫn `CONNECTED`), `AUTH_EXPIRED` (token bị từ chối → `EXPIRED`), `REFRESH_FAILED` (J-12 lỗi tạm, vẫn `CONNECTED`); shop có `last_error` → API-32 `attention` `SYNC_ERROR`. `today_synced_orders` = số đơn nguồn `API` của shop có `updated_at` từ 00:00 giờ Việt Nam hôm nay. API-72: `state` dùng một lần (10 phút, gắn người tạo URL); không có `code` → `denied`; `state` sai / đổi `code` lỗi → `error`; redirect là đường dẫn tương đối. Kết nối shop khác → shop cũ `DISCONNECTED`, xóa token (MVP một shop). MVP **không có API ngắt kết nối** (DEC-63).
 </details>
 
 <details><summary><b>API-80 / API-81</b> — cài đặt và sức khỏe</summary>
@@ -665,6 +672,7 @@ sequenceDiagram
 | NFR | NFR-01: API-11 chỉ ghi DB + đọc Redis, không gọi worker. NFR-03: cắt clip `-c copy`. NFR-09: mọi thứ trên LAN, Shopee chỉ ở worker / tra 2 giây |
 | Observability | Log JSON có `station_id`, `session_id`, `tracking_number`; metric độ trễ API-11 (p95), độ dài queue, thời gian cắt clip, camera online, lỗi Shopee |
 | Feature flag | N/A — hệ thống mới, chưa có người dùng. Shopee bật khi có partner key (`SHOPEE_ENABLED`) |
+| Adapter sàn (v0.5, DEC-62) | Interface `PlatformAdapter` (02a): `build_auth_url`, `exchange_code`, `refresh`, `shop_name`, `get_order`, `find_by_tracking`, `list_updated_orders`, **`get_shipping_statuses(creds, [ShipmentRef(order_sn, tracking)])` theo lô** (≤ 50 kiện / lời gọi; thay `get_shipping_status(tracking)` từng kiện — Shopee cần mã đơn). Thử lại trong adapter: 5 lần, giãn cách mũ hoặc theo `Retry-After`. Token bucket theo shop (ADR-007) chưa làm — chờ hạn mức thật (T-3). Adapter TikTok / Lazada sau này cài cùng interface |
 | Thời gian | Server là nguồn giờ; `server_time` trong API-10 để station hiển thị đồng hồ đúng |
 
 ## 9. Phương án đã cân nhắc
@@ -693,7 +701,9 @@ sequenceDiagram
 |---|:---:|---|
 | Cam 2 đọc mã < 95% (AC-04) | Cao | Spike S2 trước khi code vision; `tray.match = UNAVAILABLE` không chặn phiên |
 | Chưa có quyền Shopee API (Q11) | Cao | `SHOPEE_ENABLED=false` + CSV; adapter mock cho dev/test |
-| Tên API / trạng thái Shopee chưa xác minh | Trung bình | Spike S1; ánh xạ trạng thái trong adapter (02a) |
+| Tên API / trạng thái Shopee chưa xác minh | Trung bình | Spike S1; ánh xạ trạng thái trong adapter (02a). M4: adapter chỉ chạy trên HTTP giả — chờ T-3 (DEC-123 02a) |
+| Shopee không có API công khai tra đơn theo mã vận đơn | Trung bình | Tạm dò đơn cập nhật `SHOPEE_LOOKUP_LOOKBACK_MIN` (60) phút gần nhất; đơn cũ hơn → kiện chưa xác minh, J-05 xác minh lại sau. Xác nhận với Shopee ở T-3 (DEC-123 02a) |
+| Backlog sau MVP (DEC-63) | Thấp | API ngắt kết nối shop; `held_clips` trong API-81 |
 | Mã vận đơn Shopee ngoài `[A-Z0-9-]{8,40}` | Thấp | Kiểm với 50 phiếu thật ở spike; regex cấu hình được |
 | WS qua Caddy bị ngắt khi idle | Thấp | ping 20 giây |
 
@@ -743,6 +753,8 @@ sequenceDiagram
 | DEC-57 | Đổi contract sau G2 (v0.3) — **chỉ thêm, tương thích ngược**. Gom lệch BE/FE ghi khi làm M2: FE DEC-71, 72, 76 ([02b-admin](02b-fe-spec-admin.md#decisions)); BE DEC-102, 104, 105 ([02a](02a-be-spec.md#decisions)) | Chốt vào §6: (1) WS-02 thêm `session.clip_ready` `{session_id, clip_ids}` (BE đã phát cả WS-01 và WS-02). (2) API-32: trường tùy chọn `stations[].tracking_number`, `CLOCK_DRIFT.station_name`, `CLOCK_DRIFT.role`, `CAMERA_OFFLINE.role`; attention kind mới `CLIP_FAILED {count}` (clip FAILED trong 7 ngày); ghi rõ `packed` không đếm phiên SUPERSEDED, `stations[]` chỉ station đang bật, `WAITING_APPROVAL` khi có yêu cầu chờ, `DISK_USAGE` ≥ 80 %, cache 5 giây. (3) API-40/41/43: clip FAILED → `409 CLIP_NOT_READY` kèm `details.status = FAILED` (không thêm mã mới); `410 CLIP_DELETED` kèm `details.deleted_at`, `retention_clip_days`. (4) API-31: clip DELETED có `retention_until` = ngày đã xóa (FE DEC-76); `clips[]` thêm `deleted_at`, `flags`; phiên thêm `cancel_reason`, `note`; timeline thêm `from_status`. (5) API-44: người không phải người tạo và không phải ADMIN → 404; response thêm `session_id`, `layout`. (6) API-80 PUT gửi đủ 4 trường, phút 1–1440 (ghi rõ ràng buộc đã có trong code) | Code M2 đã chạy theo các điểm này và qua E2E BE thật 20/20, QA API live 78/78. Chỉ thêm trường / kind / sự kiện; client cũ bỏ qua trường lạ, nên không cần `/v2`. Phương án loại: thêm mã lỗi riêng `CLIP_FAILED` cho API-40 (phá nhánh xử lý `CLIP_NOT_READY` FE đã có); 403 ở API-44 (lộ sự tồn tại bản xuất của người khác) | khanhtt (architect, tự quyết theo ủy quyền DEC-15) | 2026-10-05 |
 | DEC-58 | Thời hạn giữ file xuất: 02a / code giữ 24 giờ, architecture §8.2 và ADR-008 ghi 30 ngày (BE DEC-104 nêu lệch) | **24 giờ** (`EXPORT_TTL_HOURS`), sau đó J-10 xóa file và bản ghi `export`; sửa architecture §8.2 và ADR-008 (phần Hệ quả) cho khớp | File xuất tạo lại được bất cứ lúc nào khi clip gốc còn (clip giữ 90 ngày, "Giữ clip" khi có khiếu nại — BR-09). Người dùng tải file về máy ngay để gửi sàn. Giữ 30 ngày tốn ổ vô ích; dev vừa có sự cố đầy ổ 64 GB. Phương án loại: 30 ngày (tốn ổ, không thêm bằng chứng — clip gốc mới là bằng chứng); 7 ngày (vẫn tốn ổ, không có nhu cầu tải lại sau 1 ngày) | khanhtt (architect, tự quyết theo ủy quyền DEC-15) | 2026-10-05 |
 | DEC-61 | Đổi contract sau G2 (v0.4) — **chỉ thêm / làm rõ**. Gom lệch khi làm M3: BE [DEC-111, DEC-112](02a-be-spec.md#decisions), FE [DEC-82, DEC-83](02b-fe-spec-admin.md#decisions) | Chốt vào §6: (a) API-11 quét mở khi khay đang có phiếu khác (`DIFFERENT` / `MULTIPLE`) → phiên mở rồi chuyển ngay `MISMATCH` nguồn `CAM2`, `outcome = MISMATCH` (không phải `SESSION_OPENED`). (b) WS-02 thêm `approval.updated` (khay đổi khi yêu cầu đang chờ). (c) WS-01 `alert` `{code, session_id, tracking_number}`, code `SESSION_CANCELLED_BY_SUPERVISOR` (cùng kênh `SESSION_ABANDONED` của J-07, nay ghi vào bảng). (d) API-20 item thêm `decision`, `decided_by`, `decided_at`, `note`; `decided_at` có cả khi `WITHDRAWN` (DEC-60). (e) API-64 ROI sai → `422 VALIDATION_ERROR` kèm `details.fields`, bỏ `ROI_INVALID`. (f) Ghi chú WHEP: `Location` trả về thiếu tiền tố `/live` → client tự ghép | (a) Vision không phát sự kiện mới khi khay không đổi, nên phải xét khay ngay lúc mở; trả `MISMATCH` để station phát âm lỗi thay cho bíp "ok" — người đứng bàn biết ngay có phiếu sai (BR-06). (d), (b), (c): code M3 đã phát, FE đã xử lý (invalidate mọi `approval.*`). (e) Nhất quán với mọi lỗi kiểm dữ liệu khác (Pydantic); FE đã xử lý cả `ROI_INVALID` và `VALIDATION_ERROR`, nên không phá client. Code M3 qua QA live 88/88, E2E BE thật 25/25 (+2 live). Phương án loại: (a) giữ `SESSION_OPENED` rồi đẩy `MISMATCH` qua WS (station bíp "ok" rồi mới báo lỗi — dễ bỏ qua); (e) BE trả riêng `ROI_INVALID` (thêm validator riêng chỉ để đổi tên mã, không thêm giá trị cho người dùng) | khanhtt (architect, tự quyết theo ủy quyền DEC-15) | 2026-10-05 |
+| DEC-62 | Đổi contract sau G2 (v0.5) — **chỉ thêm / làm rõ**. Gom lệch khi làm M4: BE [DEC-121, DEC-122, DEC-124](02a-be-spec.md#decisions) (DEC-123 là điểm Shopee chưa chắc, không đổi contract), FE [DEC-91, DEC-92, DEC-93](02b-fe-spec-admin.md#decisions) (không đổi contract) | Chốt vào §6, §8: (a) API-51 thêm `403 FORBIDDEN` (người commit ≠ người tạo bản xem trước) và `409 IMPORT_CONFLICT` (ghi đồng thời đụng nhau); `IMPORT_EXPIRED` gồm cả file gốc mất. (b) API-73 thêm `409 SHOP_NOT_CONNECTED`; API-71 / 73 trả `503 PLATFORM_NOT_CONFIGURED` khi `SHOPEE_ENABLED=false`. (c) Làm rõ `counts` (đơn vs dòng lỗi), file có lỗi vẫn 201, commit phân loại lại (BR-17), commit lặp → 200. (d) Dạng `last_error` + 3 mã; `today_synced_orders`; `state` một lần; kết nối shop khác → shop cũ `DISCONNECTED`. (e) §8: `PlatformAdapter.get_shipping_statuses` theo lô thay hàm từng kiện | (a) Commit của người khác là lỗi quyền, dùng mã chung `FORBIDDEN` thay vì mã riêng. `IMPORT_CONFLICT` cho người dùng bấm lại thay vì `500`. (b) Đồng bộ shop đã hết hạn không chạy được; báo rõ hơn `SYNC_IN_PROGRESS`. (e) Shopee tra vận chuyển theo mã đơn, 1 lời gọi / 50 đơn — gọi từng kiện tốn hạn mức. FE đã hiện `message` server cho mã lạ, nên không phá client. Code M4 qua BE 345 pass, QA live 94 pass + 2 skip, E2E BE thật 37/37. Phương án loại: (a) mã riêng `IMPORT_NOT_OWNER` (thêm mã không thêm giá trị); cho mọi ADMIN commit bản của người khác (mất dấu người chịu trách nhiệm trong audit) | khanhtt (architect, tự quyết theo ủy quyền DEC-15) | 2026-10-05 |
+| DEC-63 | FE DEC-92 (02b-admin) hỏi: 01 §10.5 D7 / D8 nêu "Ngắt kết nối" và "số clip đang giữ" nhưng 02 §6 không có API | **MVP không thêm cả hai.** (1) Không có API ngắt kết nối shop: chủ shop thu hồi ủy quyền ở Shopee Seller Center; khi token bị từ chối, J-12 / J-04 đặt shop `EXPIRED` + `last_error AUTH_EXPIRED` → D2 "Cần xử lý" có dòng lỗi đồng bộ, D7 chip "Hết hạn" + nút "Kết nối lại". (2) Không thêm `held_clips` vào API-81: số clip đang giữ xem ở D3 bằng lọc. Cả hai vào backlog sau MVP (03 §5) | MVP một shop, ngắt kết nối hiếm (đổi shop thì kết nối shop mới đã tự `DISCONNECTED` shop cũ — DEC-62 d). Số clip giữ chỉ để tham khảo dung lượng, D3 đã trả lời được. Không thêm API giữ phạm vi M5 gọn. Phương án loại: thêm `DELETE /shops/{id}` (cần gọi Shopee hủy ủy quyền — chưa có tài khoản để thử); thêm `held_clips` (thêm truy vấn đếm vào health 30 giây một lần, ít giá trị) | khanhtt (architect / PO, tự quyết theo ủy quyền DEC-15) | 2026-10-05 |
 
 ## Chốt G2 (áp cho bộ 02 + 02a + 02b)
 - [x] Mọi FR/BR/NFR trong phạm vi có chỗ trong spec (bảng FR coverage)

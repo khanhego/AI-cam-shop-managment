@@ -7,7 +7,7 @@
 | Lane | feature (chạy bằng `ai-solo-build-feature`) |
 | Quy mô | M |
 | Component bị chạm | ai-cam-be (be), ai-cam-fe (fe: station, admin) |
-| Last update | 2026-10-05 · Flow (M3 xong, trừ T-4) |
+| Last update | 2026-10-05 · Flow (M4 xong, trừ T-3) |
 
 Phạm vi dự kiến: M01, M02, M03, M05 (Shopee: đơn + trạng thái), M07 cơ bản, M10 của [SRS hệ thống](../../system/SRS.md).
 Spike S1–S5 và dựng khung repo ([architecture.md §17](../../system/architecture.md)) sẽ thành task đầu trong `03-plan`.
@@ -37,8 +37,8 @@ Số item: 01 (chưa có item nào; `git ls-remote --heads` của 3 repo không 
 | 5 | Review bộ spec | ✅ | 2026-10-04 | Vòng 1 Chưa đạt (28), vòng 2 Đạt có điều kiện (12 minor/nit, đã sửa) |
 | 6 | Kế hoạch | ✅ | 2026-10-04 | 03-plan.md |
 | 7 | Test cases | ✅ | 2026-10-04 | CP7 tự duyệt; 04 Ready: 137 case, DEC-38 |
-| 8 | Implement | ▶ đang làm | 2026-10-05 | M0–M3 xong (trừ T-4 chờ phần cứng); tiếp M4. M3: BE 294 pass / 89 skip, QA live 88/88 (M1+M2+M3); FE 224 unit, E2E mock 6, E2E BE thật 25/25 (+2 live = 27); contract chốt 02 v0.4 (DEC-61), SRS v0.4 (DEC-60) |
-| 8c | Tài liệu nghiệp vụ (mỗi lát) | ▶ đang làm | 2026-10-05 | Bắt buộc trước G3. Lát 0–3 đã viết ở `docs/nghiep-vu/01-packing-mvp/` (Draft, có §0 Giải thích đơn giản); chờ CP8c |
+| 8 | Implement | ▶ đang làm | 2026-10-05 | M0–M4 xong (trừ T-3, T-4 chờ tài nguyên ngoài); M5: T-19. M4: BE 345 pass / 97 skip, QA live 94 pass + 2 skip (Shopee chạy riêng với cờ bật + adapter mock); FE 274 unit, E2E mock 9, E2E BE thật 37/37; contract chốt 02 v0.5 (DEC-62, DEC-63) |
+| 8c | Tài liệu nghiệp vụ (mỗi lát) | ▶ đang làm | 2026-10-05 | Bắt buộc trước G3. Lát 0–4 đã viết ở `docs/nghiep-vu/01-packing-mvp/` (Draft, có §0 Giải thích đơn giản); lát 5 sau M5; chờ CP8c |
 | 9 | Commit / PR | ⬜ | | |
 | 10 | Review code | ⬜ | | |
 | 11 | Chạy test | ⬜ | | |
@@ -47,7 +47,7 @@ Số item: 01 (chưa có item nào; `git ls-remote --heads` của 3 repo không 
 ## NOW
 | Owner tiếp | Việc tiếp | Skill |
 |---|---|---|
-| Dev BE + Dev FE (agent song song) | M4 Nguồn đơn: BE T-17 imports CSV (API-50..54), T-16 Shopee adapter (mock — chưa test API thật), T-22 jobs J-04/05/06/12; FE T-56 D5, T-58 D7/D8, T-59 D9/D10. T-3 chờ Shopee duyệt partner. T-4 vẫn chờ camera thật | ai-be-implement, ai-fe-implement |
+| Dev BE → Lead review → QA → Ops | M5: T-19 (contract test, locust, compose production, Caddyfile, README vận hành, checklist DEC-53) → bước 10 review code toàn Phase 1 (G3) → bước 11 QA (G4) → bước 12 release staging local (G5) → PR + merge `main`. T-3 chờ Shopee duyệt partner, T-4 chờ camera thật | ai-be-implement → ai-lead-review → ai-qa-run-tests → ai-ops-release |
 
 ## Phản hồi giữa các vai
 | Từ | Tới | Nội dung | Trạng thái |
@@ -59,11 +59,13 @@ Số item: 01 (chưa có item nào; `git ls-remote --heads` của 3 repo không 
 | FE, BE (M2) | Architect, QA | FE DEC-71 (WS-02 `session.clip_ready`), DEC-72 (trường API-32), DEC-76 (`retention_until` clip đã xóa), DEC-73 (TC-09.04); BE DEC-102..105 (lệch contract khi code), DEC-104 (bản xuất 24 giờ vs 30 ngày) | Đóng: 02 v0.3 DEC-57, DEC-58 (architecture §8.2, ADR-008 sửa theo); 04 DEC-59 |
 | BE (T-13) | PO | RB-14 (02a): phiên chờ duyệt lâu rồi được "Cho tiếp tục" bị cảnh báo / bỏ dở ngay vì J-07 tính từ `started_at` | Đóng bằng DEC-60: đồng hồ tính lại từ lúc yêu cầu kết thúc (be `97abd2e`); change request nhỏ BR-16 → 01 v0.4; TC-03.57 |
 | BE, FE (M3) | Architect | BE DEC-111, DEC-112 (outcome MISMATCH khi mở với khay sai, `approval.updated`, `alert` SESSION_CANCELLED_BY_SUPERVISOR, trường API-20); FE DEC-82 (ROI 422 VALIDATION_ERROR), DEC-83 (WHEP `Location` thiếu `/live`) | Đóng: 02 v0.4 DEC-61; TC-01.06 sửa kỳ vọng |
+| BE, FE (M4) | Architect, QA | BE DEC-121, 122, 124 (mã mới `IMPORT_CONFLICT`, `SHOP_NOT_CONNECTED`, 403 commit bởi người khác, `get_shipping_statuses` theo lô, dạng `last_error`); DEC-123 điểm Shopee chưa chắc; FE DEC-92 hỏi API ngắt kết nối + `held_clips` | Đóng: 02 v0.5 DEC-62 (contract), DEC-63 (không thêm 2 API trong MVP → backlog 03 §5); 04 DEC-64 (TC-05.09, 05.10, 05.15). DEC-123 chờ T-3 |
 | UX | PO | Supervisor duyệt từ dashboard (DEC-5) cần FR mới FR-03.12, sửa FR-03.10, UC-08, ma trận quyền, thêm AC-19 | Đã xử lý trong 01 v0.2 (solo) |
 
 ## Lịch sử
 | Ngày | Role | Việc |
 |---|---|---|
+| 2026-10-05 | BE, FE, QA, Architect, PO | **M4 Nguồn đơn xong (trừ T-3)**: BE T-17 `90a16c6` (API-50..54 nhập CSV / xlsx, BR-17, fixtures `tests/qa/fixtures/csv/`, volume `imports`), T-16 `d5f7e05` (adapter Shopee v2 HMAC, OAuth, refresh, thử lại theo `Retry-After`, API-70..73, tra 2 giây khi quét ngoài lock), T-22 `2375a2e` (J-04/05/06/12, queue `sync`, beat 5/10/15/30 phút; tắt khi `SHOPEE_ENABLED=false`); FE T-56 `b09e0f3` D5, T-58 `83cc236` D7 + D8, T-59 `c1cb076` D9 + D10, T-61 bộ `e2e/real` 37 bài. Kết quả: BE 345 pass / 97 skip, QA live 94 pass + 2 skip (+ adapter mock 8/8), TC-05.11 nhập 500 đơn 1,1 giây (AC-12 ≤ 30 giây); FE 274 unit, E2E mock 9, E2E BE thật 37/37 (`evidence/m4-e2e-real.txt`). Sửa 2 lỗi test FE `ac017c0`: EX-P9 chập chờn (helper `src/test/scan.ts` `hidScan`), `pnpm test` thoát mã 1 do thay `FormData` toàn cục (nay `src/test/nodeFormData.ts` chỉ trong test upload). Sửa lỗi D11 màn đen `3533ff3` (track WebRTC tới muộn của kết nối đã đóng). Architect 02 v0.5 (DEC-62, DEC-63); 04 DEC-64; system-map; tài liệu nghiệp vụ lát 4. Chưa test (thiếu tài khoản partner, T-3): OAuth thật, `state` trong redirect, mã lỗi thật, bảng trạng thái vận chuyển, rate limit (token bucket ADR-007 chưa làm), tra đơn theo mã vận đơn (DEC-123, tạm dò 60 phút); TC-10.06 mới kiểm tới API 204; `.xlsx` thật ở FE |
 | 2026-10-05 | BE, FE, QA, Architect, PO | **M3 Cam 2 + duyệt xong (trừ T-4)**: BE T-12 `771f61d` (vision OpenCV + zxing-cpp đọc mã trong ROI Cam 2, 4 khung/giây, `tray:{station_id}` TTL 5 giây, `tray.changed` → `on_tray_changed`), T-13 `9b7c26e` (API-13/14/20/21, WS `approval.*`), `97abd2e` (DEC-60 đồng hồ quá giờ sau duyệt; MediaMTX dev ICE 8189 UDP+TCP); FE T-55 `aeca76e` D13, T-62 `5e25242` RoiEditor, T-60 `310de20` D11 WHEP + `fafd6b7` E2E khung hình thật; T-38 E2E station + D13 BE thật. Kết quả: BE 294 pass / 89 skip, QA live 88/88, FE 224 unit, E2E mock 6, E2E BE thật 25/25 (+2 live). Architect chốt 02 v0.4 (DEC-61); PO SRS v0.4 (DEC-60, đóng RB-14); 04 TC-01.06 + TC-03.57; tài liệu nghiệp vụ lát 3. Chưa test (thiếu camera thật, T-4): tỉ lệ đọc ≥ 95%, trễ thật, CPU 4MP, ánh sáng, phiếu nhăn; âm báo D13 chưa nghe thật; live view LAN kho (UDP) |
 | 2026-10-05 | BE, FE, QA, Architect | **M2 Video bằng chứng xong**: BE T-5 `4caa414`, T-14 `74a3aea` (+ API-30/31), T-21 `ebcc635`, T-15 `dadf93c`, T-18 `e9ef363`; FE T-51 `83b459e`, T-52 `3323be6`, T-53 `4befee3`, T-54 `555d891`, E2E UC-03 BE thật `272c9dc`. Kết quả: BE 257 pass / 79 skip, FE 185 unit, E2E BE thật 20/20, QA API live 78/78. Sự cố: ổ dev đầy 64 GB (MediaMTX giữ path camera mồ côi + video thô) → `7adb72f` dev giữ video 1 giờ, qa-reset dọn volume, J-10 xóa path mồ côi (DEC-102). Lỗi E2E thật bắt: D2 không tăng sau đóng phiên do cache API-32 → `1926eb6` xóa cache trước khi phát `report.updated` (TC-09.03). Architect chốt 02 v0.3 (DEC-57 contract, DEC-58 bản xuất 24 giờ; sửa architecture §8.2, ADR-008); 04 DEC-59 (TC-09.04); tài liệu nghiệp vụ lát 2. Rủi ro mở: AC-08 với 1080p H.265 thật (RB-7) |
 | 2026-10-05 | Flow | User giao hoàn thành Phase 1–3 tự động (DEC-56): Phase 1 tiếp item 01 từ bước 8 (M2–M5); commit + push mỗi task; cuối phase G3/G4/G5 (staging local) + PR + merge main; phần thiếu tài nguyên ghi "chưa test"; Q&A nghiệp vụ sau phase, critical → dừng hẳn |
