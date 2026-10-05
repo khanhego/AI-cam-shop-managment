@@ -648,7 +648,7 @@ Phiên bản theo SemVer, BE và FE gắn tag độc lập; `compose.yml` ghim c
 | ADR-006 | Một app React cho cả station và dashboard, station chạy Chromium kiosk | Accepted (2026-10-04, qua G2 item 01) |
 | ADR-007 | Sàn tích hợp qua adapter, polling là nền, webhook là bổ sung | Accepted (2026-10-04, qua G2 item 01) |
 | ADR-008 | Clip gốc bất biến + SHA-256; overlay chỉ trên bản xuất; bật OSD thời gian của camera | Accepted (2026-10-04, qua G2 item 01) |
-| ADR-009 | Bằng chứng giữ theo hồ sơ khiếu nại chưa đóng, thay cờ "giữ clip" | Proposed (2026-10-05, item 02) |
+| ADR-009 | Bằng chứng giữ theo hồ sơ khiếu nại chưa đóng và hồ sơ hàng hoàn chưa kết thúc, thay cờ "giữ clip" | Accepted (2026-10-05, item 02 sau review G2 lượt 1) |
 
 Mỗi ADR có file riêng trong [decisions/](decisions/).
 

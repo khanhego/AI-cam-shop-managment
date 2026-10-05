@@ -4,7 +4,7 @@
 |---|---|
 | Tác giả | khanhtt (FE) |
 | Reviewer | khanhtt (tech lead, review subagent ở bước 5) |
-| Trạng thái | In review |
+| Trạng thái | In review · **v0.2** (sửa review G2 lượt 1 — R-5, R-9, R-24, R-27, R-30; DEC-239, 244..262) |
 | Tổng quan & contract | [02-tech-spec.md](02-tech-spec.md) · Màn: [01-srs.md §10.4](01-srs.md) (R1–R5, S1/S2/S3 mở rộng) · nền Phase 1 [item 01 02b-station](../01-packing-mvp/02b-fe-spec-station.md) · [Design system](../../../design-system/README.md) mục Station kiosk |
 | Last update | 2026-10-05 · FE |
 
@@ -80,7 +80,7 @@ Guard không đổi (`role = STATION`). Không có route mới; panel chọn tro
 | `ReturnReadyPanel` (R1) | NEW `features/station/returns/ReturnReadyPanel.tsx` | `todayReturnCount`, `todayReturnIssueCount`, `recent`, `canSwitchMode` | Nút "Không quét được mã? Tìm thủ công", "Chuyển sang đóng gói" |
 | `InspectingPanel` (R2) | NEW `features/station/returns/InspectingPanel.tsx` | `session` (RETURN) | Bố cục 2 cột 01 §10.4 R2 |
 | `ReturnHeader` | NEW | `session.return_case`, `package` | Mã đã quét (display-md mono), chip loại, mã đơn, mã gốc, lý do |
-| `InspectionTable` | NEW `features/station/returns/InspectionTable.tsx` | `lines`, `onChange` | Mỗi dòng: ảnh 64px, tên, gửi, yêu cầu trả, `QuantityStepper` (− / +, 56px), `SelectField` tình trạng (6 giá trị) |
+| `InspectionTable` | NEW `features/station/returns/InspectionTable.tsx` | `lines`, `onChange`, `mode` (`FULL` \| `REFERENCE`) | `REFERENCE` (giao thất bại đơn > 1 kiện — 02 §6.3 #7): bảng chỉ xem + chữ "Đơn có {n} kiện — chỉ chọn kết luận chung cho kiện này."; không gửi `lines` thay đổi | Mỗi dòng: ảnh 64px, tên, gửi, yêu cầu trả, `QuantityStepper` (− / +, 56px), `SelectField` tình trạng (6 giá trị) |
 | `ConclusionPicker` | NEW `features/station/returns/ConclusionPicker.tsx` | `value`, `disabledOk`, `onChange`, `error` | 6 nút `SegmentedButtons` cao 56px; "Nguyên vẹn" khóa theo BR-22 + tooltip |
 | `InspectionNote` | NEW | `value`, `required` | `TextAreaField` ≤ 500; bắt buộc khi `OTHER` |
 | `SnapshotStrip` | NEW `shared/media/SnapshotStrip.tsx` (dùng chung admin) | `snapshots`, `onCapture?`, `max` | Ô 96px; bấm → `Dialog` ảnh lớn; nút "+ Chụp ảnh (F2)" |
@@ -111,10 +111,10 @@ Guard không đổi (`role = STATION`). Không có route mới; panel chọn tro
 
 | Form | Field | Rule client | Lỗi server map vào field |
 |---|---|---|---|
-| R5 người kiểm | `name` | trim, 2–40 | `VALIDATION_ERROR.fields.name`; `SESSION_ACTIVE` → Alert "Đóng phiên trước khi đổi người kiểm." |
+| R5 người kiểm | `name` (sau đăng xuất / thu hồi station, server xóa tên → R5 hiện lại — BR-28) | trim, 2–40 | `VALIDATION_ERROR.fields.name`; `SESSION_ACTIVE` → Alert "Đóng phiên trước khi đổi người kiểm." |
 | R2 dòng | `quantity_received` | 0–999 (stepper không cho ra ngoài) | `VALIDATION_ERROR.fields["lines.N.quantity_received"]` → viền đỏ dòng N |
 | | `condition` | bắt buộc (mặc định OK) | |
-| R2 kết luận | `conclusion` | "Nguyên vẹn" khóa khi `!canBeOk(lines)` (BR-22); đang chọn OK mà dòng đổi sang vấn đề → bỏ chọn + chữ "Có dòng thiếu / hỏng — chọn vấn đề." | `CONCLUSION_INCONSISTENT` → cùng chữ |
+| R2 kết luận | `conclusion` | `lines_mode = REFERENCE` → không khóa "Nguyên vẹn". `FULL`: "Nguyên vẹn" khóa khi `!canBeOk(lines)` (BR-22); đang chọn OK mà dòng đổi sang vấn đề → bỏ chọn + chữ "Có dòng thiếu / hỏng — chọn vấn đề." | `CONCLUSION_INCONSISTENT` → cùng chữ |
 | | `note` | ≤ 500; bắt buộc khi `OTHER` | `fields.note` |
 | R3 tìm | `q` | trim, upper, ≥ 4 ký tự | `VALIDATION_ERROR` → "Nhập ít nhất 4 ký tự." |
 | Hủy phiên hoàn | `reason` | Quét nhầm / Không phải hàng hoàn / Khác (note bắt buộc ≤ 200) | `fields.note` |
@@ -130,7 +130,7 @@ Guard không đổi (`role = STATION`). Không có route mới; panel chọn tro
 | R5 | Nút "Bắt đầu ca" xoay | — | Alert dưới ô | — | Đóng Dialog, chip tên trên thanh |
 | S1 thông báo cờ | — | — | — | — | Alert `warning` 10 giây |
 | S2 đơn hủy | — | — | — | — | Banner `error` + âm lỗi 1 lần (WS-01 `alert ORDER_CANCELLED_DURING_SESSION`), nút "Hủy phiên" dạng tonal |
-| Quá giờ RETURN | Alert 20 phút (từ `warn_at`), về R1 + thông báo khi `SESSION_ABANDONED` | | | | |
+| Quá giờ RETURN | Alert 20 phút (từ `warn_at`, server đã trừ thời gian chờ duyệt). 45 phút: phiên có kết luận được server tự hoàn tất → state về R1 + `ClosedNotice` ("…đã tự hoàn tất do quá 45 phút", cờ `AUTO_CLOSED`); không có → WS `alert SESSION_ABANDONED` → R1 + thông báo | | | | |
 
 ## 7. Phân quyền trên UI
 
@@ -154,6 +154,10 @@ Guard không đổi (`role = STATION`). Không có route mới; panel chọn tro
 | API-102 `SESSION_NOT_OPEN` / `NOT_RETURN_SESSION` | — | Gọi lại API-10, bỏ nháp |
 | API-102 `VALIDATION_ERROR` / `CONCLUSION_INCONSISTENT` | Theo §5 | Giữ nháp, `SaveIndicator` lỗi |
 | API-103 `SNAPSHOT_LIMIT` | Nút "Đã đủ 20 ảnh" | — |
+| API-103 `SESSION_NOT_OPEN` | — | Xóa ảnh đang chờ, gọi lại API-10 |
+| API-105 `SESSION_ACTIVE` | Toast "Station đang có phiên. Đóng phiên trước." | Đóng R3, gọi lại API-10 |
+| API-105 `200 outcome = ALERT` | Đóng R3 → R4 theo `alert.code` (như API-11) | — |
+| API-11 PACK `ALERT ALREADY_HANDED_OVER` có `data.is_return` | S4 "ĐƠN ĐÃ BÀN GIAO" + dòng "Đây là kiện hàng hoàn — nhận ở bàn nhận hoàn." | Tự đóng 5 giây |
 | API-103 `CAMERA_UNREACHABLE` | Toast "Không chụp được ảnh từ Cam 1. Thử lại." | — |
 | API-100/101 `SESSION_ACTIVE` | Alert trong Dialog / toast | — |
 | API-100 `MODE_NOT_ALLOWED`, API-104/105 `WRONG_WORK_MODE` | — | Tải lại API-10 |
@@ -231,3 +235,5 @@ Tổng ≈ 10 ngày công.
 | DEC-236 | Luật BR-22 phía client | `src/shared/returns/inspection.ts` dùng chung station + admin | Một chỗ sửa khi luật đổi | khanhtt (tự quyết) |
 | DEC-237 | Phím chụp ảnh | F2 (nghe `keydown` riêng ở R2) | Không xung đột máy quét HID (không gửi phím chức năng) | khanhtt (tự quyết) |
 | DEC-238 | Thời gian tự đóng R4 | 8 giây | Chữ R4 dài hơn S4, có 2 nút ở `RETURN_NOT_FOUND` | khanhtt (tự quyết) |
+| DEC-239 | Bố cục R2 ở 1366×768 (RF-12) | Khối Kết luận + hướng dẫn quét dính đáy (sticky), bảng dòng cuộn trong khung | Luôn thấy kết luận và hướng dẫn quét đóng; không phải cuộn trang | khanhtt (tự quyết) |
+| DEC-244 | Review G2 lượt 1 phần station | `lines_mode`, tự hoàn tất quá giờ, lỗi API-103 / 105, kiện hoàn ở bàn đóng gói, R5 sau đăng xuất | Theo 02 §6.3 | khanhtt (tự quyết) |

@@ -4,7 +4,7 @@
 |---|---|
 | Tác giả | khanhtt (FE) |
 | Reviewer | khanhtt (tech lead, review subagent ở bước 5) |
-| Trạng thái | In review |
+| Trạng thái | In review · **v0.2** (sửa review G2 lượt 1 — R-1, R-5, R-9, R-16, R-17, R-19, R-28, R-30; DEC-244..262) |
 | Tổng quan & contract | [02-tech-spec.md](02-tech-spec.md) · Màn: [01-srs.md §10.5](01-srs.md) (D14–D17 mới; D2, D3, D4, D6, D8, D13 mở rộng) · nền Phase 1 [item 01 02b-admin](../01-packing-mvp/02b-fe-spec-admin.md) · [Design system](../../../design-system/README.md) |
 | Last update | 2026-10-05 · FE |
 
@@ -66,9 +66,9 @@ Drawer (`features/shell/nav.ts`) thêm sau "Tra cứu đơn": "Hàng hoàn" (`as
 | `ReturnsPage` (D14) | NEW `features/returns/ReturnsPage.tsx` | URL params | `Tabs` có số (`tab_counts`), `ReturnFilters`, `ReturnTable` / card |
 | `ReturnTable` | NEW | `items` | Cột 01 §10.5 D14; tab Chỉ hoàn tiền: nút "Tạo hồ sơ khiếu nại"; tab Chưa xác định: "Gắn đơn" (mở D4 + Dialog) |
 | `ReturnCaseSection` | NEW `features/returns/ReturnCaseSection.tsx` | `returnCase`, `sessions`, `canLink`, `canCorrect` | Khối "Hàng hoàn" ở D4 |
-| `InspectionView` | NEW `features/returns/InspectionView.tsx` | `inspection` | Bảng dòng chỉ đọc + kết luận + người kiểm + "Đã sửa" |
-| `CorrectInspectionDialog` | NEW `features/returns/CorrectInspectionDialog.tsx` | `session` | Dùng `src/shared/returns/inspection.ts` (BR-22) + `reason` |
-| `LinkOrderDialog` | NEW `features/returns/LinkOrderDialog.tsx` | `returnCase` | Ô mã → API-30 xem trước → API-112 |
+| `InspectionView` | NEW `features/returns/InspectionView.tsx` | `inspection` | Bảng dòng chỉ đọc (`REFERENCE` → nhãn "Chỉ tham khảo") + kết luận + người kiểm + cờ "Tự đóng" + "Đã sửa {n} lần" mở lịch sử `corrections[]` (người, giờ, lý do, kết luận trước) |
+| `CorrectInspectionDialog` | NEW `features/returns/CorrectInspectionDialog.tsx` | `session` | Dùng `src/shared/returns/inspection.ts` (BR-22 theo `lines_mode`) + `reason`; case một phiên: chữ "Áp cho cả {n} kiện của hồ sơ HH-…" |
+| `LinkOrderDialog` | NEW `features/returns/LinkOrderDialog.tsx` | `returnCase` | Ô mã → API-30 xem trước (đơn > 1 kiện: chọn kiện bằng radio; đơn đã có hồ sơ hàng hoàn mở: chữ "Sẽ gộp vào HH-…") → API-112; `merged_claims` → toast "Đã gộp KN-… vào KN-…" |
 | `ReconPage` (D15) | NEW `features/reconciliation/ReconPage.tsx` | URL params | `Tabs` trạng thái, lọc mức / quy tắc / ngày, bảng |
 | `ResolveAlertDialog` | NEW `features/reconciliation/ResolveAlertDialog.tsx` | `alert` | `SegmentedButtons` 3 hành động; dùng `AdjustStatusForm`, `CreateClaimForm` |
 | `AdjustStatusForm` | NEW `features/reconciliation/AdjustStatusForm.tsx` (dùng ở D4) | `packageId`, `allowedTargets`, `alertId?` | API-122 |
@@ -76,13 +76,14 @@ Drawer (`features/shell/nav.ts`) thêm sau "Tra cứu đơn": "Hàng hoàn" (`as
 | `CreateClaimDialog` | NEW `features/claims/CreateClaimDialog.tsx` | `packageId?`, `returnCaseId?`, `reconAlertId?`, `defaultType?` | API-131; `CLAIM_EXISTS` → nút "Mở hồ sơ" |
 | `ClaimDetailPage` (D17) | NEW `features/claims/ClaimDetailPage.tsx` | `:id` | Header + `ClaimStatusStepper` + `ClaimInfoForm` + `EvidenceList` + `ClaimNotes` |
 | `ClaimStatusStepper` | NEW | `status`, `allowedTransitions`, `onTransition` | Menu "Đổi trạng thái" + Dialog theo trạng thái đích (mã sàn / số tiền / lý do) |
-| `EvidenceList` | NEW `features/claims/EvidenceList.tsx` | `evidence`, `otherSessions`, `missing`, `editable` | Bỏ / Thêm → API-134; chọn phiên → `ClipPlayer` (REUSE `shared/media/ClipPlayer.tsx`) |
+| `EvidenceList` | NEW `features/claims/EvidenceList.tsx` | `evidence`, `otherSessions`, `missing`, `editable` | Bỏ / Thêm → API-134 (bỏ bằng chứng tự chọn → Dialog "Lý do bỏ" 5–500 bắt buộc — R-19); chọn phiên → `ClipPlayer` (REUSE `shared/media/ClipPlayer.tsx`) |
 | `EvidencePackDialog` | NEW `features/claims/EvidencePackDialog.tsx` | `claimId` | API-136 → theo dõi API-137 / WS → tải API-138 (mẫu `ExportDialog` Phase 1) |
 | `ClaimNotes` | NEW | `notes` | Dòng thời gian + ô thêm (API-135) |
 | `SnapshotStrip` | REUSE `shared/media/SnapshotStrip.tsx` (từ 02b-station T-134) | `snapshots` | D4, D17 |
-| `ProtectedChip` | NEW `features/orders/ProtectedChip.tsx` | `claims` | Thay `HoldToggle` (xóa file) |
+| `ProtectedChip` | NEW `features/orders/ProtectedChip.tsx` | `protection` (API-31) | Thay `HoldToggle` (xóa file). "Đang được giữ: hồ sơ khiếu nại KN-…" / "…: hàng hoàn HH-…" (link) / "…tới {until}" khi có hạn; không giữ → gợi ý "Muốn giữ clip? Tạo hồ sơ khiếu nại." (R-1) |
 | `RetentionConfirmDialog` | NEW `features/settings/RetentionConfirmDialog.tsx` | `impact` (API-82 / `details.impact`) | 01 §10.5 D8 chữ |
-| `KpiCard`, `AttentionList` | EXTEND | kind mới | D2 |
+| `KpiCard`, `AttentionList` | EXTEND | kind mới (gồm `RETURN_SESSION_ABANDONED`) | D2 |
+| `PackageTable` | EXTEND | `is_placeholder` | Chip "Kiện tạm" cho kiện của hàng hoàn chưa xác định |
 | `NavBadge` | EXTEND `ApprovalBadge` → `NavBadge` | `kind: approvals \| recon \| claims` | Số từ API-32 (`recon_open.HIGH`, `claims_due_soon`) |
 
 ## 4. State & data fetching
@@ -200,7 +201,7 @@ N/A — như Phase 1 (DEC-23 item 01).
 | T-151 | API client `lib/api/{returns,recon,claims}.ts` + mở rộng `packages.ts`, `reports.ts`, `settings.ts`, `stations.ts`, `approvals.ts`, `clips.ts`; `src/shared/returns/labels.ts`; MSW handlers + `returnsDb.ts` | nền | 02 §6 (mock) | 2 |
 | T-152 | Route + drawer + `NavBadge` (recon, claims) + `useDashboardSocket` 4 sự kiện mới | nav / FR-10.02 | API-32, WS-02 | 1 |
 | T-153 | D14 Hàng hoàn: tab (số), lọc URL, bảng / card, hành động theo tab | D14 / FR-05.05, 05.11, 05.12 | API-110 | 1,5 |
-| T-154 | D4 mở rộng hiển thị: `ReturnCaseSection`, `InspectionView`, ảnh + ảnh lúc đóng gói (`SnapshotStrip`), cảnh báo của kiện, chip hồ sơ, `ProtectedChip` thay `HoldToggle`, phiên có chip "Mở hoàn"; `CreateClaimDialog` | D4 / FR-07.02, 02.09, 02.11, 08.01 | API-31, 131 | 2 |
+| T-154 | D4 mở rộng hiển thị: `ReturnCaseSection`, `InspectionView` (lịch sử sửa), ảnh + ảnh lúc đóng gói (`SnapshotStrip`), cảnh báo của kiện, chip hồ sơ, `ProtectedChip` (`protection`) thay `HoldToggle`, phiên có chip "Mở hoàn"; `CreateClaimDialog` | D4 / FR-07.02, 02.06, 02.09, 02.11, 08.01 | API-31, 131; **T-134** (`SnapshotStrip` của 02b-station) | 2 |
 | T-155 | D4 hành động: `LinkOrderDialog` (API-30 xem trước + API-112), `CorrectInspectionDialog` (API-113), `AdjustStatusForm` (API-122) | D4 / FR-04.11, 04.13, 06.05 | API-30, 112, 113, 122 | 1,5 |
 | T-156 | D15 Lệch trạng thái + `ResolveAlertDialog` (resolve / điều chỉnh / tạo hồ sơ) | D15 / FR-06.01..03, 05 | API-120, 121, 122, 131 | 1,5 |
 | T-157 | D16 danh sách hồ sơ (tab số, lọc, "Của tôi", sắp hết hạn) + "Tạo hồ sơ" | D16 / FR-08.01, 08.03, 08.04 | API-130, 131 | 1 |
@@ -239,4 +240,5 @@ Tổng ≈ 17,5 ngày công.
 | DEC-240 | Vị trí code màn mới | `features/returns/`, `features/reconciliation/`, `features/claims/`; logic dùng chung `src/shared/returns/` | Theo architecture §5.1; lazy-load theo route | khanhtt (FE, tự quyết theo ủy quyền user) |
 | DEC-241 | Cập nhật hồ sơ khiếu nại | Chờ server + `version`; `VERSION_CONFLICT` → thay dữ liệu, giữ giá trị đang nhập | Hai CSKH có thể cùng mở hồ sơ | khanhtt (tự quyết) |
 | DEC-242 | Nút "Giữ clip" ở D4 | Gỡ; thay `ProtectedChip` + gợi ý "Tạo hồ sơ khiếu nại" | FR-02.09, ADR-009; API-42 chỉ ADMIN | khanhtt (tự quyết) |
+| DEC-244 | Review G2 lượt 1 phần dashboard | `ProtectedChip` theo `protection` (hồ sơ khiếu nại + hàng hoàn), chọn kiện + gộp khi gắn đơn, lý do khi bỏ bằng chứng tự chọn, lịch sử sửa kết luận, `lines_mode`, chip kiện tạm, attention phiên hoàn bỏ dở; T-154 phụ thuộc T-134 | Theo 02 §6.3 | khanhtt (FE, tự quyết theo ủy quyền user) |
 | DEC-243 | Nguồn số cho badge drawer | API-32 (`recon_open.HIGH`, `claims_due_soon`) qua query `['daily', today]` sẵn có | Không thêm request; đã realtime | khanhtt (tự quyết) |

@@ -2,14 +2,14 @@
 
 | | |
 |---|---|
-| Trạng thái | Proposed (item 02, chờ G2) |
+| Trạng thái | Accepted (2026-10-05, item 02 v0.2 sau review G2 lượt 1 — DEC-263) |
 | Tác giả | khanhtt (Architect, agent soạn) |
 | Reviewer | khanhtt (review subagent bước 5) |
 | Người chốt | khanhtt (tự quyết theo ủy quyền user) |
 | Ngày | 2026-10-05 |
 | Work item / yêu cầu | [item 02](../../items/02-returns-reconciliation/02-tech-spec.md) §8, API-42, API-131..134, migration 0004 · FR-02.06, FR-02.09, BR-09 · [06-business-qa](../../items/01-packing-mvp/06-business-qa.md) L7 |
 
-> **TL;DR** — Clip và ảnh gắn với một hồ sơ khiếu nại chưa `CLOSED` không bao giờ bị retention xóa; khi hồ sơ đóng, hạn xóa = max(lúc tạo clip, lúc đóng hồ sơ) + số ngày giữ clip. Cờ `clip.held` thôi là cơ chế chính: dữ liệu cũ được chuyển thành hồ sơ "Chuyển từ cờ giữ", API giữ chỉ còn cho Admin.
+> **TL;DR** — Clip và ảnh gắn với một hồ sơ khiếu nại chưa `CLOSED` — và clip / ảnh của phiên đóng gói hiệu lực + phiên mở hoàn của kiện thuộc hồ sơ hàng hoàn chưa kết thúc — không bị retention xóa; khi hồ sơ đóng, hạn xóa = max(lúc tạo clip, lúc đóng hồ sơ) + số ngày giữ clip. Cờ `clip.held` thôi là cơ chế chính: dữ liệu cũ được chuyển thành hồ sơ "Chuyển từ cờ giữ", API giữ chỉ còn cho Admin.
 > Vì sao: một đối tượng có người phụ trách, hạn và trạng thái quyết định việc giữ bằng chứng; không ai bỏ giữ lén (L7).
 > Đánh đổi lớn nhất: cần migration dữ liệu và downgrade có điều kiện; giữ bằng chứng giờ phụ thuộc người dùng đóng hồ sơ đúng lúc.
 
@@ -39,14 +39,14 @@
 | C. Xóa hẳn cờ giữ và API-42 | Gọn | Mất đường khẩn cấp; phá client cũ | Trung bình |
 
 ## Quyết định
-Chọn **A**. J-02 bỏ qua clip / ảnh của phiên là bằng chứng (`claim_evidence`) của hồ sơ có `status ≠ CLOSED`; hồ sơ `CLOSED` → hạn = max(`clip.end_at`, `claim.closed_at`) + `retention_clip_days`. Clip `held = true` vẫn được bỏ qua (đường khẩn cấp, chỉ ADMIN qua API-42, deprecated). Migration 0004 chuyển mọi clip đang giữ thành hồ sơ `source = LEGACY_HOLD` theo kiện, đặt `held = false`; downgrade làm ngược lại. Loại B vì không sửa L7; loại C vì cần đường khẩn cấp tới khi hồ sơ chạy ổn (gỡ ở Phase 3).
+Chọn **A**, mở rộng sau review G2 (R-1, DEC-245). J-02 bỏ qua clip / ảnh của: (a) phiên là bằng chứng (`claim_evidence`) của hồ sơ có `status ≠ CLOSED`; (b) phiên PACK hiệu lực và mọi phiên RETURN của kiện thuộc `return_case` `EXPECTED` / `INSPECTING` / `PARTIALLY_RECEIVED` / `MISSING`; (c) như (b) với `NO_PARCEL` trong 30 ngày từ `reported_at` — vì hàng hoàn cần clip đóng gói **trước** khi biết có khiếu nại (kiện quá hạn về sau 62 ngày với retention 60 ngày vẫn còn clip). Ảnh `PACK_CLOSE` theo phiên PACK. J-02 khóa từng clip `FOR UPDATE` và kiểm lại bảo vệ dưới khóa; tạo hồ sơ / thêm bằng chứng khóa clip của phiên (theo id) và kiểm lại `status` (DEC-251). J-02 dùng max(`retention_clip_days`, `RETENTION_CLIP_MIN_DAYS`); migration nâng setting thấp hơn sàn (DEC-257). Với (a): hồ sơ `CLOSED` → hạn = max(`clip.end_at`, `claim.closed_at`) + `retention_clip_days`. Clip `held = true` vẫn được bỏ qua (đường khẩn cấp, chỉ ADMIN qua API-42, deprecated). Migration 0004 chuyển mọi clip đang giữ thành hồ sơ `source = LEGACY_HOLD` theo kiện (hạn nhắc 30 ngày, không tính BR-27), đặt `held = false`; kiểm **tập con**: mọi clip `held` trước ∈ tập được bảo vệ sau (tập sau lớn hơn vì bảo vệ theo phiên) — sai thì raise, cả migration một transaction (DEC-250). Downgrade đặt `held = true` cho mọi clip đang được bảo vệ (hồ sơ chưa đóng + hồ sơ hàng hoàn chưa kết thúc) để code cũ vẫn giữ, rồi xóa hồ sơ `LEGACY_HOLD` (DEC-252). Loại B vì không sửa L7; loại C vì cần đường khẩn cấp tới khi hồ sơ chạy ổn (gỡ ở Phase 3).
 
 ## Hệ quả
 | Loại | Nội dung |
 |---|---|
 | Tốt | Lý do giữ nằm trong hồ sơ (loại, người phụ trách, hạn, ghi chú); D4 hiện "Đang được bảo vệ bởi KN-…"; không còn nút bỏ giữ ở UI |
 | Xấu / đánh đổi | Hồ sơ bị bỏ quên ở trạng thái mở → clip giữ vô hạn (tốn ổ); đóng hồ sơ sớm → bằng chứng theo retention thường |
-| Phải làm thêm | J-02 join `claim_evidence`; API-31 `protected_by_claim`; D2 / D16 nhắc hồ sơ quá hạn; migration 0004 + downgrade; contract test API-42 403 cho SUPERVISOR / CSKH |
+| Phải làm thêm | J-02 join `claim_evidence` + `return_case_package`; API-31 `protection` `{reasons, claims, return_cases, until}`; D2 / D16 nhắc hồ sơ quá hạn; migration 0004 + downgrade; contract test API-42 403 cho SUPERVISOR / CSKH |
 
 ## Câu hỏi mở & điều kiện xem lại
 - Q13 (hạn khiếu nại thật): nếu sàn cho khiếu nại > 90 ngày sau giao → xem lại mặc định `retention_clip_days` và sàn tối thiểu 60 ngày (DEC-210 item 02).
