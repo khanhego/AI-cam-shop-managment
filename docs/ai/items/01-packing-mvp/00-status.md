@@ -7,7 +7,7 @@
 | Lane | feature (chạy bằng `ai-solo-build-feature`) |
 | Quy mô | M |
 | Component bị chạm | ai-cam-be (be), ai-cam-fe (fe: station, admin) |
-| Last update | 2026-10-05 · Flow (M2 xong) |
+| Last update | 2026-10-05 · Flow (M3 xong, trừ T-4) |
 
 Phạm vi dự kiến: M01, M02, M03, M05 (Shopee: đơn + trạng thái), M07 cơ bản, M10 của [SRS hệ thống](../../system/SRS.md).
 Spike S1–S5 và dựng khung repo ([architecture.md §17](../../system/architecture.md)) sẽ thành task đầu trong `03-plan`.
@@ -37,8 +37,8 @@ Số item: 01 (chưa có item nào; `git ls-remote --heads` của 3 repo không 
 | 5 | Review bộ spec | ✅ | 2026-10-04 | Vòng 1 Chưa đạt (28), vòng 2 Đạt có điều kiện (12 minor/nit, đã sửa) |
 | 6 | Kế hoạch | ✅ | 2026-10-04 | 03-plan.md |
 | 7 | Test cases | ✅ | 2026-10-04 | CP7 tự duyệt; 04 Ready: 137 case, DEC-38 |
-| 8 | Implement | ▶ đang làm | 2026-10-05 | M0, M1, M2 xong; tiếp M3. M2: BE 257 pass / 79 skip, FE 185 unit pass, E2E BE thật 20/20, QA API live M1+M2 78/78 (`evidence/m2-*.txt`); contract chốt 02 v0.3 (DEC-57, 58) |
-| 8c | Tài liệu nghiệp vụ (mỗi lát) | ▶ đang làm | 2026-10-05 | Bắt buộc trước G3. Lát 0–2 đã viết ở `docs/nghiep-vu/01-packing-mvp/` (Draft, có §0 Giải thích đơn giản); chờ CP8c |
+| 8 | Implement | ▶ đang làm | 2026-10-05 | M0–M3 xong (trừ T-4 chờ phần cứng); tiếp M4. M3: BE 294 pass / 89 skip, QA live 88/88 (M1+M2+M3); FE 224 unit, E2E mock 6, E2E BE thật 25/25 (+2 live = 27); contract chốt 02 v0.4 (DEC-61), SRS v0.4 (DEC-60) |
+| 8c | Tài liệu nghiệp vụ (mỗi lát) | ▶ đang làm | 2026-10-05 | Bắt buộc trước G3. Lát 0–3 đã viết ở `docs/nghiep-vu/01-packing-mvp/` (Draft, có §0 Giải thích đơn giản); chờ CP8c |
 | 9 | Commit / PR | ⬜ | | |
 | 10 | Review code | ⬜ | | |
 | 11 | Chạy test | ⬜ | | |
@@ -47,7 +47,7 @@ Số item: 01 (chưa có item nào; `git ls-remote --heads` của 3 repo không 
 ## NOW
 | Owner tiếp | Việc tiếp | Skill |
 |---|---|---|
-| Dev BE + Dev FE (agent song song) | M3 Cam 2 + duyệt: BE T-12 (phần không cần camera thật — chạy trên `fake-cams`), T-13; FE T-55, T-62, T-60, T-38. T-4 cần camera thật → ghi "chưa test" (kèm đo lại AC-08 / RB-7) | ai-be-implement, ai-fe-implement |
+| Dev BE + Dev FE (agent song song) | M4 Nguồn đơn: BE T-17 imports CSV (API-50..54), T-16 Shopee adapter (mock — chưa test API thật), T-22 jobs J-04/05/06/12; FE T-56 D5, T-58 D7/D8, T-59 D9/D10. T-3 chờ Shopee duyệt partner. T-4 vẫn chờ camera thật | ai-be-implement, ai-fe-implement |
 
 ## Phản hồi giữa các vai
 | Từ | Tới | Nội dung | Trạng thái |
@@ -57,11 +57,14 @@ Số item: 01 (chưa có item nào; `git ls-remote --heads` của 3 repo không 
 | Lead review (code M1, subagent) | BE, FE | Review code M1: Đạt có điều kiện — 3 major (FE treo khi 409 STATION_INACTIVE/403; J-07 race với quét đóng; rate-limit IP sau proxy), 20 minor/nit | Đã sửa 3 major + #4–#12, #14, #16–#18, #20–#22, một phần #13, kèm test (BE 203, FE 141 pass). Để sau (DEC-53): #13 phần còn lại → T-13/T-59, #15 → T-14, #19, #23. Đóng |
 | QA (M1) | BE, FE | BUG-1 image thiếu alembic · BUG-2 camera mới ONLINE chậm 30 giây · BUG-3 quét ở S0 không phản hồi · BUG-4 D6 không nhận WS `camera.status` | Đã sửa, chạy lại: QA API thật 72/72, E2E BE thật 18/18. Báo cáo: 04a-test-report.md. Đóng |
 | FE, BE (M2) | Architect, QA | FE DEC-71 (WS-02 `session.clip_ready`), DEC-72 (trường API-32), DEC-76 (`retention_until` clip đã xóa), DEC-73 (TC-09.04); BE DEC-102..105 (lệch contract khi code), DEC-104 (bản xuất 24 giờ vs 30 ngày) | Đóng: 02 v0.3 DEC-57, DEC-58 (architecture §8.2, ADR-008 sửa theo); 04 DEC-59 |
+| BE (T-13) | PO | RB-14 (02a): phiên chờ duyệt lâu rồi được "Cho tiếp tục" bị cảnh báo / bỏ dở ngay vì J-07 tính từ `started_at` | Đóng bằng DEC-60: đồng hồ tính lại từ lúc yêu cầu kết thúc (be `97abd2e`); change request nhỏ BR-16 → 01 v0.4; TC-03.57 |
+| BE, FE (M3) | Architect | BE DEC-111, DEC-112 (outcome MISMATCH khi mở với khay sai, `approval.updated`, `alert` SESSION_CANCELLED_BY_SUPERVISOR, trường API-20); FE DEC-82 (ROI 422 VALIDATION_ERROR), DEC-83 (WHEP `Location` thiếu `/live`) | Đóng: 02 v0.4 DEC-61; TC-01.06 sửa kỳ vọng |
 | UX | PO | Supervisor duyệt từ dashboard (DEC-5) cần FR mới FR-03.12, sửa FR-03.10, UC-08, ma trận quyền, thêm AC-19 | Đã xử lý trong 01 v0.2 (solo) |
 
 ## Lịch sử
 | Ngày | Role | Việc |
 |---|---|---|
+| 2026-10-05 | BE, FE, QA, Architect, PO | **M3 Cam 2 + duyệt xong (trừ T-4)**: BE T-12 `771f61d` (vision OpenCV + zxing-cpp đọc mã trong ROI Cam 2, 4 khung/giây, `tray:{station_id}` TTL 5 giây, `tray.changed` → `on_tray_changed`), T-13 `9b7c26e` (API-13/14/20/21, WS `approval.*`), `97abd2e` (DEC-60 đồng hồ quá giờ sau duyệt; MediaMTX dev ICE 8189 UDP+TCP); FE T-55 `aeca76e` D13, T-62 `5e25242` RoiEditor, T-60 `310de20` D11 WHEP + `fafd6b7` E2E khung hình thật; T-38 E2E station + D13 BE thật. Kết quả: BE 294 pass / 89 skip, QA live 88/88, FE 224 unit, E2E mock 6, E2E BE thật 25/25 (+2 live). Architect chốt 02 v0.4 (DEC-61); PO SRS v0.4 (DEC-60, đóng RB-14); 04 TC-01.06 + TC-03.57; tài liệu nghiệp vụ lát 3. Chưa test (thiếu camera thật, T-4): tỉ lệ đọc ≥ 95%, trễ thật, CPU 4MP, ánh sáng, phiếu nhăn; âm báo D13 chưa nghe thật; live view LAN kho (UDP) |
 | 2026-10-05 | BE, FE, QA, Architect | **M2 Video bằng chứng xong**: BE T-5 `4caa414`, T-14 `74a3aea` (+ API-30/31), T-21 `ebcc635`, T-15 `dadf93c`, T-18 `e9ef363`; FE T-51 `83b459e`, T-52 `3323be6`, T-53 `4befee3`, T-54 `555d891`, E2E UC-03 BE thật `272c9dc`. Kết quả: BE 257 pass / 79 skip, FE 185 unit, E2E BE thật 20/20, QA API live 78/78. Sự cố: ổ dev đầy 64 GB (MediaMTX giữ path camera mồ côi + video thô) → `7adb72f` dev giữ video 1 giờ, qa-reset dọn volume, J-10 xóa path mồ côi (DEC-102). Lỗi E2E thật bắt: D2 không tăng sau đóng phiên do cache API-32 → `1926eb6` xóa cache trước khi phát `report.updated` (TC-09.03). Architect chốt 02 v0.3 (DEC-57 contract, DEC-58 bản xuất 24 giờ; sửa architecture §8.2, ADR-008); 04 DEC-59 (TC-09.04); tài liệu nghiệp vụ lát 2. Rủi ro mở: AC-08 với 1080p H.265 thật (RB-7) |
 | 2026-10-05 | Flow | User giao hoàn thành Phase 1–3 tự động (DEC-56): Phase 1 tiếp item 01 từ bước 8 (M2–M5); commit + push mỗi task; cuối phase G3/G4/G5 (staging local) + PR + merge main; phần thiếu tài nguyên ghi "chưa test"; Q&A nghiệp vụ sau phase, critical → dừng hẳn |
 | 2026-10-05 | BE, FE, QA | Sửa finding review code M1 (DEC-53); thêm `useDashboardSocket` (WS-02 → invalidate D6); E2E với BE thật `ai-cam-fe/e2e/real` (`pnpm e2e:real`); QA M1 lần 1: API 72/72, E2E 18/18 → 04a. Tài liệu nghiệp vụ lát 0, lát 1 (`docs/nghiep-vu/`, thêm §0 theo template cập nhật) |

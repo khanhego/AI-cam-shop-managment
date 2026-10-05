@@ -1,9 +1,9 @@
 # System map
 
 > Bản đồ hệ thống đang chạy — nền cho reuse-first. Mỗi dòng có nguồn (file/lệnh).
-> Ai làm thay đổi hệ thống thì cập nhật file này. Last update: 2026-10-05 · Dev (M2 Video bằng chứng xong)
+> Ai làm thay đổi hệ thống thì cập nhật file này. Last update: 2026-10-05 · Dev (M3 Cam 2 + duyệt xong, trừ T-4 camera thật)
 
-**Hiện trạng (2026-10-05):** item 01 xong M0, M1, M2 trên nhánh `feat/01-packing-mvp` của `ai-cam-be`, `ai-cam-fe` (đã push, chưa merge `main`). BE: auth, station/camera, phiên quét, realtime, cắt clip, tra cứu, giữ clip, xuất MP4, báo cáo ngày, cài đặt, health. FE: station S0–S6, dashboard D1, D2, D3, D4 (+ xuất), D6, D12. Chưa có: vision đọc khay (T-12), duyệt (T-13), Shopee (T-16), nhập CSV (T-17).
+**Hiện trạng (2026-10-05):** item 01 xong M0–M3 (trừ T-4 camera thật) trên nhánh `feat/01-packing-mvp` của `ai-cam-be`, `ai-cam-fe` (đã push, chưa merge `main`). BE: auth, station/camera, phiên quét, realtime, vision đọc khay Cam 2 (chạy trên camera giả), duyệt, cắt clip, tra cứu, giữ clip, xuất MP4, báo cáo ngày, cài đặt, health. FE: station S0–S6, dashboard D1, D2, D3, D4 (+ xuất), D6 (+ vùng đọc mã), D11, D12, D13. Chưa có: Shopee (T-16), nhập CSV (T-17), D5, D7–D10.
 Kiến trúc: [architecture.md](architecture.md).
 
 ## Module / component
@@ -12,7 +12,7 @@ Kiến trúc: [architecture.md](architecture.md).
 | core | settings, ids (UUID v7), clock giả lập được, db (async, after_commit, rollback), redis, errors (format 02 §6), pagination, security (Argon2id, JWT, Fernet, HMAC), audit, deps (`require_roles`) | `ai-cam-be/src/aicam/core/` | BE |
 | users | Auth + tài khoản + audit log API (T-7) | `ai-cam-be/src/aicam/modules/users/` | BE |
 | stations | Station, camera, MediaMTX client, probe ffmpeg/ONVIF, HealthTracker (T-8) | `ai-cam-be/src/aicam/modules/stations/` | BE |
-| vision | J-08 vòng theo dõi camera (đọc mã ở T-12) | `ai-cam-be/src/aicam/modules/vision/`, `entrypoints/vision.py` | BE |
+| vision | Tiến trình `vision`: J-08 vòng theo dõi camera (`health_loop.py`) + đọc mã khay Cam 2 (T-12, ADR-005): `capture.py` (mỗi Cam 2 một thread đọc relay RTSP, giải mã 4 khung/giây, timeout mở 5 giây / đọc 3 giây), `reader.py` (OpenCV + zxing-cpp đọc Code128 / QR trong ROI, chỉ nhận mã khớp `SCAN_CODE_REGEX`), `tray.py` (khử nhiễu tập mã, mất stream > 3 giây → `UNAVAILABLE`), `runner.py` (ghi Redis, phát `tray.changed`, nạp lại camera khi `vision.config` và mỗi 10 giây) | `ai-cam-be/src/aicam/modules/vision/`, `entrypoints/vision.py` | BE |
 | workers | Celery app, task, lịch beat | `ai-cam-be/src/aicam/workers/` | BE |
 | orders | `transition()` (điểm duy nhất đổi trạng thái kho), `upsert_platform_order` (BR-17, EX-P10), kiện chưa xác minh (BR-04) | `ai-cam-be/src/aicam/modules/orders/service.py` | BE |
 | orders — tra cứu | API-30 tìm kiện (q, ngày ≤ 92, station, trạng thái, phiên, nguồn), API-31 chi tiết (đơn, sản phẩm, phiên, clip, dòng thời gian) | `ai-cam-be/src/aicam/modules/orders/packages.py`, `orders/router.py` | BE |
@@ -20,10 +20,11 @@ Kiến trúc: [architecture.md](architecture.md).
 | reports | API-32 số liệu ngày + station + mục cần xử lý (cache Redis 5 giây) | `ai-cam-be/src/aicam/modules/reports/` | BE |
 | settings | API-80 cài đặt (retention, ngưỡng phiên, audit `SETTINGS_UPDATE`), API-81 sức khỏe hệ thống | `ai-cam-be/src/aicam/modules/settings/` (`router.py`, `service.py`) | BE |
 | platforms | `PlatformAdapter` + model chung, `MockAdapter` (dữ liệu SPXTST…), `get_adapter()` | `ai-cam-be/src/aicam/modules/platforms/` | BE |
-| sessions | State machine phiên, API-10/11, advisory lock theo station, dedup quét | `ai-cam-be/src/aicam/modules/sessions/` | BE |
-| modules khác | `approvals`, `imports`: hiện có `models.py` (+ `approvals/queries.py`, hàm dọn `imports` cho J-11) | `ai-cam-be/src/aicam/modules/` | BE |
+| sessions | State machine phiên, API-10/11, advisory lock theo station, dedup quét; `on_tray_changed` (`OPEN` ↔ `MISMATCH` nguồn `CAM2`, BR-06) nghe `tray.changed` (`listeners.py`); `timer_base` = max(`started_at`, `decided_at` gần nhất) cho J-07 (DEC-60) | `ai-cam-be/src/aicam/modules/sessions/` | BE |
+| approvals | API-13 gửi, API-14 rút, API-20 danh sách, API-21 duyệt (CONTINUE / CLOSE_WITH_NOTE / CANCEL_SESSION / APPROVE_REPACK / REJECT), audit `APPROVAL_DECISION`, WS `approval.*`: `service.py`, `router.py`, `views.py` (dựng item API-20 / WS), `schemas.py`, `queries.py` (đọc cho module khác), `models.py` | `ai-cam-be/src/aicam/modules/approvals/` | BE |
+| modules khác | `imports`: hiện có `models.py` + hàm dọn cho J-11 (API-50..54 ở T-17) | `ai-cam-be/src/aicam/modules/imports/` | BE |
 | CLI | `aicam create-admin`, `aicam seed-demo` (TST…, mật khẩu matkhau123) | `ai-cam-be/src/aicam/entrypoints/cli.py` | BE |
-| MediaMTX + camera giả | Relay RTSP, ghi fMP4 60 giây, chạy uid 10001; dev chỉ giữ video thô 1 giờ (`recordDeleteAfter: 1h`, sau sự cố đầy ổ 64 GB); `fake-cam1/2` cho dev | `ai-cam-be/docker/mediamtx.yml`, `docker/compose.dev.yml` | BE |
+| MediaMTX + camera giả | Relay RTSP, ghi fMP4 60 giây, chạy uid 10001; dev chỉ giữ video thô 1 giờ (`recordDeleteAfter: 1h`, sau sự cố đầy ổ 64 GB); WebRTC ICE cổng 8189 UDP + TCP (TCP cho máy dev Docker/Colima không chuyển UDP), `webrtcAdditionalHosts: [127.0.0.1]` (dev); `fake-cam1/2` cho dev (`fake-cam2` phát vòng 60 giây có phiếu SPXTST…01 / …02 / …03) | `ai-cam-be/docker/mediamtx.yml`, `docker/compose.dev.yml` | BE |
 | Compose dev | `postgres`, `redis`, `video-init` (tạo `/data/video/{raw,clips,exports}`, chown uid 10001), `mediamtx`, `api`, `vision`, `worker` (`-Q default,video,sync`), `worker-export` (`-Q export -c 1`), `beat`, camera giả | `ai-cam-be/docker/compose.dev.yml` | BE |
 | Spike S3 | Đo cắt clip, encode bản xuất (T-5) | `ai-cam-be/scripts/spike_s3.py`, `spike_s3_encode.sh` | BE |
 
@@ -49,7 +50,11 @@ Kiến trúc: [architecture.md](architecture.md).
 | WS-01 `/ws/station?token=`, WS-02 `/ws/dashboard?token=` | Realtime; ping/pong; 4401 token hết hạn, 4403 sai vai | STATION / ADMIN, SUPERVISOR, CSKH | `realtime/hub.py` |
 | Redis `ws:station:{id}`, `ws:dashboard`, `ws:approvals` (chỉ ADMIN, SUPERVISOR), `ws:user:{id}` | Kênh sự kiện realtime | nội bộ | `realtime/publish.py` |
 | Celery `sessions.check_timeouts` (J-07, 30 giây) | BR-16 cảnh báo 15 phút, bỏ dở 30 phút | nội bộ | `workers/tasks.py` |
-| Redis `tray:{station_id}` (vision ghi, TTL 5 giây — T-12) | Mã Cam 2 đang thấy trên khay | nội bộ | `modules/sessions/tray.py` |
+| Redis `tray:{station_id}` `{codes, updated_at}` (vision ghi mỗi khung, TTL 5 giây; mất stream / camera gỡ / station tắt → xóa khóa = `UNAVAILABLE`) | Mã Cam 2 đang thấy trên khay | nội bộ | `modules/sessions/tray.py`, `modules/vision/runner.py` |
+| Redis kênh `tray.changed` `{station_id}` (vision → api) | Tập mã trên khay đổi → `on_tray_changed` | nội bộ | `modules/sessions/listeners.py`, `modules/vision/runner.py` |
+| API-13, API-14 `POST /station/approval-requests`, `POST /station/approval-requests/{id}/withdraw` | Station gửi yêu cầu duyệt (MISMATCH / ASSIST / REPACK), rút yêu cầu | STATION | `modules/approvals/router.py` |
+| API-20, API-21 `GET /approval-requests`, `POST /approval-requests/{id}/decision` | Danh sách yêu cầu (mặc định PENDING), duyệt | ADMIN, SUPERVISOR | `modules/approvals/router.py` |
+| WS sự kiện M3 | WS-01 `alert` `{code: SESSION_CANCELLED_BY_SUPERVISOR \| SESSION_ABANDONED, session_id, tracking_number}`; WS-02 `approval.created`, `approval.resolved` (cả WITHDRAWN), `approval.updated` (khay đổi khi yêu cầu chờ) — chỉ ADMIN, SUPERVISOR qua `ws:approvals` | — | `modules/approvals/service.py`, `realtime/publish.py` |
 | Redis `camera.health` (vision → api), `vision.config` (api → vision) | Trạng thái camera, nạp lại ROI | nội bộ | `modules/stations/listeners.py`, `modules/vision/health_loop.py` |
 | Celery `stations.check_clock_drift` (J-09, 10 phút) | Đo lệch giờ ONVIF | nội bộ | `workers/tasks.py` |
 | API-30, API-31 `GET /packages`, `GET /packages/{id}` | Tra cứu kiện, chi tiết kiện | ADMIN, SUPERVISOR, CSKH | `modules/orders/router.py`, `orders/packages.py` |
@@ -76,14 +81,16 @@ Kiến trúc: [architecture.md](architecture.md).
 | `/admin` (D2 Tổng quan) | 6 thẻ số (4 theo ngày, 2 số hiện tại), station, mục cần xử lý | `DailyPage`, `KpiCard`, `StationStatusList`, `AttentionList` | `ai-cam-fe/src/features/reports/` |
 | `/admin/packages` (D3 Tra cứu đơn) | Tìm theo mã / máy quét, lọc ghi vào URL, 1 kết quả mở D4 | `PackagesPage`, `PackageFilters`, `PackageTable`, `filters.ts` | `ai-cam-fe/src/features/orders/` |
 | `/admin/packages/:id` (D4 Chi tiết đơn) | Đơn, sản phẩm, phiên, clip Cam 1/Cam 2/Ghép, Giữ clip, cắt lại clip lỗi, dòng thời gian; poll 10 giây khi clip đang cắt; `ExportDialog` (Cam 1/Cam 2/Ghép, poll API-44 2 giây, tải MP4 + JSON) | `PackageDetailPage`, `SessionPanel`, `HoldToggle`, `ExportDialog`, `ClipPlayer` | `ai-cam-fe/src/features/orders/`, `src/shared/media/` |
-| `/admin/settings/stations`, `/new`, `/:id` (D6) | Station, tài khoản station, Cam 1 / Cam 2, kiểm tra kết nối | `StationsListPage`, `StationEditPage`, `CameraForm` | `ai-cam-fe/src/features/admin/` |
+| `/admin/settings/stations`, `/new`, `/:id` (D6) | Station, tài khoản station, Cam 1 / Cam 2, kiểm tra kết nối, vùng đọc mã Cam 2 (ảnh API-63, kéo khung, lưu API-64, khóa Lưu khi < 5%) | `StationsListPage`, `StationEditPage`, `CameraForm`, `RoiEditor` (+ `roi.ts`) | `ai-cam-fe/src/features/admin/` |
+| `/admin/approvals` (D13 Yêu cầu duyệt) | Thẻ yêu cầu đang chờ, quyết định theo loại, badge drawer, âm báo Web Audio khi `approval.created` (ADMIN, SUPERVISOR) | `ApprovalsPage`, `ApprovalCard`, `ApprovalBadge`, `usePendingApprovals`, `chime.ts`, `decision.ts` | `ai-cam-fe/src/features/approvals/` |
+| `/admin/live` (D11 Live view) | Lưới camera theo station qua WHEP, `?station=` phóng to, "Mất tín hiệu" + tự thử lại 5 giây × 3 | `LivePage`, `CameraTile`, `useLiveStream` | `ai-cam-fe/src/features/liveview/` |
 | `/_ui` (chỉ `pnpm dev`) | Xem UI kit | `UiGallery` | `ai-cam-fe/src/app/` |
 
 ## Test & QA
 | Bộ | Lệnh | Nguồn |
 |---|---|---|
 | BE unit + integration | `cd ai-cam-be && uv run pytest` (Postgres :55432, Redis :56379 db15) | `ai-cam-be/tests/{unit,integration}` |
-| QA API trên stack thật | `ai-cam-be/scripts/qa-reset.sh && QA_BASE_URL=http://localhost:8180 uv run pytest -m qa tests/qa` (qa-reset dọn cả volume video) | `ai-cam-be/tests/qa/test_m1_live.py`, `test_m2_live.py` |
+| QA API trên stack thật | `ai-cam-be/scripts/qa-reset.sh && QA_BASE_URL=http://localhost:8180 uv run pytest -m qa tests/qa` (qa-reset dọn cả volume video) | `ai-cam-be/tests/qa/test_m1_live.py`, `test_m2_live.py`, `test_m3_live.py` (cần `fake-cam2` + vision) |
 | FE unit/integration (MSW) | `cd ai-cam-fe && pnpm test` | `ai-cam-fe/src/**/*.test.ts(x)` |
 | E2E mock / BE thật | `pnpm e2e` (MSW, :5180) · `pnpm e2e:real` (dev server :5181 → api :8180, reset dữ liệu mỗi test) | `ai-cam-fe/e2e/{mock,real}`, `playwright.real.config.ts` |
 
@@ -102,6 +109,8 @@ Kiến trúc: [architecture.md](architecture.md).
 | MediaMTX API v3 (v1.21.1) | Thêm/sửa/xóa path camera, đọc `ready` + `inboundBytes`; J-10 thêm lại path bị mất, xóa path `cam-<uuid>` mồ côi | `HttpMediaMTX` | `MEDIAMTX_API_URL` |
 | FFmpeg / ffprobe (trong image BE) | Cắt clip `-c copy`, đo thời lượng, encode bản xuất H.264 + `drawtext` (font Be Vietnam Pro) | subprocess, `modules/media/ffmpeg.py` | `VIDEO_ROOT`, `CLIP_*`, `EXPORT_*` (02a §9) |
 | Camera ONVIF | `GetSystemDateAndTime` (J-09) | SOAP qua httpx | — |
+| zxing-cpp, opencv-python-headless, numpy | Đọc khung RTSP Cam 2, giải mã Code128 / QR (tiến trình `vision`) | thư viện Python, `modules/vision/` | `ai-cam-be/pyproject.toml` |
+| MediaMTX WebRTC (WHEP) | Live view D11 | trình duyệt POST SDP tới `/live/cam-<id>/whep` | ICE 8189 UDP + TCP (`docker/mediamtx.yml`) |
 | Shopee Open Platform | Chưa có (T-16) | | |
 
 ## Thành phần dùng chung (reuse trước khi viết mới)
@@ -117,12 +126,14 @@ Kiến trúc: [architecture.md](architecture.md).
 | `orders.transition()` | Mọi thay đổi `warehouse_status` | `modules/orders/service.py` |
 | UI kit: Button, IconButton, TextField, SelectField, TextAreaField, Alert, StatusChip, LinearProgress, PageHeader, EmptyState, Tabs, SegmentedButtons, AuthCard, Dialog, Pagination, Toast/`toast()`, Skeleton, TrackingNumber, Icon, `cx` | Mọi màn FE | `ai-cam-fe/src/shared/ui/` (xem tại `/_ui` khi `pnpm dev`) |
 | Token + class design system (`card`, `md-input`, `md-table`, `state-layer`, `icon`…) | Mọi màn FE | `ai-cam-fe/src/design/` (`pnpm tokens` để sinh lại) |
-| `api.get/post/...`, `ApiError`, `onUnauthenticated` | Gọi API (token, refresh 401 một lần, lỗi 02 §6) | `ai-cam-fe/src/lib/api/client.ts`, `errors.ts` |
+| `api.get/post/...`, `api.blob` (`responseType: "blob"`, ảnh API-63), `ApiError`, `onUnauthenticated` | Gọi API (token, refresh 401 một lần, lỗi 02 §6) | `ai-cam-fe/src/lib/api/client.ts`, `errors.ts` |
+| `whep.ts` | WHEP tự viết: RTCPeerConnection recvonly, POST SDP kèm Bearer (401 → refresh 1 lần), ghép `Location` thiếu tiền tố `/live`, DELETE khi đóng | `ai-cam-fe/src/shared/media/whep.ts` |
+| Proxy Vite `/live` | Dev: `/live/*` → MediaMTX WebRTC (bỏ tiền tố); production qua Caddy | `ai-cam-fe/vite.config.ts` |
 | `useSession`, `login/logout/fetchMe` | Phiên đăng nhập (access token trong bộ nhớ) | `ai-cam-fe/src/lib/api/session.ts`, `auth.ts` |
 | `connectWs()` | WebSocket backoff + ping + 4401 | `ai-cam-fe/src/lib/ws.ts` |
 | MSW handlers + dữ liệu mock (`tst_*`, mật khẩu `matkhau123`), `StationSim` (state machine phiên), mock WS | `pnpm dev:mock`, test | `ai-cam-fe/src/mocks/` |
 | `RequireRole`, `useAuth` | Guard theo vai, khôi phục phiên khi tải trang | `ai-cam-fe/src/features/auth/` |
 | `useScanListener` / `ScanBuffer` | Nhận máy quét HID (≤ 50 ms/phím + Enter) | `ai-cam-fe/src/shared/scan/` |
 | `ClipPlayer` | Phát clip Cam 1 / Cam 2 / Ghép (API-40, lấy lại URL một lần khi lỗi), trạng thái PENDING / FAILED / DELETED | `ai-cam-fe/src/shared/media/` |
-| API client M2 | `packages.ts` (API-30/31), `clips.ts` (API-40, 42..46), `reports.ts` (API-32) | `ai-cam-fe/src/lib/api/` |
+| API client M2, M3 | `packages.ts` (API-30/31), `clips.ts` (API-40, 42..46), `reports.ts` (API-32), `approvals.ts` (API-13/14/20/21), `live.ts` (API-65) | `ai-cam-fe/src/lib/api/` |
 | `signing.py`, `segments.py`, `ffmpeg.py` | Ký URL media; tính khe hở / kế hoạch cắt; dựng lệnh FFmpeg | `ai-cam-be/src/aicam/modules/media/` |

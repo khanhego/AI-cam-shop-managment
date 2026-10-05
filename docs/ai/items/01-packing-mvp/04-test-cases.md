@@ -5,12 +5,12 @@
 | QA | khanhtt |
 | Reviewer | Tech lead · PO |
 | Trạng thái | Executing (lần 1 — M1) |
-| Nguồn | SRS [01-srs.md](01-srs.md) v0.3 · Tech Spec [02](02-tech-spec.md), [02a](02a-be-spec.md), [02b-station](02b-fe-spec-station.md), [02b-admin](02b-fe-spec-admin.md) · Plan [03](03-plan.md) |
+| Nguồn | SRS [01-srs.md](01-srs.md) v0.4 · Tech Spec [02](02-tech-spec.md), [02a](02a-be-spec.md), [02b-station](02b-fe-spec-station.md), [02b-admin](02b-fe-spec-admin.md) · Plan [03](03-plan.md) |
 | Build / môi trường | Stack dev `ai-cam-be/docker/compose.dev.yml` (api :8180) + FE `pnpm dev` (:5180) · bàn thử phần cứng chưa có (T-4) |
-| Last update | 2026-10-05 · QA (TC-09.04 theo DEC-59) |
+| Last update | 2026-10-05 · QA (TC-01.06 theo DEC-61 của 02; thêm TC-03.57 theo DEC-60) |
 
-> **TL;DR** — 157 case: 138 chức năng (8 module), 10 phân quyền, 9 NFR; 53 case chức năng P1 + 9 case phân quyền P1 chặn release.
-> 113 case chức năng chạy tự động được (API 33, INT 28, E2E 52); 25 case thủ công (HW 15, MAN 9, API + MAN 1) cần camera thật, máy quét thật hoặc Shopee thật.
+> **TL;DR** — 158 case: 139 chức năng (8 module), 10 phân quyền, 9 NFR; 53 case chức năng P1 + 9 case phân quyền P1 chặn release.
+> 113 case chức năng chạy tự động được (API 33, INT 29, E2E 52); 25 case thủ công (HW 15, MAN 9, API + MAN 1) cần camera thật, máy quét thật hoặc Shopee thật.
 > Phủ AC-01..05, AC-08..21, BR-01..06, 09, 15..18, EX-P1..P11, ma trận quyền 4 vai, NFR-01, 03, 04, 05, 09, 10, 31.
 > Rủi ro: M2..M5 chưa có code (clip, tra cứu, CSV, Shopee) → kỳ vọng các module đó theo spec, chỗ chưa chắc ghi "(cần xác nhận)".
 > Lần chạy 1 (phạm vi M1, 2026-10-05): ✅ 38 · ❌ 0 · ⛔ 13 (chờ phần cứng T-4) · ⬜ 87 (80 ngoài phạm vi M1, 7 chưa chạy / chưa đủ) — kết quả và bug: [04a](04a-test-report.md).
@@ -132,7 +132,7 @@ Mã API viết tắt: API-xx theo 02 §6; base `http://localhost:8180/api/v1`. "
 | TC-01.03 | Tài khoản station đã gắn nơi khác | API-60 | Negative | P3 | API | PRE-5 | 1. Lấy id `tst_station01` qua GET /users?role=STATION 2. POST /stations `{"name":"QA S3","account_user_id":<id>}` | 409 `ACCOUNT_IN_USE`; D6: `tst_station01` không có trong danh sách chọn "Tài khoản station" | ✅ |
 | TC-01.04 | Camera không tới được (IP không tồn tại) | API-62 | Error | P2 | API | PRE-5 | 1. POST /cameras/test `{"rtsp_url":"rtsp://10.255.255.1:554/x"}` 2. PUT /stations/{id TST Station 02}/cameras/CAM1 cùng URL | Bước 1: 422 `CAMERA_UNREACHABLE`, `details.reason` = `TIMEOUT` (test chấp nhận `STREAM`); D6 hiện "Không kết nối được camera (hết thời gian chờ). Kiểm tra địa chỉ camera và dây mạng." Bước 2: 200, `status` = `OFFLINE` (vẫn lưu được) | ✅ |
 | TC-01.05 | Vẽ và lưu ROI Cam 2 | FR-01.04 | Happy | P1 | E2E | PRE-3 (RoiEditor thuộc T-62) | 1. D6 mở TST Station 01 2. Bước ROI: kéo khung trên ảnh Cam 2 tới x=0.2, y=0.2, w=0.6, h=0.6 3. Bấm "Lưu vùng đọc mã" | API-64 200, `roi` = `{"x":0.2,"y":0.2,"w":0.6,"h":0.6}`; Redis kênh `vision.config` nhận `{"camera_id": <id Cam 2>}`; mã ngoài khung không được đọc — kiểm ở TC-03.35 | ⬜ |
-| TC-01.06 | ROI quá nhỏ | API-64 | Boundary | P3 | API | PRE-5 | 1. PUT /cameras/{id Cam 2 TST Station 01}/roi `{"x":0.2,"y":0.2,"w":0.04,"h":0.6}` | 422; code hiện trả `VALIDATION_ERROR` với `details.fields` chứa `w` (02 §6 ghi `ROI_INVALID` — cần xác nhận); ROI cũ giữ nguyên | ✅ |
+| TC-01.06 | ROI quá nhỏ | API-64 | Boundary | P3 | API | PRE-5 | 1. PUT /cameras/{id Cam 2 TST Station 01}/roi `{"x":0.2,"y":0.2,"w":0.04,"h":0.6}` | 422 `VALIDATION_ERROR` với `details.fields` chứa `w` (02 v0.4 §6, DEC-61 — bỏ `ROI_INVALID`); ROI cũ giữ nguyên | ✅ |
 | TC-01.07 | Mất tín hiệu camera ≤ 10 giây | FR-01.02, 01.03, AC-10, EX-P7 | NFR | P1 | HW | PRE-7, phiên `SPXTST0000001` đang mở | Xem chi tiết bên dưới | ≤ 10 giây: chip "Cam 2 mất tín hiệu" trên station, D2 "Cần xử lý" có dòng Cam 2 TST Station 01 mất tín hiệu; phiên gắn cờ `VIDEO_INCOMPLETE` | ⛔ |
 | TC-01.08 | Camera trở lại | FR-01.02 | State | P2 | HW | Ngay sau TC-01.07 | 1. Cắm lại cáp Cam 2 2. Bấm đồng hồ | ≤ 10 giây: chip "Cam 2" xanh; API-60 GET /stations → Cam 2 `status` = `ONLINE` | ⛔ |
 | TC-01.09 | Lệch giờ camera 1,5 giây → cảnh báo | FR-01.06, BR-15, AC-17 | Boundary | P1 | HW | PRE-7, camera hỗ trợ ONVIF (DEC-33) | 1. Chỉnh giờ Cam 1 nhanh hơn 1,5 giây 2. Chờ ≤ 10 phút (J-09) 3. Mở D2 | API-32 `attention` có `{"kind":"CLOCK_DRIFT","offset_ms":≈1500}`; D2 "Cần xử lý" hiện "Camera lệch giờ 1,5 giây" | ⛔ |
@@ -298,6 +298,7 @@ Trên stack thật: đặt `session_warn_minutes=1`, `session_abandon_minutes=2`
 | TC-03.54 | Từ chối đóng gói lại | API-21 REJECT | Negative | P2 | E2E | PRE-4; station đã gửi REPACK cho `SPXTST0000010` | 1. D13 bấm "Từ chối" | API-21 200, `decision` = `REJECT`; station về "SẴN SÀNG"; kiện …10 vẫn `PACKED` | ⬜ |
 | TC-03.55 | REPACK kiện đã bàn giao qua API | API-13 NOT_ELIGIBLE | Negative | P2 | API | PRE-5 | 1. `tst_station01` gọi API-13 `{"type":"REPACK","tracking_number":"SPXTST0000011"}` | 409 `NOT_ELIGIBLE`; không tạo yêu cầu | ⬜ |
 | TC-03.56 | CSKH không nhận sự kiện duyệt | 02 WS-02 | Permission | P3 | INT | PRE-6; WS-02 `/ws/dashboard?token=<token tst_cskh>` | 1. Phát `approval.created` 2. Phát `report.updated` | Không nhận `approval.created` trong 5 giây; nhận `report.updated` | ✅ |
+| TC-03.57 | Chờ duyệt lâu không làm phiên bỏ dở (đồng hồ tính lại sau duyệt) | BR-16 (01 v0.4), DEC-60 | State | P2 | INT | PRE-6, `clock.freeze` lúc T0; station mở phiên `SPXTST0000005`, gửi ASSIST ngay | 1. `clock.freeze(T0 + 40 phút)` 2. `tst_sup` gọi API-21 `{"action":"CONTINUE"}` 3. Chạy `sessions.check_timeouts` 4. API-10 đọc `session.abandon_at` 5. Tua tới T0 + 55 phút, chạy lại 6. Tua tới T0 + 70 phút, chạy lại | Bước 3: không cảnh báo, không bỏ dở (phiên `OPEN`). Bước 4: `abandon_at` = T0 + 70 phút (30 phút kể từ lúc duyệt). Bước 5: đúng 1 cảnh báo (15 phút kể từ lúc duyệt). Bước 6: phiên `ABANDONED`. Test: `test_timer_restarts_after_approval_resolved` (`ai-cam-be/tests/integration/test_approvals_api.py`) | ✅ |
 
 <details><summary>TC-03.40 — chi tiết</summary>
 
@@ -545,7 +546,7 @@ TC-P.01..P.09: `API`, P1, mọi ô của bảng (đã tự động cho P.01, P.0
 | FR-03.01 | TC-10.01, 10.06, 03.30 | ⬜ |
 | FR-03.02..03.07 | TC-03.01..03.17, 03.20..03.26, 03.34, 03.35 | ⬜ |
 | FR-03.08, 03.09 | TC-03.18, 03.19, 03.27..03.29 | ⬜ |
-| FR-03.10, 03.12 | TC-03.40..03.56 | ⬜ |
+| FR-03.10, 03.12 | TC-03.40..03.57 | ⬜ |
 | FR-03.11 | TC-03.03, 03.31, 03.34 | ⬜ |
 | FR-05.01..05.04, 05.06..05.08 | TC-05.01..05.10, 05.19, 03.12, 03.13 | ⬜ |
 | FR-05.09, 05.10 | TC-05.11..05.18, 05.20, 05.21 | ⬜ |
@@ -560,7 +561,7 @@ TC-P.01..P.09: `API`, P1, mọi ô của bảng (đã tự động cho P.01, P.0
 | BR-06 | TC-03.21..03.23 | ⬜ |
 | BR-09 | TC-02.06 | ⬜ |
 | BR-15 | TC-01.09, 01.13 | ⬜ |
-| BR-16 | TC-03.27..03.29, 03.53, 02.16 | ⬜ |
+| BR-16 | TC-03.27..03.29, 03.53, 03.57, 02.16 | ⬜ |
 | BR-17 | TC-05.15, 05.16 | ⬜ |
 | BR-18 | TC-03.24..03.26 | ⬜ |
 | EX-P1 | TC-03.08 | ⬜ |

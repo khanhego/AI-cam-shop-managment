@@ -4,12 +4,12 @@
 
 | | |
 |---|---|
-| Phiên bản | 0.3 |
+| Phiên bản | 0.4 |
 | Trạng thái | Approved (G1 2026-10-04) |
 | Owner (PO) | khanhtt (nghiệp vụ do chủ shop xác nhận) |
 | Reviewer | khanhtt (solo) |
 | Nguồn | [SRS hệ thống](../../system/SRS.md) §13.2 Phase 1 · trả lời của user 2026-10-04 (DEC-1..4) |
-| Last update | 2026-10-04 · PO (v0.3: change request DEC-24..27 sau review G2) |
+| Last update | 2026-10-05 · PO (v0.4: change request nhỏ DEC-60 — BR-16 không tính thời gian chờ duyệt) |
 
 > **TL;DR** — Shop đóng gói thủ công, không có video, thua khiếu nại "thiếu / sai / hộp rỗng" (P1) và có thể dán nhầm phiếu (P5).
 > MVP: quét mã mở phiên → đóng gói dưới Cam 1 → Cam 2 đối chiếu phiếu trên khay → quét lại mã đóng phiên → hệ thống cắt clip có hash, trạng thái kho `PACKED`.
@@ -208,7 +208,7 @@ Các trạng thái hoàn (`RETURN_*`) thuộc Phase 2: trong MVP, kiện có tr�
 | BR-18 | Đóng phiên khi Cam 2 chưa từng khớp mã trong phiên, hoặc Cam 2 không hoạt động → cờ "Cam 2 không xác minh"; khi đóng mà Cam 2 vẫn thấy chính mã phiên trên khay → cờ "Phiếu còn trên khay" (có thể in trùng phiếu), không chặn (DEC-26) | Vision dừng cả phiên → clip có cờ "Cam 2 không xác minh" |
 | BR-09 | Clip có cờ "giữ" không bị xóa bởi retention (thay "hồ sơ khiếu nại" trong MVP) | Clip ngày 01/01 có cờ giữ → vẫn còn sau 90 ngày |
 | BR-15 | Không đổi | Camera lệch 1,5 giây → cảnh báo trên dashboard |
-| BR-16 | Phiên mở quá 15 phút (cấu hình được) → cảnh báo; quá 30 phút → `ABANDONED` | Mở 08:00, 08:15 cảnh báo, 08:30 tự đóng `ABANDONED`, clip 08:00–08:30 được giữ |
+| BR-16 | Phiên mở quá 15 phút (cấu hình được) → cảnh báo; quá 30 phút → `ABANDONED`. Thời gian chờ quản lý duyệt không tính vào quá giờ; đồng hồ tính lại từ lúc yêu cầu kết thúc (duyệt xong hoặc station rút) — v0.4, DEC-60 | Mở 08:00, 08:15 cảnh báo, 08:30 tự đóng `ABANDONED`, clip 08:00–08:30 được giữ. Gửi duyệt 08:05, quản lý cho tiếp tục 08:45 → cảnh báo 09:00, bỏ dở 09:15 |
 | BR-17 | Đơn nguồn `API` không bị nhập CSV ghi đè; đơn nguồn `CSV` bị API ghi đè | CSV có SPX…789 đã có từ API → bỏ qua dòng đó, báo "đã có từ Shopee" |
 
 BR-10..14 (đối soát) → Phase 2.
@@ -624,6 +624,7 @@ Không đổi — AS-01..05, CO-01..04, RK-01..08 theo SRS hệ thống §12. B�
 | DEC-26 | Change request (review #9): FR-03.06 "phiếu rời khay" | Không chặn đóng phiên; gắn cờ (BR-18) | Chặn sẽ làm kẹt khi in trùng phiếu; cờ đủ làm bằng chứng | khanhtt (tự quyết) | 2026-10-04 |
 | DEC-27 | Change request (review #18): xóa clip thủ công | MVP không có UI/API xóa tay; chỉ retention | Giảm rủi ro mất bằng chứng; AC-11 chỉ kiểm "không xóa được" | khanhtt (tự quyết) | 2026-10-04 |
 | DEC-4 | Quy mô đặt NFR | 2 station, ≤ 500 đơn/ngày; FR-09.01 dashboard ngày giữ trong MVP | User chọn. Dashboard là FR mức M ở SRS hệ thống, chi phí thấp | khanhtt | 2026-10-04 |
+| DEC-60 | Change request nhỏ (RB-14 của 02a, phát hiện khi làm T-13): phiên chờ duyệt lâu rồi được "Cho tiếp tục" bị cảnh báo / bỏ dở ngay vì đồng hồ vẫn tính từ lúc mở phiên | BR-16: thời gian chờ quản lý duyệt không tính vào quá giờ; đồng hồ tính lại từ lúc yêu cầu kết thúc (mốc = lúc mở phiên hoặc lúc yêu cầu gần nhất được duyệt / rút, lấy mốc muộn hơn); cảnh báo 15 phút được bật lại | Người đứng bàn không có lỗi khi quản lý duyệt chậm; tránh phải quét mở lại. Không mất bằng chứng: clip vẫn tính từ lúc mở phiên. Loại: giữ nguyên tính từ lúc mở phiên (bỏ dở oan); trừ đúng tổng thời gian chờ (cần cột mới, không thêm giá trị) | khanhtt (vai PO, theo ủy quyền DEC-15) | 2026-10-05 |
 
 ## Chốt G1
 - [x] Mọi vấn đề P# trong phạm vi (P1, P5, P3 phần kiện đi) có FR; mọi FR M có ≥ 1 AC (FR-01.04 ROI, FR-03.03 hiển thị đơn, FR-03.11 quét liên tục được kiểm gián tiếp qua AC-01, AC-04)

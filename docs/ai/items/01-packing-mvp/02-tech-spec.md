@@ -4,11 +4,11 @@
 |---|---|
 | Tác giả (Architect) | khanhtt |
 | Reviewer | BE lead · FE lead (khanhtt, solo) |
-| Trạng thái | Approved (G2 2026-10-04, có điều kiện DEC-33) · **v0.3** — đổi contract sau G2, chỉ thêm, tương thích ngược (DEC-57, DEC-58) |
-| SRS | [01-srs.md](01-srs.md) v0.3 · FR phủ: FR-01.01–01.06, FR-02.01–02.07, 02.09, FR-03.01–03.12, FR-05.01–05.04, 05.06–05.10, FR-07.01–07.04, FR-09.01, FR-10.01–10.03 |
+| Trạng thái | Approved (G2 2026-10-04, có điều kiện DEC-33) · **v0.4** — đổi contract sau G2 — chỉ thêm / làm rõ (v0.3: DEC-57, DEC-58; v0.4: DEC-61) |
+| SRS | [01-srs.md](01-srs.md) v0.4 · FR phủ: FR-01.01–01.06, FR-02.01–02.07, 02.09, FR-03.01–03.12, FR-05.01–05.04, 05.06–05.10, FR-07.01–07.04, FR-09.01, FR-10.01–10.03 |
 | Spec con | BE: [02a-be-spec.md](02a-be-spec.md) · FE: [02b-fe-spec-station.md](02b-fe-spec-station.md), [02b-fe-spec-admin.md](02b-fe-spec-admin.md) |
 | Kiến trúc nền | [architecture.md](../../system/architecture.md) · ADR-001..008 |
-| Last update | 2026-10-05 · Architect (chốt contract M2: DEC-57, DEC-58) |
+| Last update | 2026-10-05 · Architect (chốt contract M3: DEC-61) |
 
 > **TL;DR** — Dựng mới toàn bộ: `ai-cam-be` (FastAPI + Celery + vision + MediaMTX, chạy tại kho) và `ai-cam-fe` (React, 2 client: station kiosk, dashboard).
 > Quét mã đi qua một API duy nhất `POST /station/scan`. API này luôn trả `200` kèm `outcome` để station tự chọn màn và âm thanh (DEC-7). Cập nhật realtime (Cam 2, duyệt, camera) đi qua WebSocket.
@@ -286,7 +286,7 @@ Luôn trả **200** cho mọi kết quả nghiệp vụ (DEC-7). 4xx chỉ cho l
 |---|---|---|
 | `SESSION_OPENED` | READY + mã hợp lệ (có thể kèm flag `UNVERIFIED`) | S2, bíp thành công |
 | `SESSION_COMPLETED` | Đang mở + mã = mã phiên | S1, bíp thành công |
-| `MISMATCH` | Đang mở / lệch mã + mã ≠ mã phiên | S3, âm lỗi lặp |
+| `MISMATCH` | Đang mở / lệch mã + mã ≠ mã phiên. **Hoặc** READY + mã hợp lệ nhưng Cam 2 đang thấy phiếu khác (`tray.match` = `DIFFERENT` / `MULTIPLE`): phiên vẫn mở rồi chuyển ngay `MISMATCH` nguồn `CAM2` trong cùng transaction (v0.4, DEC-61) | S3, âm lỗi lặp |
 | `ALERT` | Không mở phiên, xem `alert.code` | S4, 2 bíp |
 | `IGNORED` | Đang `WAITING_APPROVAL` | giữ màn, nhắc "Đang chờ duyệt." |
 
@@ -349,7 +349,13 @@ Luôn trả **200** cho mọi kết quả nghiệp vụ (DEC-7). 4xx chỉ cho l
 { "items": [ { "id": "0192…", "type": "MISMATCH", "status": "PENDING",
   "station": { "id": "…", "name": "Station 01" }, "session_id": "…",
   "tracking_number": "SPX…789", "context": { "expected": "SPX…789", "actual": "SPX…788", "source": "SCAN", "tray_match": "DIFFERENT" },
-  "created_at": "…" } ], "page": 1, "page_size": 20, "total": 1 }
+  "created_at": "…",
+  "decision": null, "decided_by": null, "decided_at": null, "note": null } ],   // v0.4 (DEC-61)
+  "page": 1, "page_size": 20, "total": 1 }
+// status mặc định PENDING; page_size ≤ 100; cũ nhất trước.
+// decision: action API-21 đã chọn (RESOLVED) · decided_by: { id, display_name } (null nếu WITHDRAWN)
+// decided_at: lúc duyệt, hoặc lúc station rút (WITHDRAWN) — mốc tính lại đồng hồ quá giờ (DEC-60)
+// context mọi loại = { expected, actual, source, tray_match }; REPACK: actual, source = null
 
 // API-21 request
 { "action": "CONTINUE", "note": null }
@@ -365,7 +371,7 @@ Luôn trả **200** cho mọi kết quả nghiệp vụ (DEC-7). 4xx chỉ cho l
 ```
 | HTTP | Mã lỗi | Khi nào | FE xử lý |
 |---|---|---|---|
-| 409 | ALREADY_RESOLVED | Người khác đã xử lý / station đã rút; `details`: `status`, `decided_by` (null nếu WITHDRAWN), `decided_at` | RESOLVED: "Yêu cầu này đã được {decided_by} xử lý lúc {giờ}." · WITHDRAWN: "Station đã rút yêu cầu." |
+| 409 | ALREADY_RESOLVED | Người khác đã xử lý / station đã rút; `details`: `status`, `decided_by` (null nếu WITHDRAWN), `decided_at` (có cả khi WITHDRAWN — v0.4) | RESOLVED: "Yêu cầu này đã được {decided_by} xử lý lúc {giờ}." · WITHDRAWN: "Station đã rút yêu cầu." |
 | 409 | TRAY_STILL_DIFFERENT | CLOSE_WITH_NOTE khi Cam 2 còn thấy mã khác | "Cam 2 vẫn thấy phiếu sai trên khay. Yêu cầu bỏ phiếu sai trước." |
 | 422 | INVALID_ACTION | Action không hợp với `type` | lỗi chung |
 | 422 | VALIDATION_ERROR | CLOSE_WITH_NOTE thiếu note | lỗi dưới ô ghi chú |
@@ -496,7 +502,7 @@ Cột mẫu: `platform_order_sn`, `tracking_number`, `sku`, `product_name`, `var
 | 409 | NAME_TAKEN | Tên station trùng | "Tên station đã tồn tại." |
 | 409 | ACCOUNT_IN_USE | Tài khoản station đã gắn station khác | lỗi dưới ô tài khoản |
 | 422 | CAMERA_UNREACHABLE | API-62 không kết nối được (`details.reason`: `TIMEOUT` / `AUTH` / `STREAM`) | "Không kết nối được Cam 1. Kiểm tra địa chỉ và mật khẩu camera." |
-| 422 | ROI_INVALID | Ngoài [0,1] hoặc w,h < 0.05 | lỗi trên RoiEditor |
+| 422 | VALIDATION_ERROR | ROI ngoài [0,1], x+w > 1, y+h > 1 hoặc w,h < 0.05; `details.fields` như mọi lỗi kiểm dữ liệu (v0.4 thay `ROI_INVALID`, DEC-61) | Alert trên RoiEditor |
 | 409 | ROI_ONLY_CAM2 | Đặt ROI cho CAM1 | không hiện công cụ ROI cho Cam 1 |
 </details>
 
@@ -570,6 +576,8 @@ Cột mẫu: `platform_order_sn`, `tracking_number`, `sku`, `product_name`, `var
 // API-60 PATCH /stations/{id} { "name"?, "is_active"?, "account_user_id"? } → item
 // API-63 GET /cameras/{id}/snapshot → image/jpeg · 422 CAMERA_UNREACHABLE
 // API-65 GET /live → { "stations": [ { "id", "name", "cameras": [ { "id", "role", "status", "whep_url": "/live/cam-0192…/whep" } ] } ] }
+//   WHEP: POST whep_url (SDP, Authorization: Bearer) → 201 + header Location tính từ gốc MediaMTX (/cam-…/whep/<id>, THIẾU tiền tố /live)
+//   → client tự ghép <id> vào sau whep_url khi DELETE phiên (v0.4, ghi chú DEC-61)
 // API-90 GET /users?page=&role= → { "items": [ { "id", "username", "display_name", "role", "is_active", "station": { "id", "name" } | null, "created_at" } ], … }
 // API-90 PATCH /users/{id} { "display_name"?, "role"?, "is_active"?, "password"? } → item
 // API-91 POST /users/{id}/revoke-sessions → 204
@@ -584,7 +592,9 @@ Kết nối: `wss://<host>/ws/station?token=<access_token>` (tương tự `/ws/d
 |---|---|---|---|
 | WS-01 | `station.state` | như API-10 | Mọi thay đổi: Cam 2 đổi `tray.match`, phiên bị `MISMATCH` do Cam 2, duyệt xong, quá giờ, `ABANDONED`, camera online/offline |
 | WS-01 | `session.clip_ready` | `{ "session_id", "clip_ids": [] }` | Clip phiên gần đây sẵn sàng |
-| WS-02 | `approval.created` / `approval.resolved` | như item API-20 | Chỉ gửi cho ADMIN, SUPERVISOR |
+| WS-01 | `alert` | `{ "code", "session_id", "tracking_number" }` | `code` = `SESSION_ABANDONED` (J-07 bỏ dở) hoặc `SESSION_CANCELLED_BY_SUPERVISOR` (API-21 `CANCEL_SESSION`) → station hiện thông báo trên S1 (v0.4, DEC-61) |
+| WS-02 | `approval.created` / `approval.resolved` | như item API-20 | Chỉ gửi cho ADMIN, SUPERVISOR. Station rút → `approval.resolved` với `status = WITHDRAWN` |
+| WS-02 | `approval.updated` | như item API-20 | Khay Cam 2 đổi trong lúc yêu cầu MISMATCH / ASSIST đang chờ → `context.tray_match` mới; chỉ ADMIN, SUPERVISOR (v0.4, DEC-61) |
 | WS-02 | `report.updated` | `{ "date" }` → client gọi lại API-32 (tối đa 1 lần / 5 giây) | Phiên đóng / đổi trạng thái |
 | WS-02 | `camera.status` | `{ "camera_id", "status" }` | |
 | WS-02 | `export.updated` | như API-44 (chỉ gửi cho người tạo) | Tiến độ tăng ≥ 5 %, READY, FAILED |
@@ -732,6 +742,7 @@ sequenceDiagram
 | DEC-10 | Nguồn sự thật contract | `02` §6 cho tới khi có `/openapi.json`; sau đó OpenAPI | Repo chưa có code | khanhtt (architect) | 2026-10-04 |
 | DEC-57 | Đổi contract sau G2 (v0.3) — **chỉ thêm, tương thích ngược**. Gom lệch BE/FE ghi khi làm M2: FE DEC-71, 72, 76 ([02b-admin](02b-fe-spec-admin.md#decisions)); BE DEC-102, 104, 105 ([02a](02a-be-spec.md#decisions)) | Chốt vào §6: (1) WS-02 thêm `session.clip_ready` `{session_id, clip_ids}` (BE đã phát cả WS-01 và WS-02). (2) API-32: trường tùy chọn `stations[].tracking_number`, `CLOCK_DRIFT.station_name`, `CLOCK_DRIFT.role`, `CAMERA_OFFLINE.role`; attention kind mới `CLIP_FAILED {count}` (clip FAILED trong 7 ngày); ghi rõ `packed` không đếm phiên SUPERSEDED, `stations[]` chỉ station đang bật, `WAITING_APPROVAL` khi có yêu cầu chờ, `DISK_USAGE` ≥ 80 %, cache 5 giây. (3) API-40/41/43: clip FAILED → `409 CLIP_NOT_READY` kèm `details.status = FAILED` (không thêm mã mới); `410 CLIP_DELETED` kèm `details.deleted_at`, `retention_clip_days`. (4) API-31: clip DELETED có `retention_until` = ngày đã xóa (FE DEC-76); `clips[]` thêm `deleted_at`, `flags`; phiên thêm `cancel_reason`, `note`; timeline thêm `from_status`. (5) API-44: người không phải người tạo và không phải ADMIN → 404; response thêm `session_id`, `layout`. (6) API-80 PUT gửi đủ 4 trường, phút 1–1440 (ghi rõ ràng buộc đã có trong code) | Code M2 đã chạy theo các điểm này và qua E2E BE thật 20/20, QA API live 78/78. Chỉ thêm trường / kind / sự kiện; client cũ bỏ qua trường lạ, nên không cần `/v2`. Phương án loại: thêm mã lỗi riêng `CLIP_FAILED` cho API-40 (phá nhánh xử lý `CLIP_NOT_READY` FE đã có); 403 ở API-44 (lộ sự tồn tại bản xuất của người khác) | khanhtt (architect, tự quyết theo ủy quyền DEC-15) | 2026-10-05 |
 | DEC-58 | Thời hạn giữ file xuất: 02a / code giữ 24 giờ, architecture §8.2 và ADR-008 ghi 30 ngày (BE DEC-104 nêu lệch) | **24 giờ** (`EXPORT_TTL_HOURS`), sau đó J-10 xóa file và bản ghi `export`; sửa architecture §8.2 và ADR-008 (phần Hệ quả) cho khớp | File xuất tạo lại được bất cứ lúc nào khi clip gốc còn (clip giữ 90 ngày, "Giữ clip" khi có khiếu nại — BR-09). Người dùng tải file về máy ngay để gửi sàn. Giữ 30 ngày tốn ổ vô ích; dev vừa có sự cố đầy ổ 64 GB. Phương án loại: 30 ngày (tốn ổ, không thêm bằng chứng — clip gốc mới là bằng chứng); 7 ngày (vẫn tốn ổ, không có nhu cầu tải lại sau 1 ngày) | khanhtt (architect, tự quyết theo ủy quyền DEC-15) | 2026-10-05 |
+| DEC-61 | Đổi contract sau G2 (v0.4) — **chỉ thêm / làm rõ**. Gom lệch khi làm M3: BE [DEC-111, DEC-112](02a-be-spec.md#decisions), FE [DEC-82, DEC-83](02b-fe-spec-admin.md#decisions) | Chốt vào §6: (a) API-11 quét mở khi khay đang có phiếu khác (`DIFFERENT` / `MULTIPLE`) → phiên mở rồi chuyển ngay `MISMATCH` nguồn `CAM2`, `outcome = MISMATCH` (không phải `SESSION_OPENED`). (b) WS-02 thêm `approval.updated` (khay đổi khi yêu cầu đang chờ). (c) WS-01 `alert` `{code, session_id, tracking_number}`, code `SESSION_CANCELLED_BY_SUPERVISOR` (cùng kênh `SESSION_ABANDONED` của J-07, nay ghi vào bảng). (d) API-20 item thêm `decision`, `decided_by`, `decided_at`, `note`; `decided_at` có cả khi `WITHDRAWN` (DEC-60). (e) API-64 ROI sai → `422 VALIDATION_ERROR` kèm `details.fields`, bỏ `ROI_INVALID`. (f) Ghi chú WHEP: `Location` trả về thiếu tiền tố `/live` → client tự ghép | (a) Vision không phát sự kiện mới khi khay không đổi, nên phải xét khay ngay lúc mở; trả `MISMATCH` để station phát âm lỗi thay cho bíp "ok" — người đứng bàn biết ngay có phiếu sai (BR-06). (d), (b), (c): code M3 đã phát, FE đã xử lý (invalidate mọi `approval.*`). (e) Nhất quán với mọi lỗi kiểm dữ liệu khác (Pydantic); FE đã xử lý cả `ROI_INVALID` và `VALIDATION_ERROR`, nên không phá client. Code M3 qua QA live 88/88, E2E BE thật 25/25 (+2 live). Phương án loại: (a) giữ `SESSION_OPENED` rồi đẩy `MISMATCH` qua WS (station bíp "ok" rồi mới báo lỗi — dễ bỏ qua); (e) BE trả riêng `ROI_INVALID` (thêm validator riêng chỉ để đổi tên mã, không thêm giá trị cho người dùng) | khanhtt (architect, tự quyết theo ủy quyền DEC-15) | 2026-10-05 |
 
 ## Chốt G2 (áp cho bộ 02 + 02a + 02b)
 - [x] Mọi FR/BR/NFR trong phạm vi có chỗ trong spec (bảng FR coverage)

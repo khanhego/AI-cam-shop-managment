@@ -6,7 +6,7 @@
 | Reviewer | PO · Tech lead (khanhtt) |
 | Trạng thái | Approved (Plan 2026-10-04, tự quyết DEC-15) |
 | Spec | [02-tech-spec.md](02-tech-spec.md) · [02a §12](02a-be-spec.md#12-task) · [02b-station §14](02b-fe-spec-station.md#14-task) · [02b-admin §14](02b-fe-spec-admin.md#14-task) |
-| Last update | 2026-10-05 · PM (M2 xong) |
+| Last update | 2026-10-05 · PM (M3 xong, trừ T-4) |
 
 > **TL;DR** — 46 task (22 BE, 24 FE), ≈ 70 ngày công cho một dev, 6 milestone M0–M5; mỗi milestone demo được end-to-end.
 > Đường găng BE: T-1 → T-6 → T-7 → T-10 → T-14 → T-15 (≈ 11 ngày); nhánh Cam 2 T-10 → T-11 → T-12 chờ thêm camera thật (T-4).
@@ -32,7 +32,7 @@ Owner tất cả: khanhtt (profile §7). Ticket: chưa tạo (§7). Trạng thá
 | T-1 | Khung repo BE: uv, ruff, mypy, pytest, import-linter, Dockerfile (Python + FFmpeg + font), compose.dev, CI | be | — | 02a §12 | — | 1 | | ✅ |
 | T-2 | MediaMTX + `fake-cams` (RTSP từ file mẫu có barcode), record fMP4 60 giây | be | FR-02.01 | 02a §12 | T-1 | 1 | | ✅ |
 | T-3 | Spike S1 Shopee (đăng ký partner, endpoint, ký, trạng thái, rate limit) | be | FR-05.* | 02a §12 | — (bắt đầu ngày 1) | 2 + chờ duyệt | | ⬜ |
-| T-4 | Spike S2 vision với camera thật (vị trí, ROI, tỉ lệ đọc, CPU, ONVIF — DEC-33) | be | FR-03.06, AC-04, AC-17 | 02a §12 | T-2, có camera | 2 | | ⬜ |
+| T-4 | Spike S2 vision với camera thật (vị trí, ROI, tỉ lệ đọc, CPU, ONVIF — DEC-33) | be | FR-03.06, AC-04, AC-17 | 02a §12 | T-2, có camera | 2 | | ⬜ chờ phần cứng — chưa test: tỉ lệ đọc ≥ 95% (AC-04, TC-03.21), trễ thật ≤ 2 giây, CPU camera 4MP, vị trí / ánh sáng, phiếu nhăn / in trùng; đo lại AC-08 (RB-7) |
 | T-5 | Spike S3 cắt clip + đo encode export (AC-08) | be | FR-02.02, AC-08 | 02a §12 | T-2 | 1 | be `4caa414` | ✅ (AC-08 với 1080p H.265 chưa đạt trên nguồn giả — RB-7, đo lại ở T-4) |
 | T-6 | core + migration `0001_initial` + CLI `create-admin` (`seed-demo` dời T-10, DEC-39) | be | — | 02a §12 | T-1 | 2 | | ✅ |
 | T-7 | users + auth: API-01..04, 90..92 | be | FR-10.*, FR-03.01 | 02a §12 | T-6 | 2 | | ✅ |
@@ -41,8 +41,8 @@ Owner tất cả: khanhtt (profile §7). Ticket: chưa tạo (§7). Trạng thá
 | T-10 | sessions: state machine, API-10, API-11 (mở / đóng / MISMATCH / ALERT, nhánh tray) + CLI `seed-demo` | be | FR-03.02..07, 03.11, BR-01..06, 18 | 02a §12 (tách) | T-7, T-8, T-9 | 2 | | ✅ |
 | T-20 | sessions: API-12, 15, `scan_dedup`, J-07 quá giờ, REPACK superseding | be | FR-03.08, 03.09, BR-03, 16 | tách từ T-10 | T-10 | 1 | | ✅ |
 | T-11 | realtime hub: WS-01, WS-02, `ws:approvals`, after_commit | be | FR-03.06, 09.01 | 02a §12 | T-10 | 1 | | ✅ |
-| T-12 | vision process + `on_tray_changed` + `camera.health` subscriber | be | FR-03.06, 03.07, 01.04, BR-06, 18 | 02a §12 | T-4, T-11 | 2 | | ⬜ |
-| T-13 | approvals: API-13, 14, 20, 21 | be | FR-03.10, 03.12 | 02a §12 | T-11, T-20 | 1,5 | | ⬜ |
+| T-12 | vision process + `on_tray_changed` + `camera.health` subscriber | be | FR-03.06, 03.07, 01.04, BR-06, 18 | 02a §12 | T-4, T-11 | 2 | be `771f61d` | ✅ trên camera giả (`fake-cam2`); phần camera thật thuộc T-4 (DEC-111 02a) |
+| T-13 | approvals: API-13, 14, 20, 21 | be | FR-03.10, 03.12 | 02a §12 | T-11, T-20 | 1,5 | be `9b7c26e`, `97abd2e` (DEC-60) | ✅ (DEC-112 02a) |
 | T-14 | media: J-10 index segment, J-01 cắt clip, API-40, 41 | be | FR-02.01..05, 07.02 | 02a §12 (tách) | T-5, T-10 | 2 | be `74a3aea` | ✅ (làm thêm API-30/31 — 03 không có task nào giữ; DEC-102 02a) |
 | T-21 | media: API-42 giữ clip, API-46 cắt lại, J-02 retention | be | FR-02.06, 02.09, BR-09, AC-15, AC-20 | tách từ T-14 | T-14 | 1 | be `ebcc635` | ✅ |
 | T-15 | export: API-43..45, J-03 (overlay, side-by-side, queue `export`) | be | FR-07.04, 02.07 | 02a §12 | T-14 | 2 | be `dadf93c` | ✅ |
@@ -60,20 +60,20 @@ Owner tất cả: khanhtt (profile §7). Ticket: chưa tạo (§7). Trạng thá
 | T-35 | `useScanListener`, `stationStore`, hàng đợi quét, âm thanh | fe | FR-03.11 | 02b-st §14 | T-33 | 1,5 | | ✅ |
 | T-36 | StationPage, StatusBar, S2, S3 | fe | S2, S3, FR-03.03..07 | 02b-st §14 (tách) | T-34, T-35; API-10, 11, WS-01 | 2 | | ✅ |
 | T-40 | S1 + phiên gần đây + ClipPreviewDialog (`ClipPlayer` dùng chung) | fe | S1, FR-03.02 | tách từ T-36 | T-36, T-39; API-15, 40 | 1 | | ✅ |
-| T-37 | S4, S5 (MISMATCH / ASSIST / REPACK), S6, CancelSessionDialog | fe | S4–S6, FR-03.08, 03.10, 03.12 | 02b-st §14 | T-36; API-12..14 | 2 | | ✅ (FE; API-13/14 thật ở T-13) |
-| T-38 | Test integration + E2E station; chạy với BE thật | fe | UC-01, UC-08 | 02b-st §14 | T-37, T-13 | 1,5 | | ⬜ |
+| T-37 | S4, S5 (MISMATCH / ASSIST / REPACK), S6, CancelSessionDialog | fe | S4–S6, FR-03.08, 03.10, 03.12 | 02b-st §14 | T-36; API-12..14 | 2 | | ✅ (API-13/14 thật ở T-13, kiểm qua T-38) |
+| T-38 | Test integration + E2E station; chạy với BE thật | fe | UC-01, UC-08 | 02b-st §14 | T-37, T-13 | 1,5 | fe `e2e/real/station.spec.ts`, `e2e/real/admin-d13.spec.ts` | ✅ (chạy BE thật pass) |
 | T-50 | AppShell, drawer theo role, theme, D1, D12, guard | fe | D1, D12, FR-10.02 | 02b-ad §14 | T-34, T-39 | 1,5 | | ✅ |
 | T-51 | D2 Tổng quan + WS-02 invalidate | fe | D2, FR-09.01 | 02b-ad §14 | T-50; API-32 | 1,5 | fe `83b459e` | ✅ |
 | T-52 | D3 Tra cứu | fe | D3, FR-07.01, 07.03 | 02b-ad §14 | T-50; API-30 | 1,5 | fe `3323be6` | ✅ |
 | T-53 | D4 Chi tiết + ClipPlayer + Giữ clip + cắt lại | fe | D4, FR-07.02, 02.09 | 02b-ad §14 | T-52, T-40; API-31, 40, 42, 46 | 2 | fe `4befee3` | ✅ |
 | T-54 | ExportDialog | fe | D4, FR-07.04, 02.07 | 02b-ad §14 | T-53; API-43..45 | 1 | fe `555d891` (+ E2E BE thật `272c9dc`) | ✅ |
-| T-55 | D13 Yêu cầu duyệt + badge + âm báo | fe | D13, FR-03.12 | 02b-ad §14 | T-50; API-20, 21 | 1,5 | | ⬜ |
+| T-55 | D13 Yêu cầu duyệt + badge + âm báo | fe | D13, FR-03.12 | 02b-ad §14 | T-50; API-20, 21 | 1,5 | fe `aeca76e` | ✅ (âm báo chưa nghe thử trên máy thật; DEC-81 02b-admin) |
 | T-56 | D5 Nhập đơn | fe | D5, FR-05.09 | 02b-ad §14 | T-50; API-50..54 | 1,5 | | ⬜ |
 | T-57 | D6 Station, camera, kiểm tra kết nối | fe | D6, FR-01.01 | 02b-ad §14 (tách) | T-50; API-60..63 | 1,5 | | ✅ |
-| T-62 | `RoiEditor` + lưu ROI | fe | D6, FR-01.04 | tách từ T-57 | T-57; API-63, 64 | 1 | | ⬜ |
+| T-62 | `RoiEditor` + lưu ROI | fe | D6, FR-01.04 | tách từ T-57 | T-57; API-63, 64 | 1 | fe `5e25242` | ✅ (DEC-82 02b-admin) |
 | T-58 | D7 Shopee, D8 Lưu trữ + sức khỏe | fe | D7, D8, FR-05.01, 02.06 | 02b-ad §14 | T-50; API-70..73, 80, 81 | 1,5 | | ⬜ |
 | T-59 | D9 Người dùng, D10 Nhật ký | fe | D9, D10, FR-10.01, 10.03 | 02b-ad §14 | T-50; API-90..92 | 1,5 | | ⬜ |
-| T-60 | D11 Live view (WHEP) | fe | D11, FR-01.05 | 02b-ad §14 | T-50; API-65 | 1,5 | | ⬜ |
+| T-60 | D11 Live view (WHEP) | fe | D11, FR-01.05 | 02b-ad §14 | T-50; API-65 | 1,5 | fe `310de20`, E2E `fafd6b7` | ✅ (khung hình thật Cam 1 + Cam 2 qua ICE-TCP máy dev; LAN kho / UDP chưa test; DEC-83 02b-admin) |
 | T-61 | Test integration + E2E admin; chạy với BE thật | fe | UC-03, 07, 08, 09 | 02b-ad §14 | T-51..T-60 | 2 | | ⬜ |
 
 Task nền theo spec đã có: migration (T-6), mock contract cho FE (T-33 MSW), flag `SHOPEE_ENABLED` (T-16), seed dữ liệu test (T-6 `seed-demo`), tài liệu vận hành (T-19). Done của mọi task: theo profile §8 (build / lint / test không thêm lỗi, test hành vi mới, system-map cập nhật).
@@ -111,9 +111,9 @@ Ngày mục tiêu tính từ thứ Hai 2026-10-05, 1 dev, 5 ngày/tuần, chưa 
 | M0 Nền móng | T-1, T-2, T-6, T-30, T-31, T-32, T-39, T-33 | 11,5 | 2026-10-20 | Hai repo chạy `compose.dev` + `pnpm dev`, CI xanh, camera giả phát RTSP, UI kit xem được |
 | M1 Quét đóng gói | T-7, T-8, T-9, T-10, T-20, T-11, T-34, T-35, T-36, T-50, T-57 | 17 | 2026-11-11 | Đăng nhập station, quét mở / đóng phiên với đơn seed, lệch mã do quét, Admin tạo station + camera (AC-01, 03, 13) |
 | M2 Video bằng chứng | T-5, T-14, T-21, T-15, T-18, T-40, T-51, T-52, T-53, T-54 | 14 | 2026-12-01 · **xong 2026-10-05** (code + E2E BE thật) | Clip Cam 1 + Cam 2 sau khi đóng, tra cứu, xem, giữ, xuất MP4 có overlay, dashboard ngày (AC-02, 08, 11, 15, 16, 18, 20) |
-| M3 Cam 2 + duyệt | T-4, T-12, T-13, T-37, T-55, T-62, T-60 | 13 | 2026-12-18 | Phiếu sai trên khay bị bắt, gửi duyệt → Supervisor duyệt trên dashboard, đóng gói lại, live view (AC-04, 10, 14, 17, 19, 21) |
+| M3 Cam 2 + duyệt | T-4, T-12, T-13, T-37, T-55, T-62, T-60 (+ T-38 làm sớm) | 13 | 2026-12-18 · **xong 2026-10-05** trừ T-4 (chờ phần cứng) | Phiếu sai trên khay bị bắt, gửi duyệt → Supervisor duyệt trên dashboard, đóng gói lại, live view (AC-04, 10, 14, 17, 19, 21) |
 | M4 Nguồn đơn | T-3, T-16, T-22, T-17, T-56, T-58, T-59 | 11 | 2027-01-06 | Kết nối Shopee (hoặc CSV khi chưa có quyền), đơn hủy bị chặn, người dùng + nhật ký (AC-05, 12) |
-| M5 Hoàn thiện | T-19, T-38, T-61 | 5,5 | 2027-01-14 | Contract test, test tải, E2E, compose production; sẵn sàng G3 (AC-09, NFR-01, 05) |
+| M5 Hoàn thiện | T-19, T-61 (T-38 xong ở M3) | 5,5 | 2027-01-14 | Contract test, test tải, E2E, compose production; sẵn sàng G3 (AC-09, NFR-01, 05) |
 
 ## 5. Rủi ro tiến độ
 
@@ -171,3 +171,4 @@ Profile: GitHub Issues (`khanhego/ai-cam-be`, `khanhego/ai-cam-fe`). **Chưa t�
 | DEC-54 | QA M1: tài khoản dashboard mở `/station` bằng tải trang mới | Chấp nhận hành vi thực tế: về `/station/login` (cookie refresh tách `rt_station` / `rt_dashboard`), thay vì `/admin` như ma trận 04 §3. Điều hướng trong app vẫn theo guard | An toàn hơn, không lộ phiên chéo client; đổi lại cần sửa ô ma trận trong 04 | khanhtt (tự quyết) |
 | DEC-55 | Thu hồi đăng nhập station trễ tối đa 15 phút (review M1 #13, TC-10.06) | Chấp nhận: station về màn đăng nhập khi access token hết hạn (≤ 15 phút); không làm "đóng WS ngay". Phiên station giữ như hiện tại (refresh 30 ngày trượt — máy dùng hằng ngày không phải đăng nhập lại) | Thu hồi chỉ dùng khi sự cố hiếm (đổi/mất máy trạm, khai báo lại station, nghi lộ phiên), Admin chủ động; bỏ việc khỏi T-13 | User (2026-10-05) |
 | DEC-56 | User giao hoàn thành Phase 1–3 (2026-10-05) | Phase 1 tiếp item 01 từ bước 8; mỗi milestone chạy 2 agent song song (BE ở `ai-cam-be`, FE ở `ai-cam-fe`, FE mock theo contract 02 tới khi BE xong), tuần tự trong mỗi repo; commit + push mỗi task; người điều phối giữ 03/00-status/system-map và chạy E2E với BE thật sau mỗi milestone | Hai repo độc lập nên song song không xung đột; giữ thứ tự task trong từng repo (CONVENTIONS §4: 8a ∥ 8b) | User (phạm vi) · khanhtt tự quyết (cách làm) |
+| DEC-60 | RB-14 (02a): phiên chờ duyệt lâu rồi được "Cho tiếp tục" bị J-07 cảnh báo / bỏ dở ngay vì đồng hồ tính từ `started_at` | Đồng hồ quá giờ tính lại từ lúc yêu cầu duyệt kết thúc: `timer_base` = max(`started_at`, `decided_at` gần nhất); station rút yêu cầu cũng ghi `decided_at`; cảnh báo 15 phút bật lại. Change request nhỏ BR-16 (01 v0.4). Code be `97abd2e` | Người đứng bàn không phải quét mở lại vì quản lý duyệt chậm; không mất bằng chứng (clip vẫn từ lúc mở phiên). Loại: giữ nguyên (bỏ dở oan); cột mới cộng dồn thời gian chờ (thừa) | khanhtt (vai PO, theo ủy quyền DEC-15) |
