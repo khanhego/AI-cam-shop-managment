@@ -4,7 +4,7 @@
 |---|---|
 | Tác giả | khanhtt (FE) |
 | Reviewer | khanhtt (tech lead, review subagent ở bước 5) |
-| Trạng thái | In review · **v0.2** (sửa review G2 lượt 1 — R-5, R-9, R-24, R-27, R-30; DEC-239, 244..262) |
+| Trạng thái | In review · **v0.2** (sửa review G2 lượt 1 — R-5, R-9, R-24, R-27, R-30; DEC-239, 281) · **v0.3** (review G2 lượt 2: R2-3, R2-8, R2-11 — DEC-264..273) |
 | Tổng quan & contract | [02-tech-spec.md](02-tech-spec.md) · Màn: [01-srs.md §10.4](01-srs.md) (R1–R5, S1/S2/S3 mở rộng) · nền Phase 1 [item 01 02b-station](../01-packing-mvp/02b-fe-spec-station.md) · [Design system](../../../design-system/README.md) mục Station kiosk |
 | Last update | 2026-10-05 · FE |
 
@@ -103,6 +103,8 @@ Guard không đổi (`role = STATION`). Không có route mới; panel chọn tro
 | Kết quả tìm R3 | API-104 | Query `['return-lookup', q]` `staleTime` 0 | Chỉ khi bấm "Tìm" / Enter | ✗ |
 | Thông báo sau đóng | `closed_session` trong response API-11 | `stationStore.closedNotice` | Xóa sau 10 giây / lần quét kế | — |
 
+**Flush trước quá giờ (DEC-272):** khi tới `warn_at` và 30 giây trước `abandon_at` (theo đồng hồ server) → nếu nháp `dirty` thì gửi API-102 ngay (server chỉ tự hoàn tất bằng kết luận **đã lưu**).
+
 **Quét khi R2 có nháp chưa lưu (DEC-235):** `scan()` ở R2 → nếu `inspectionDraft.dirty` hoặc API-102 đang chạy → chờ API-102 xong (tối đa 3 giây; quá → vẫn gửi API-11, server trả `INSPECTION_REQUIRED` nếu chưa có kết luận) → gửi API-11. Hàng đợi quét Phase 1 (tối đa 1 lần chờ) giữ nguyên.
 
 **F2 và máy quét (DEC-237):** máy quét HID gửi ký tự + Enter ≤ 50 ms/phím (`ScanBuffer`); F2 là phím chức năng không sinh ký tự → `StationPage` nghe `keydown` `F2` riêng (chỉ R2, `preventDefault`). Khi focus đang ở ô nhập (ghi chú, tên người kiểm, tìm thủ công): `ScanBuffer` vẫn nhận chuỗi nhanh kết thúc Enter và **không** gõ vào ô (Phase 1 đã chặn ở ô tìm D3 — áp lại cho R2 / R3 / R5 qua `useScanListener({ captureInInputs: true })`); gõ tay chậm vào ô bình thường.
@@ -148,7 +150,9 @@ Guard không đổi (`role = STATION`). Không có route mới; panel chọn tro
 | ALERT `OPERATOR_REQUIRED` | Mở R5 (không overlay) | — |
 | ALERT `RETURN_NOT_FOUND` | R4 "KHÔNG TÌM THẤY ĐƠN" | "Tìm thủ công" → R3 (`q` = mã); "Mở phiên chưa xác định" → API-105 `unidentified_code` |
 | ALERT `RETURN_MULTIPLE_PACKAGES` | R4 "ĐƠN CÓ NHIỀU KIỆN" 1,5 giây | Tự mở R3 với `q = data.platform_order_sn` |
-| ALERT `RETURN_ALREADY_RECEIVED`, `NOT_SHIPPED`, `RETURN_IN_PROGRESS_ELSEWHERE`, `INVALID_CODE` | R4 theo bảng 01 §10.4 + `alert.message` | Tự đóng 8 giây |
+| ALERT `RETURN_ALREADY_RECEIVED` | R4 "KIỆN HOÀN ĐÃ NHẬN" + nút "Đây là kiện khác — vẫn ghi hình" (khi `data.can_record_other`) → Dialog ghi chú 5–200 → API-105 `{unidentified_code, force_new: true, note}` → R2 | Không bấm → tự đóng 8 giây (DEC-265) |
+| ALERT `NOT_SHIPPED`, `RETURN_IN_PROGRESS_ELSEWHERE`, `INVALID_CODE` | R4 theo bảng 01 §10.4 + `alert.message` | Tự đóng 8 giây |
+| WS-01 `alert SESSION_AUTO_CLOSED` | R1 + `ClosedNotice` từ `data.closed_session` ("…đã tự hoàn tất do quá 45 phút", mã KN nếu có) + bíp | Invalidate phiên gần đây (DEC-272) |
 | ALERT `INSPECTION_REQUIRED` | Tại chỗ R2 (không overlay) | Cuộn tới khối Kết luận, focus nút đầu |
 | ALERT `RETURN_CODE_DIFFERENT` | Alert vàng R2 "Mã {code} không thuộc kiện đang kiểm…" | 5 giây |
 | API-102 `SESSION_NOT_OPEN` / `NOT_RETURN_SESSION` | — | Gọi lại API-10, bỏ nháp |
@@ -201,9 +205,9 @@ N/A — như Phase 1 (DEC-23 item 01: không gửi lỗi JS về BE). Log trình
 |---|---|---|---|---|
 | T-131 | API client `lib/api/station.ts` mở rộng (kiểu API-10/11 RETURN, `closed_session`, API-100..105), `src/shared/returns/inspection.ts`, copy; MSW `StationSim` RETURN + `returnsDb.ts` | nền R1–R5 | 02 §6 (mock) | 1,5 |
 | T-132 | `selectPanel`, `StationStatusBar` chip chế độ / người kiểm, R1 `ReturnReadyPanel`, R5 `OperatorDialog`, đổi chế độ ở S1 / R1 | R1, R5, S1 / FR-01.07, 04.10 | API-10, 100, 101, 15 | 1 |
-| T-133 | R2 `InspectingPanel`: `ReturnHeader`, `InspectionTable`, `ConclusionPicker`, ghi chú, `SaveIndicator`, nháp + debounce API-102, chờ flush trước quét đóng, `ReturnCancelDialog`, quá giờ | R2 / FR-04.02, 04.03, 04.05, 04.09 | API-11, 12, 102 | 2 |
+| T-133 | R2 `InspectingPanel`: `ReturnHeader`, `InspectionTable`, `ConclusionPicker`, ghi chú, `SaveIndicator`, nháp + debounce API-102, chờ flush trước quét đóng, flush tại `warn_at` / trước `abandon_at`, WS `SESSION_AUTO_CLOSED`, `ReturnCancelDialog`, quá giờ | R2 / FR-04.02, 04.03, 04.05, 04.09 | API-11, 12, 102 | 2 |
 | T-134 | R2 ảnh + tham chiếu: `SnapshotStrip` (shared), F2, API-103, `PackReferenceCard` + `ClipPreviewDialog` | R2 / FR-04.04, 04.12 | API-103, 106, 40 | 1,5 |
-| T-135 | R3 `ReturnLookupDialog` + R4 mã RETURN trong `AlertOverlay` + `RETURN_MULTIPLE_PACKAGES` → R3 + API-105 (kèm `unidentified_code`); `useScanListener({ captureInInputs })` | R3, R4 / FR-04.07, 04.13 | API-104, 105 | 1,5 |
+| T-135 | R3 `ReturnLookupDialog` + R4 mã RETURN trong `AlertOverlay` + `RETURN_MULTIPLE_PACKAGES` → R3 + API-105 (kèm `unidentified_code`, `force_new` từ "Đây là kiện khác"); `useScanListener({ captureInInputs })` | R3, R4 / FR-04.07, 04.13 | API-104, 105 | 1,5 |
 | T-136 | Hardening Phase 1: S3 chữ hai tình huống, `ClosedNotice` cho PACK (S1), `OrderCancelledBanner` S2 + WS-01 `alert` | S1, S2, S3 / FR-03.13..15 | API-11 `closed_session`, WS-01 | 1 |
 | T-137 | Test unit / component / integration, E2E mock + E2E BE thật UC-02 | — | BE T-101..T-110 cho E2E thật | 1,5 |
 
@@ -236,4 +240,4 @@ Tổng ≈ 10 ngày công.
 | DEC-237 | Phím chụp ảnh | F2 (nghe `keydown` riêng ở R2) | Không xung đột máy quét HID (không gửi phím chức năng) | khanhtt (tự quyết) |
 | DEC-238 | Thời gian tự đóng R4 | 8 giây | Chữ R4 dài hơn S4, có 2 nút ở `RETURN_NOT_FOUND` | khanhtt (tự quyết) |
 | DEC-239 | Bố cục R2 ở 1366×768 (RF-12) | Khối Kết luận + hướng dẫn quét dính đáy (sticky), bảng dòng cuộn trong khung | Luôn thấy kết luận và hướng dẫn quét đóng; không phải cuộn trang | khanhtt (tự quyết) |
-| DEC-244 | Review G2 lượt 1 phần station | `lines_mode`, tự hoàn tất quá giờ, lỗi API-103 / 105, kiện hoàn ở bàn đóng gói, R5 sau đăng xuất | Theo 02 §6.3 | khanhtt (tự quyết) |
+| DEC-281 | Review G2 lượt 1 phần station (đổi số từ DEC-244 — trùng 01, R2-11) | `lines_mode`, tự hoàn tất quá giờ, lỗi API-103 / 105, kiện hoàn ở bàn đóng gói, R5 sau đăng xuất | Theo 02 §6.3 | khanhtt (tự quyết) |
