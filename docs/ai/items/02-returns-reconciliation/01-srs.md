@@ -4,8 +4,8 @@
 
 | | |
 |---|---|
-| Phiên bản | 0.4 |
-| Trạng thái | Approved (G1 2026-10-05, tự duyệt theo ủy quyền user — DEC-217) · v0.3 change request sau review G2 lượt 1 (DEC-244) · v0.4 sau review G2 lượt 2 (DEC-264) |
+| Phiên bản | 0.5 |
+| Trạng thái | Approved (G1 2026-10-05, tự duyệt theo ủy quyền user — DEC-217) · v0.3 change request sau review G2 lượt 1 (DEC-244) · v0.4 sau review G2 lượt 2 (DEC-264) · v0.5 sau lượt 3 (DEC-275) |
 | Owner (PO) | khanhtt (nghiệp vụ do chủ shop xác nhận) |
 | Reviewer | khanhtt (solo) |
 | Nguồn | [SRS hệ thống](../../system/SRS.md) §4.2, §5.4–5.8, §6.3–6.5, §7, §13.2 Phase 2 · Q&A sau Phase 1 [06-business-qa](../01-packing-mvp/06-business-qa.md) (L2–L9, §4) · hệ thống Phase 1 đang chạy ([system-map](../../system/system-map.md), item [01](../01-packing-mvp/01-srs.md)) |
@@ -437,7 +437,7 @@ Hồ sơ khiếu nại: `NEW` Mới → `SUBMITTED` Đã gửi → `WAITING` Đa
 | BR-21 | Đơn hủy khi kiện `PACKING` → báo station; đóng phiên → kiện `CANCELLED_AFTER_PACK` (không qua `PACKED`) | J-04 thấy hủy 14:03, phiên mở từ 14:01 → S2 đỏ 14:03; quét đóng → CANCELLED_AFTER_PACK + BR-11 |
 | BR-22 | Kết luận chung "Nguyên vẹn" chỉ được chọn khi mọi dòng có tình trạng Nguyên vẹn và số nhận = số yêu cầu trả; có dòng khác → kết luận phải là một vấn đề. Đơn không có danh sách sản phẩm, hoặc giao thất bại của đơn > 1 kiện (DEC-249) → chỉ kết luận chung, dòng chỉ để tham khảo | Yêu cầu trả 2 áo, nhận 1 → dòng "Thiếu", kết luận chung bị khóa "Nguyên vẹn" |
 | BR-23 | Phiên hoàn đóng khi mã quét lại thuộc cùng hồ sơ hàng hoàn (mã chiều về / mã gốc / mã đơn); mã khác → cảnh báo, phiên giữ nguyên | Mở bằng mã chiều về SPXRT…01, đóng bằng mã gốc SPX…789 cùng đơn → đóng được |
-| BR-24 | **Hồ sơ một phiên** chỉ khi loại Khách trả hàng, hoặc đơn chỉ có 1 kiện: một phiên `COMPLETED` → hồ sơ `RECEIVED_*`; kiện chuyển `RETURN_RECEIVED_*`: **mọi** kiện của đơn khi yêu cầu trả bao trọn đơn, ngược lại **chỉ kiện được quét** (kiện khác giữ trạng thái, rời hồ sơ — DEC-271). **Còn lại** (Giao thất bại, Về trước khi sàn báo, Chưa xác định của đơn > 1 kiện): mỗi kiện một phiên, chỉ kết luận chung; hồ sơ `RECEIVED_*` khi mọi kiện có phiên `COMPLETED`, trong lúc đó `PARTIALLY_RECEIVED`; tổng kết `RECEIVED_ISSUE` nếu ≥ 1 kiện có vấn đề (DEC-249, DEC-265) | Giao thất bại 2 kiện, nhận 1 → PARTIALLY_RECEIVED. Đơn 2 kiện về trước khi sàn báo → 2 phiên. Khách trả trọn đơn 2 kiện bằng 1 kiện chiều về → 1 phiên → cả 2 kiện nhận. Khách trả 1 áo của đơn 2 kiện → chỉ kiện quét được nhận |
+| BR-24 | **Hồ sơ một phiên** chỉ khi loại Khách trả hàng, hoặc đơn chỉ có 1 kiện: một phiên `COMPLETED` → hồ sơ `RECEIVED_*`; kiện chuyển `RETURN_RECEIVED_*`: **mọi** kiện của đơn khi yêu cầu trả bao trọn đơn, ngược lại **chỉ kiện được quét** (kiện khác rời hồ sơ, về trạng thái trước — "Đã giao" / "Đã bàn giao" — DEC-271, DEC-275). **Còn lại** (Giao thất bại, Về trước khi sàn báo, Chưa xác định của đơn > 1 kiện): mỗi kiện một phiên, chỉ kết luận chung; hồ sơ `RECEIVED_*` khi mọi kiện có phiên `COMPLETED`, trong lúc đó `PARTIALLY_RECEIVED`; tổng kết `RECEIVED_ISSUE` nếu ≥ 1 kiện có vấn đề (DEC-249, DEC-265) | Giao thất bại 2 kiện, nhận 1 → PARTIALLY_RECEIVED. Đơn 2 kiện về trước khi sàn báo → 2 phiên. Khách trả trọn đơn 2 kiện bằng 1 kiện chiều về → 1 phiên → cả 2 kiện nhận. Khách trả 1 áo của đơn 2 kiện → chỉ kiện quét được nhận |
 | BR-25 | Số ngày giữ clip ≥ sàn tối thiểu (mặc định 60); hạ số ngày giữ clip / video thô phải xác nhận kèm số lượng bị ảnh hưởng | Đổi 90 → 70 → hộp thoại "312 clip sẽ bị xóa ở lần dọn 02:00 tới"; đổi 90 → 45 → lỗi "Không được thấp hơn 60 ngày" |
 | BR-26 | Mỗi (kiện, quy tắc) tối đa một cảnh báo mở; điều kiện hết → tự đóng "Tự hết"; đóng tay cần ghi chú; cùng điều kiện tái phát sau khi đóng → cảnh báo mới | BR-14 cho SPX…789 mở, sàn lấy hàng → tự đóng |
 | BR-27 | Mỗi kiện tối đa một hồ sơ khiếu nại chưa Đóng cho mỗi loại (trừ hồ sơ "Chuyển từ cờ giữ" — không tính, hạn nhắc 30 ngày sau nâng cấp, DEC-262). Hạn khiếu nại = hạn phản hồi của người bán do sàn trả về; không có → ngày tạo + `claim_deadline_days` (mặc định 7, đề xuất — chờ Q13) | Tạo lần 2 "Hộp rỗng" cho cùng kiện → mở hồ sơ cũ |
@@ -697,7 +697,7 @@ Nguồn "Cam 2 thấy trên khay": giữ chữ cũ "Bỏ phiếu SPX…790 khỏ
 | Tình huống | Tiêu đề | Dòng phụ | Hành động |
 |---|---|---|---|
 | Không tìm thấy (EX-R12) | KHÔNG TÌM THẤY ĐƠN | "Không có đơn nào khớp mã SPX…000, sàn không trả lời." | "Tìm thủ công" · "Mở phiên chưa xác định" |
-| Đã nhận (EX-R11) | KIỆN HOÀN ĐÃ NHẬN | "SPX…789 đã nhận lúc 09:05 tại Station 03 — Nguyên vẹn." | "Đây là kiện khác — vẫn ghi hình" → Dialog ghi chú (bắt buộc, 5–200) → mở phiên chưa xác định; không bấm → tự đóng 8 giây |
+| Đã nhận (EX-R11) | KIỆN HOÀN ĐÃ NHẬN | "SPX…789 đã nhận lúc 09:05 tại Station 03 — Nguyên vẹn." | "Đây là kiện khác — vẫn ghi hình" → Dialog ghi chú (bắt buộc, 5–200) → mở phiên chưa xác định (chỉ Supervisor gắn đơn được; D2 "Cần xử lý" báo); không bấm → tự đóng 8 giây |
 | Chưa gửi đi (EX-R6) | KIỆN CHƯA GỬI ĐI | "SPX…789 đang ở trạng thái Đã đóng gói trong kho. Đây không phải hàng hoàn." | Tự đóng |
 | Quét mã đơn có nhiều kiện | ĐƠN CÓ NHIỀU KIỆN | "Đơn 2410ABCDEF có 2 kiện. Chọn đúng kiện đang cầm." | Mở R3 với mã đơn điền sẵn |
 | Đang kiểm ở bàn khác | ĐANG KIỂM Ở STATION KHÁC | "SPX…789 đang được kiểm tại Station 04." | Tự đóng |
@@ -981,6 +981,7 @@ Không đổi — AS-01..07, CO-01..04, RK-01..10. Bổ sung:
 | DEC-267 | R2-2: sàn báo sau khi hồ sơ "về trước" đã nhận → hồ sơ ma; `TO_RETURN` lặp tạo hồ sơ mới | Gắn tín hiệu sàn vào hồ sơ gần nhất của đơn chưa có mã yêu cầu sàn trong 30 ngày, kể cả đã nhận (chỉ cập nhật thông tin sàn, không đổi kiện); mỗi tín hiệu xử lý một lần; mọi kiện đã nhận → bỏ qua tín hiệu giao thất bại | AC-24 đúng; không giữ clip vô hạn | khanhtt (tự quyết) | 2026-10-05 |
 | DEC-268 | R2-4: clip đóng gói hết được giữ ngay khi nhận "Nguyên vẹn", trong khi kết luận còn sửa được 7 ngày | Giữ thêm 7 ngày sau khi hồ sơ hàng hoàn "Đã nhận" (BR-09 b) | Sửa OK → có vấn đề vẫn có clip | khanhtt (tự quyết) | 2026-10-05 |
 | DEC-271 | R2-7: khách trả một phần của đơn nhiều kiện — chuyển cả kiện không trả sang "đã nhận" | Chỉ mọi kiện khi yêu cầu trả bao trọn mọi dòng × số lượng của đơn; còn lại chỉ kiện được quét, kiện khác rời hồ sơ và giữ trạng thái | Trạng thái kho đúng thực tế hơn; không đối soát sai kiện chưa về. Loại: chuyển tất cả + ghi rủi ro (trạng thái sai bằng chứng) | khanhtt (tự quyết) | 2026-10-05 |
+| DEC-275 | Change request v0.5 sau review G2 lượt 3 (điều kiện G2 C1–C6) | BR-24: kiện không được trả của đơn trả một phần về "Đã giao" / "Đã bàn giao"; R4 "kiện khác" chỉ khi kiện đã nhận, chỉ Supervisor gắn đơn, D2 báo | Khớp 02 §6.5 | khanhtt (PO, tự quyết theo ủy quyền user) | 2026-10-05 |
 
 ## Chốt G1
 - [x] Mọi vấn đề P# trong phạm vi (P2, P3, P4, P6 + hardening P1/P5) có FR; mọi FR M có ≥ 1 AC (FR-05.07 kiểm gián tiếp qua AC-23; FR-07.01, 07.02 qua AC-22, AC-31)

@@ -4,7 +4,7 @@
 |---|---|
 | Tác giả (Architect) | khanhtt |
 | Reviewer | BE lead · FE lead (khanhtt, solo — review subagent ở bước 5) |
-| Trạng thái | In review · **v0.3** (v0.2: review G2 lượt 1 R-1..R-30, §6.3; v0.3: lượt 2 R2-1..R2-11, §6.4 — DEC-264..273) |
+| Trạng thái | **Approved (G2 2026-10-05, có điều kiện C1–C6 — đã thỏa, DEC-274)** · **v0.4** (v0.2: lượt 1 §6.3; v0.3: lượt 2 §6.4; v0.4: lượt 3 §6.5 — DEC-275) |
 | SRS | [01-srs.md](01-srs.md) v0.2 · FR phủ: FR-01.01, 01.07, FR-02.06, 02.09–02.12, FR-03.13–03.15, FR-04.01–04.13, FR-05.05, 05.07, 05.11, 05.12, FR-06.01–06.03, 06.05, 06.06, FR-07.01, 07.02, FR-08.01–08.06, FR-09.01, FR-10.02, 10.03 |
 | Spec con | BE: [02a-be-spec.md](02a-be-spec.md) · FE: [02b-fe-spec-station.md](02b-fe-spec-station.md), [02b-fe-spec-admin.md](02b-fe-spec-admin.md) |
 | Nền | Contract Phase 1: [item 01 02 v0.7](../01-packing-mvp/02-tech-spec.md) (quy ước §6 giữ nguyên) · [architecture.md](../../system/architecture.md) · ADR-001..008, [ADR-009](../../system/decisions/ADR-009-claim-based-evidence-retention.md) (mới) |
@@ -733,7 +733,7 @@ Mọi điểm dưới đây ghi đè chỗ khác trong §5–§6 nếu lệch.
 | 4 | §5.1 INSPECTION | `corrected` → `corrections[]` (lịch sử); + `lines_mode` `FULL` \| `REFERENCE` | R-17, R-5 |
 | 5 | §5.2 `claim.source` LEGACY_HOLD | `deadline_at` = lúc nâng cấp + 30 ngày (`DEFAULT`), không tính vào unique BR-27 | R-25 |
 | 6 | Gắn tín hiệu hoàn | Một hàm `returns.attach_or_create(order, signal)` cho J-04, J-06, J-13, API-11, API-105, API-112: hồ sơ mở của đơn (kể cả `UNANNOUNCED`) → gắn; `UNIDENTIFIED` có `open_code` = mã chiều về của yêu cầu mới → gộp. Ưu tiên `kind`: BUYER_RETURN > FAILED_DELIVERY > UNANNOUNCED. `TO_RETURN` / giao thất bại / boom COD / hủy khi `HANDED_OVER` chỉ tạo FAILED_DELIVERY khi đơn không có yêu cầu trả mở (xác minh T-3) | R-4, R-14 |
-| 7 | API-11 RETURN — hồ sơ một phiên | **v0.3 (DEC-265, 271): chỉ `BUYER_RETURN`, hoặc đơn 1 kiện**; `UNANNOUNCED` / `UNIDENTIFIED` của đơn > 1 kiện xử lý như `FAILED_DELIVERY` (mỗi kiện một phiên, `REFERENCE`); đóng phiên chuyển kiện khác chỉ khi yêu cầu trả bao trọn đơn. (v0.2 cũ:) `BUYER_RETURN` / `UNANNOUNCED` / `UNIDENTIFIED`: phiên mở trên kiện quét được, dòng = toàn bộ `requested_items` (hoặc mọi dòng đơn); đóng phiên → **mọi** kiện của hồ sơ `RETURN_RECEIVED_*`, hồ sơ `RECEIVED_*`. `FAILED_DELIVERY` của đơn > 1 kiện: mỗi kiện một phiên, `lines_mode = REFERENCE` (`quantity_requested` = phần chưa nhận của hồ sơ, chỉ tham khảo) | R-5 |
+| 7 | API-11 RETURN — hồ sơ một phiên | Xem §6.4 #1, #6 và §6.5 (v0.3–v0.4): chỉ `BUYER_RETURN` hoặc đơn 1 kiện; còn lại mỗi kiện một phiên, `lines_mode = REFERENCE` khi đơn > 1 kiện | R-5 |
 | 8 | API-102 / API-113 | `lines_mode = REFERENCE` → không kiểm số lượng / BR-22, chỉ kiểm `conclusion` (+ note khi OTHER); `CONCLUSION_INCONSISTENT` chỉ ở `FULL` | R-5 |
 | 9 | API-105 | Station có phiên hoạt động → `409 SESSION_ACTIVE`. `unidentified_code` khớp kiện / hồ sơ đã có → xử lý như quét mã đó (không tạo kiện tạm). Kiện bị chặn → `200` `outcome = ALERT` với mã như API-11 | R-27 |
 | 10 | API-134 | Bỏ bằng chứng `auto = true` → bắt buộc `note` (5–500), ghi vào CLAIM_NOTE; thiếu → `422 VALIDATION_ERROR` `fields.note` | R-19 |
@@ -756,13 +756,28 @@ Ghi đè §5–§6.3 nếu lệch.
 | 1 | Hồ sơ một phiên | Chỉ `BUYER_RETURN` hoặc đơn có đúng 1 kiện. `UNANNOUNCED` / `UNIDENTIFIED` / `FAILED_DELIVERY` của đơn > 1 kiện: mỗi kiện một phiên, `lines_mode = REFERENCE` | R2-3 |
 | 2 | API-11 / R4 `RETURN_ALREADY_RECEIVED` | `alert.data` thêm `"can_record_other": true`. API-105 nhận `{ "unidentified_code", "force_new": true, "note": "…" (5–200), "client_scan_id" }` → luôn tạo hồ sơ `UNIDENTIFIED` + kiện tạm có mã riêng (`tracking_number` = `TAM-` + 6 số, `open_code` = mã đã quét), cờ phiên `UNIDENTIFIED`; `force_new` thiếu `note` → `422` | R2-3 |
 | 3 | Kiện tạm | `tracking_number` luôn là mã riêng `TAM-…` (không chiếm mã thật); mã quét lưu `session.open_code`. Sau mỗi upsert đơn (J-04, J-05, tra sàn khi quét, API-112): `returns.merge_unidentified_by_code(mã vận đơn của đơn)` → hồ sơ `UNIDENTIFIED` có `open_code` khớp → gộp vào hồ sơ của đơn, phiên chuyển sang kiện thật, kiện tạm xóa (DEC-269) | R2-5 |
-| 4 | `attach_or_create` | Xét: (a) hồ sơ mở của đơn; (b) hồ sơ `UNANNOUNCED` / `FAILED_DELIVERY` / đã gộp của đơn **chưa có `platform_return_sn`**, tạo trong 30 ngày, ở **mọi** trạng thái (kể cả `RECEIVED_*`) → gắn thông tin sàn (`platform_return_sn`, `platform_status`, `kind` nâng), không đổi trạng thái kiện đã nhận; (c) không có → tạo. Idempotent: `return_case.signal_keys text[]` (`RETURN:{return_sn}`, `FAILED:{order_sn}`) — khóa đã có → bỏ qua. Tín hiệu giao thất bại khi mọi kiện của đơn đã `RETURN_RECEIVED_*` → bỏ qua (DEC-267) | R2-2 |
+| 4 | `attach_or_create` | Xét: (a) hồ sơ mở của đơn; (b) hồ sơ `UNANNOUNCED` / `FAILED_DELIVERY` của đơn **chưa có `platform_return_sn`**, tạo trong 30 ngày, ở trạng thái **`RECEIVED_*`** (v0.4: `CANCELLED` → nhánh c; hồ sơ đã gộp → gắn vào hồ sơ đích `merged_into`) → gắn thông tin sàn (`platform_return_sn`, `platform_status`, `kind` nâng), không đổi trạng thái kiện đã nhận; (c) không có → tạo. Idempotent: `return_case.signal_keys text[]` (`RETURN:{return_sn}`, `FAILED:{order_sn}`) — khóa đã có → bỏ qua. Tín hiệu giao thất bại khi mọi kiện của đơn đã `RETURN_RECEIVED_*` → bỏ qua (DEC-267) | R2-2 |
 | 5 | BR-09 (b) | Thêm 7 ngày sau `return_case.received_at` (hạn API-113); `protection.until` = `received_at + 7 ngày` (DEC-268) | R2-4 |
-| 6 | Đóng phiên hồ sơ một phiên | Mọi kiện của đơn sang `RETURN_RECEIVED_*` chỉ khi `requested_items` bao trọn mọi dòng × số lượng của đơn; ngược lại chỉ kiện của phiên, kiện khác xóa khỏi `return_case_package` và giữ trạng thái (DEC-271) | R2-7 |
+| 6 | Đóng phiên hồ sơ một phiên | Mọi kiện của đơn sang `RETURN_RECEIVED_*` chỉ khi `requested_items` bao trọn mọi dòng × số lượng của đơn; ngược lại chỉ kiện của phiên; kiện khác xóa khỏi `return_case_package` và **về trạng thái trước** khi vào hồ sơ (`RETURN_EXPECTED`/`RETURN_MISSING` → `DELIVERED` hoặc `HANDED_OVER`, nguồn WAREHOUSE, `actor_label` "Khách trả một phần") (DEC-271, v0.4 R3-3) | R2-7 |
 | 7 | WS-01 | `alert SESSION_AUTO_CLOSED` (bảng WS). FE flush nháp kết luận (API-102) khi tới `warn_at` và 30 giây trước `abandon_at`; J-07 chỉ dùng kết luận **đã lưu** (DEC-272) | R2-8 |
 | 8 | §5.3 | Chuyển `→ RETURN_RECEIVED_*` khi API-112 gộp (nguồn MANUAL) | R2-9 |
-| 9 | Thứ tự khóa | `order:{sn}` → station → case → package → clip (§8, DEC-266). API-112 lấy `order:{sn}` của đơn đích **trước tiên** | R2-1 |
-| 10 | Rollback | Archive gồm thêm `approval_request`, `export` của phiên RETURN, hồ sơ `LEGACY_HOLD` + ghi chú; nâng cấp lại `setval` sequence `HH-` / `KN-` = max + 1; clip đặt `held` bởi downgrade ghi vào `phase2_archive.downgrade_held_clips` → 0004 nâng cấp lại bỏ qua (khôi phục hồ sơ cũ từ archive, không tạo `LEGACY_HOLD` mới) (DEC-270) | R2-6 |
+| 9 | Thứ tự khóa | `order:{sn}` → station → case → package → clip (§8, DEC-266). API-112 lấy `order:{sn}` của đơn đích **trước tiên**; v0.4: API-11 / API-105 RETURN gọi `resolve_code` và lấy `order:{sn}` (khi có đơn) **trước** `lock_station` — như `_lookup_platform`; J-06 lấy `order:{sn}` trước khi khóa kiện | R2-1 |
+| 10 | Rollback | Archive gồm thêm `approval_request`, `export` của phiên RETURN, hồ sơ `LEGACY_HOLD` + ghi chú; nâng cấp lại `setval` sequence `HH-` / `KN-` = max + 1; clip đặt `held` bởi downgrade ghi vào `phase2_archive.downgrade_held_clips` → 0004 nâng cấp lại bỏ qua (khôi phục hồ sơ cũ từ archive, không tạo `LEGACY_HOLD` mới) (DEC-270). v0.4: downgrade 0004 `CREATE SCHEMA IF NOT EXISTS phase2_archive`; schema chỉ drop ở **cuối** upgrade 0004; upgrade 0004 đặt `held = false` cho clip trong `downgrade_held_clips` | R2-6 |
+
+### 6.5 Thay đổi contract v0.4 (review G2 lượt 3 — điều kiện C1–C6, DEC-274, 275)
+
+| # | Chỗ | Thay đổi | Finding |
+|---|---|---|---|
+| 1 | API-105 `force_new` | Server chạy `resolve_code(unidentified_code)`; chỉ nhận khi kết quả là `RETURN_ALREADY_RECEIVED`, khác → `409 FORCE_NEW_NOT_ALLOWED` (`details.reason` = mã alert thật). Hồ sơ tạo ra: `kind = UNIDENTIFIED`, `manual_link_only = true` (không vào `merge_unidentified_by_code`, chỉ gắn qua API-112); `note` lưu `return_case.force_note` + `session.note`; audit `RETURN_FORCE_NEW` (data: mã, ghi chú, kiện đã nhận trước đó); API-32 attention `RETURN_FORCE_NEW {count}` (7 ngày, chưa gắn đơn) | R3-1 (C1) |
+| 2 | `merge_unidentified_by_code` | Chỉ gộp hồ sơ `UNIDENTIFIED` (không `manual_link_only`) mà **mọi phiên đã kết thúc**; còn phiên hoạt động → đánh dấu `pending_merge_order_id`, gộp lúc đóng phiên (API-11 / J-07) trong lock station | R3-2 (C2) |
+| 3 | Trả một phần | §6.4 #6 sửa: kiện tách về trạng thái trước | R3-3 (C3) |
+| 4 | Thứ tự khóa | §6.4 #9 sửa: `resolve_code` + `order:{sn}` trước `lock_station` ở API-11 / API-105 RETURN; J-06 khóa đơn trước kiện | R3-4 (C4) |
+| 5 | Rollback | §6.4 #10 sửa (schema tạo `IF NOT EXISTS`, drop cuối, `held = false`) | R3-5 (C5) |
+| 6 | `attach_or_create` (b) | Chỉ `RECEIVED_*`; `CANCELLED` → tạo mới; đã gộp → hồ sơ đích | R3-6 (C6) |
+| 7 | `signal_keys` | Khóa theo đợt: `RETURN:{return_sn}`, `FAILED:{order_sn}:{logistics_update_time}`; khóa thuộc hồ sơ `CANCELLED` bị bỏ qua khi xét trùng | R3-7 |
+| 8 | `flag_order_cancelled` | Phiên đã đóng trước khi task chạy (kiện `PACKED`) → áp `PACKED → CANCELLED_AFTER_PACK` (như J-06 hủy sau khi đóng) | R3-8 |
+| 9 | Mã kiện tạm | `TAM-` + 6 số từ sequence `placeholder_code_seq`, unique theo `upper(tracking_number)`; khớp `SCAN_CODE_REGEX` (`^[A-Z0-9-]{8,40}$`, `TAM-000123` = 10 ký tự). API-32 `returns_received` không đếm kiện tạm; thêm `returns_unidentified` | R3-9 |
+| 10 | Đổi `kind` sau khi đã nhận | Hồ sơ đã có phiên `COMPLETED` giữ chế độ mỗi kiện một phiên khi `kind` nâng thành `BUYER_RETURN` (`is_single_session` tính một lần lúc mở phiên đầu, lưu `return_case.single_session`) | R3-10 |
 
 ## 7. Luồng chính (end-to-end)
 
@@ -949,10 +964,13 @@ sequenceDiagram
 | DEC-271 | R2-7 | Chỉ chuyển mọi kiện khi yêu cầu bao trọn đơn (§6.4 #6) | 01 DEC-271 | khanhtt (tự quyết) | 2026-10-05 |
 | DEC-272 | R2-8: phiên tự hoàn tất không báo station; kết luận chưa lưu bị mất | WS-01 `SESSION_AUTO_CLOSED`; FE flush khi `warn_at` / trước `abandon_at`; J-07 dùng bản đã lưu | Station hiện kết quả + mã KN như đóng thường | khanhtt (tự quyết) | 2026-10-05 |
 | DEC-273 | R2-9, R2-10, R2-11 | Thêm chuyển trạng thái khi gộp; sửa chữ cũ 02a; đánh số lại DEC của 02b (DEC-281, 282) | Nhất quán tài liệu | khanhtt (tự quyết) | 2026-10-05 |
+| DEC-274 | Chốt G2 sau 3 lượt review (lượt 3: Đạt có điều kiện, không CRITICAL) | **G2 ✅ có điều kiện**: C1–C6 = sửa R3-1..R3-6 (đã sửa ở v0.4, §6.5) | Điều phối duyệt theo ủy quyền user; điều kiện đã thỏa trong cùng lượt | khanhtt (điều phối, tự quyết theo ủy quyền user) | 2026-10-05 |
+| DEC-275 | Findings lượt 3 R3-1..R3-10 | §6.5: `force_new` chỉ khi đã nhận + `manual_link_only`; gộp chỉ khi phiên đã kết thúc; kiện tách về trạng thái trước; `resolve_code` + `order:{sn}` trước station; archive `IF NOT EXISTS` / drop cuối / `held = false`; (b) chỉ `RECEIVED_*`; `signal_keys` theo đợt; `flag_order_cancelled` áp cả `PACKED`; mã `TAM-` từ sequence; `single_session` lưu lúc mở | Đóng điều kiện G2 | khanhtt (tự quyết) | 2026-10-05 |
 
 ## Chốt G2 (áp cho bộ 02 + 02a + 02b)
-- [ ] Mọi FR/BR/NFR trong phạm vi có chỗ trong spec (bảng FR coverage)
-- [ ] API contract đủ request/response/lỗi/quyền — FE, BE, QA làm song song được
-- [ ] Spec con BE và FE đã Approved, không mâu thuẫn contract
-- [ ] Mọi thứ NEW có lý do (đã kiểm không có sẵn)
-- [ ] Migration + rollback rõ; bảo mật & observability đã tính
+- [x] Mọi FR/BR/NFR trong phạm vi có chỗ trong spec (bảng FR coverage)
+- [x] API contract đủ request/response/lỗi/quyền — FE, BE, QA làm song song được
+- [x] Spec con BE và FE đã Approved, không mâu thuẫn contract (v0.4)
+- [x] Mọi thứ NEW có lý do (đã kiểm không có sẵn)
+- [x] Migration + rollback rõ; bảo mật & observability đã tính
+- [x] G2 ✅ có điều kiện (DEC-274): 3 lượt review subagent; lượt 3 Đạt có điều kiện, không CRITICAL; điều kiện C1–C6 (R3-1..R3-6) + minor R3-7..R3-10 đã sửa ở v0.4 (§6.5)

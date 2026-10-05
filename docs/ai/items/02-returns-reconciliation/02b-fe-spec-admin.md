@@ -4,7 +4,7 @@
 |---|---|
 | Tác giả | khanhtt (FE) |
 | Reviewer | khanhtt (tech lead, review subagent ở bước 5) |
-| Trạng thái | In review · **v0.2** (sửa review G2 lượt 1 — R-1, R-5, R-9, R-16, R-17, R-19, R-28, R-30; DEC-282) · **v0.3** (review G2 lượt 2: R2-4, R2-11 — DEC-264..273) |
+| Trạng thái | **Approved (G2 2026-10-05 có điều kiện, DEC-274)** · **v0.4** (lượt 3: R3-1, R3-9) · v0.2 (sửa review G2 lượt 1 — R-1, R-5, R-9, R-16, R-17, R-19, R-28, R-30; DEC-282) · **v0.3** (review G2 lượt 2: R2-4, R2-11 — DEC-264..273) |
 | Tổng quan & contract | [02-tech-spec.md](02-tech-spec.md) · Màn: [01-srs.md §10.5](01-srs.md) (D14–D17 mới; D2, D3, D4, D6, D8, D13 mở rộng) · nền Phase 1 [item 01 02b-admin](../01-packing-mvp/02b-fe-spec-admin.md) · [Design system](../../../design-system/README.md) |
 | Last update | 2026-10-05 · FE |
 
@@ -82,7 +82,7 @@ Drawer (`features/shell/nav.ts`) thêm sau "Tra cứu đơn": "Hàng hoàn" (`as
 | `SnapshotStrip` | REUSE `shared/media/SnapshotStrip.tsx` (từ 02b-station T-134) | `snapshots` | D4, D17 |
 | `ProtectedChip` | NEW `features/orders/ProtectedChip.tsx` | `protection` (API-31) | Thay `HoldToggle` (xóa file). "Đang được giữ: hồ sơ khiếu nại KN-…" / "…: hàng hoàn HH-…" (link) / "…tới {until}" khi có hạn (hồ sơ "Chỉ hoàn tiền" 30 ngày; hồ sơ hàng hoàn đã nhận: 7 ngày sau khi nhận — DEC-268); không giữ → gợi ý "Muốn giữ clip? Tạo hồ sơ khiếu nại." (R-1) |
 | `RetentionConfirmDialog` | NEW `features/settings/RetentionConfirmDialog.tsx` | `impact` (API-82 / `details.impact`) | 01 §10.5 D8 chữ |
-| `KpiCard`, `AttentionList` | EXTEND | kind mới (gồm `RETURN_SESSION_ABANDONED`) | D2 |
+| `KpiCard`, `AttentionList` | EXTEND | kind mới (gồm `RETURN_SESSION_ABANDONED`, `RETURN_FORCE_NEW` → D14 tab Chưa xác định) | D2; thẻ "Hoàn đã nhận" không đếm kiện tạm, thêm số `returns_unidentified` (v0.4) |
 | `PackageTable` | EXTEND | `is_placeholder` | Chip "Kiện tạm" cho kiện của hàng hoàn chưa xác định |
 | `NavBadge` | EXTEND `ApprovalBadge` → `NavBadge` | `kind: approvals \| recon \| claims` | Số từ API-32 (`recon_open.HIGH`, `claims_due_soon`) |
 

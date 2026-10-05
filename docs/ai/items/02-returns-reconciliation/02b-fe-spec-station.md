@@ -4,7 +4,7 @@
 |---|---|
 | Tác giả | khanhtt (FE) |
 | Reviewer | khanhtt (tech lead, review subagent ở bước 5) |
-| Trạng thái | In review · **v0.2** (sửa review G2 lượt 1 — R-5, R-9, R-24, R-27, R-30; DEC-239, 281) · **v0.3** (review G2 lượt 2: R2-3, R2-8, R2-11 — DEC-264..273) |
+| Trạng thái | **Approved (G2 2026-10-05 có điều kiện, DEC-274)** · **v0.4** (lượt 3: R3-1 `FORCE_NEW_NOT_ALLOWED`) · v0.2 (sửa review G2 lượt 1 — R-5, R-9, R-24, R-27, R-30; DEC-239, 281) · **v0.3** (review G2 lượt 2: R2-3, R2-8, R2-11 — DEC-264..273) |
 | Tổng quan & contract | [02-tech-spec.md](02-tech-spec.md) · Màn: [01-srs.md §10.4](01-srs.md) (R1–R5, S1/S2/S3 mở rộng) · nền Phase 1 [item 01 02b-station](../01-packing-mvp/02b-fe-spec-station.md) · [Design system](../../../design-system/README.md) mục Station kiosk |
 | Last update | 2026-10-05 · FE |
 
@@ -151,6 +151,7 @@ Guard không đổi (`role = STATION`). Không có route mới; panel chọn tro
 | ALERT `RETURN_NOT_FOUND` | R4 "KHÔNG TÌM THẤY ĐƠN" | "Tìm thủ công" → R3 (`q` = mã); "Mở phiên chưa xác định" → API-105 `unidentified_code` |
 | ALERT `RETURN_MULTIPLE_PACKAGES` | R4 "ĐƠN CÓ NHIỀU KIỆN" 1,5 giây | Tự mở R3 với `q = data.platform_order_sn` |
 | ALERT `RETURN_ALREADY_RECEIVED` | R4 "KIỆN HOÀN ĐÃ NHẬN" + nút "Đây là kiện khác — vẫn ghi hình" (khi `data.can_record_other`) → Dialog ghi chú 5–200 → API-105 `{unidentified_code, force_new: true, note}` → R2 | Không bấm → tự đóng 8 giây (DEC-265) |
+| API-105 `409 FORCE_NEW_NOT_ALLOWED` (v0.4) | Toast "Mã này không thuộc kiện đã nhận — quét lại." | Đóng Dialog, giữ R1 |
 | ALERT `NOT_SHIPPED`, `RETURN_IN_PROGRESS_ELSEWHERE`, `INVALID_CODE` | R4 theo bảng 01 §10.4 + `alert.message` | Tự đóng 8 giây |
 | WS-01 `alert SESSION_AUTO_CLOSED` | R1 + `ClosedNotice` từ `data.closed_session` ("…đã tự hoàn tất do quá 45 phút", mã KN nếu có) + bíp | Invalidate phiên gần đây (DEC-272) |
 | ALERT `INSPECTION_REQUIRED` | Tại chỗ R2 (không overlay) | Cuộn tới khối Kết luận, focus nút đầu |
