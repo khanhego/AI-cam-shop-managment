@@ -1,6 +1,19 @@
 # <NN>-<slug> — Release
 
-> Owner: Ops · Last update: <YYYY-MM-DD> · Ops
+| | |
+|---|---|
+| Owner (Ops) | |
+| Reviewer | Chủ sản phẩm (duyệt G5) |
+| Trạng thái | Planned · In progress · Released (G5) · Rolled back |
+| Test report | <link 04a-test-report.md> (G4) |
+| Môi trường đích | |
+| Last update | <YYYY-MM-DD> · Ops |
+
+> **TL;DR** — <phát hành gì · lên môi trường nào · có migration/đổi dữ liệu không · rủi ro chính · cách rollback 1 câu>
+
+<!-- Đối tượng đọc: ops và chủ sản phẩm. Ghi log thật từng bước; không có bước nào → "N/A — lý do". -->
+
+---
 
 ## 1. Nội dung release
 | Hạng mục | Chi tiết |

@@ -17,6 +17,10 @@ CLI, data pipeline, thư viện. Mục không áp dụng: "N/A — <lý do>". --
 ---
 
 ## 1. Phạm vi
+| Goals (lát/spec này làm) | Non-goals (cố ý không làm — để đâu) |
+|---|---|
+| | |
+
 | API / job / lệnh | FR | Ghi chú |
 |---|---|---|
 | API-01 | FR-01.01 | |
@@ -71,6 +75,15 @@ CLI, data pipeline, thư viện. Mục không áp dụng: "N/A — <lý do>". --
 
 ## 12. Task
 | # | Việc | FR / API | Phụ thuộc | Ước lượng |
+|---|---|---|---|---|
+
+## Phương án đã cân nhắc
+<!-- Chỉ các lựa chọn riêng của phía này (cấu trúc code, lock, cache, thư viện, state…). Lựa chọn xuyên suốt nằm ở 02 §9. -->
+| Phương án | Ưu | Nhược | Chọn? (lý do) |
+|---|---|---|---|
+
+## Rủi ro & câu hỏi mở
+| ID | Rủi ro / câu hỏi | Ảnh hưởng | Giảm thiểu / ai trả lời | Hạn |
 |---|---|---|---|---|
 
 ## Decisions

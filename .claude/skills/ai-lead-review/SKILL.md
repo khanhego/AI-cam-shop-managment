@@ -33,6 +33,8 @@ không ngoài phạm vi · theo pattern repo · system-map cập nhật.
 **Code FE (G3):** đúng màn & luồng spec · đủ trạng thái loading/empty/error/forbidden · xử lý lỗi API · không tin dữ liệu client cho quyền ·
 reuse component/design system · không route tạm trong nav thật · mock không lọt production · a11y cơ bản · i18n · test hiển thị/form ·
 không thêm lỗi build/lint/type/test · ảnh chụp/chạy app khớp spec.
+**Tài liệu nghiệp vụ (G3, mỗi lát):** có file theo `ai-dev-explain-business` · phủ mọi FR/BR của lát · bản đồ code ở §7 trỏ file có thật ·
+mô tả khớp hành vi code (không mô tả tính năng chưa làm).
 
 ## Cách làm
 - Mỗi finding phải **kiểm chứng**: file:line hoặc mục tài liệu + kịch bản cụ thể gây sai. Chưa kiểm được → "cần xác minh", tách riêng.

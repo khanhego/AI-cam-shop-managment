@@ -4,11 +4,11 @@
 |---|---|
 | Tác giả (Architect) | khanhtt |
 | Reviewer | BE lead · FE lead (khanhtt, solo) |
-| Trạng thái | Approved (G2 2026-10-04, có điều kiện DEC-33) |
-| SRS | [01-srs.md](01-srs.md) v0.3 · FR phủ: FR-01.01–01.06, FR-02.01–02.07, 02.09, FR-03.01–03.12, FR-05.01–05.04, 05.06–05.10, FR-07.01–07.04, FR-09.01, FR-10.01–10.03 |
+| Trạng thái | Approved (G2 2026-10-04, có điều kiện DEC-33) · **v0.7** — đổi contract sau G2 — chỉ thêm / làm rõ (v0.3: DEC-57, DEC-58; v0.4: DEC-61; v0.5: DEC-62, DEC-63; v0.6: DEC-66; v0.7: DEC-67) |
+| SRS | [01-srs.md](01-srs.md) v0.4 · FR phủ: FR-01.01–01.06, FR-02.01–02.07, 02.09, FR-03.01–03.12, FR-05.01–05.04, 05.06–05.10, FR-07.01–07.04, FR-09.01, FR-10.01–10.03 |
 | Spec con | BE: [02a-be-spec.md](02a-be-spec.md) · FE: [02b-fe-spec-station.md](02b-fe-spec-station.md), [02b-fe-spec-admin.md](02b-fe-spec-admin.md) |
 | Kiến trúc nền | [architecture.md](../../system/architecture.md) · ADR-001..008 |
-| Last update | 2026-10-04 · Architect |
+| Last update | 2026-10-05 · Architect (v0.7 làm rõ sau sửa review G3: `413`, `CREDENTIALS_UNREADABLE`, `info.json.video_gaps`, cookie OAuth — DEC-67) |
 
 > **TL;DR** — Dựng mới toàn bộ: `ai-cam-be` (FastAPI + Celery + vision + MediaMTX, chạy tại kho) và `ai-cam-fe` (React, 2 client: station kiosk, dashboard).
 > Quét mã đi qua một API duy nhất `POST /station/scan`. API này luôn trả `200` kèm `outcome` để station tự chọn màn và âm thanh (DEC-7). Cập nhật realtime (Cam 2, duyệt, camera) đi qua WebSocket.
@@ -157,11 +157,12 @@ erDiagram
 | Base | `https://<host>/api/v1`; WS `wss://<host>/ws/...` |
 | Auth | `Authorization: Bearer <access_token>` (JWT 15 phút). Refresh token trong cookie `httpOnly; Secure; SameSite=Strict`, path `/api/v1/auth`, tên riêng theo client: `rt_station`, `rt_dashboard` (không ghi đè nhau trên cùng trình duyệt). Tài khoản STATION: refresh 30 ngày, thu hồi được (DEC-9) |
 | Format | JSON, `snake_case`, UTF-8 |
-| Thời gian | ISO-8601 UTC có `Z` (`2026-10-04T07:27:05Z`); FE hiển thị giờ Việt Nam |
+| Thời gian | ISO-8601 UTC có `Z` (`2026-10-04T07:27:05Z`) ở **mọi** response API và khung WS — kể cả JSON tự ghép (WS `at`, `alert.data.packed_at`, `details.decided_at` / `until`, `shop.last_error.at`); contract test kiểm (v0.6, DEC-66). FE hiển thị giờ Việt Nam |
 | ID | UUID v7 dạng chuỗi |
 | Phân trang | `?page=1&page_size=20` (tối đa 100) → `{ "items": [...], "page": 1, "page_size": 20, "total": 312 }` |
 | Lỗi | `{ "error": { "code": "VALIDATION_ERROR", "message": "…", "details": { "fields": { "name": "…" } } } }`. `message` là tiếng Việt, hiển thị được; FE dựa vào `code` |
-| Lỗi chung mọi API | `401 UNAUTHENTICATED` → FE refresh 1 lần rồi về màn đăng nhập · `403 FORBIDDEN` → D12 / ẩn hành động · `404 NOT_FOUND` → EmptyState · `422 VALIDATION_ERROR` → lỗi theo field · `429 RATE_LIMITED` → thử lại sau `Retry-After` · `500 INTERNAL` → Alert "Có lỗi hệ thống. Thử lại sau ít phút." |
+| Lỗi chung mọi API | `401 UNAUTHENTICATED` → FE refresh 1 lần rồi về màn đăng nhập · `403 FORBIDDEN` → D12 / ẩn hành động · `404 NOT_FOUND` → EmptyState · `422 VALIDATION_ERROR` → lỗi theo field · `413 PAYLOAD_TOO_LARGE` → body vượt giới hạn (xem dòng dưới) · `429 RATE_LIMITED` → thử lại sau `Retry-After` · `500 INTERNAL` → Alert "Có lỗi hệ thống. Thử lại sau ít phút." |
+| Giới hạn body (v0.7, DEC-67) | `POST` / `PUT` / `PATCH`: `/api/v1/imports*` ≤ 6 MB (file ≤ 5 MB + phần bao multipart), mọi API khác ≤ 1 MB. Vượt → `413 PAYLOAD_TOO_LARGE`, `details.max_bytes` (api kiểm `Content-Length` và đếm byte thật). Caddy chặn trước ở proxy (`request_body max_size`): 413 từ proxy **có thể không có body JSON** → client chặn trước theo kích thước file, và coi 413 không body như `PAYLOAD_TOO_LARGE` |
 | Version | Tiền tố `/v1`; đổi phá vỡ → `/v2` |
 | Nguồn sự thật | File này cho tới khi BE sinh `/openapi.json`; sau đó OpenAPI là nguồn, file này cập nhật theo (DEC-10) |
 
@@ -201,7 +202,7 @@ erDiagram
 | API-62 | `POST /cameras/test` | Thử kết nối camera, trả ảnh | ADMIN | FR-01.01 | admin |
 | API-63 | `GET /cameras/{id}/snapshot` | Ảnh hiện tại (JPEG) | ADMIN, SUPERVISOR | FR-01.04 | admin |
 | API-64 | `PUT /cameras/{id}/roi` | Lưu vùng đọc mã Cam 2 | ADMIN | FR-01.04 | admin |
-| API-65 | `GET /live` | Danh sách station + URL WHEP từng camera | ADMIN, SUPERVISOR | FR-01.05 | admin |
+| API-65 | `GET /live` | Danh sách station + URL WHEP từng camera; cũng là đích `forward_auth` của Caddy cho `/live/*` (v0.6, DEC-66) | ADMIN, SUPERVISOR | FR-01.05 | admin |
 | API-70 | `GET /shops` | Trạng thái kết nối sàn | ADMIN | FR-05.01 | admin |
 | API-71 | `POST /shops/shopee/auth-url` | Tạo URL ủy quyền | ADMIN | FR-05.01 | admin |
 | API-72 | `GET /shops/shopee/callback` | Shopee chuyển về (redirect 302 tới `/admin/settings/shopee?result=`) | công khai + `state` | FR-05.01 | trình duyệt |
@@ -286,7 +287,7 @@ Luôn trả **200** cho mọi kết quả nghiệp vụ (DEC-7). 4xx chỉ cho l
 |---|---|---|
 | `SESSION_OPENED` | READY + mã hợp lệ (có thể kèm flag `UNVERIFIED`) | S2, bíp thành công |
 | `SESSION_COMPLETED` | Đang mở + mã = mã phiên | S1, bíp thành công |
-| `MISMATCH` | Đang mở / lệch mã + mã ≠ mã phiên | S3, âm lỗi lặp |
+| `MISMATCH` | Đang mở / lệch mã + mã ≠ mã phiên. **Hoặc** READY + mã hợp lệ nhưng Cam 2 đang thấy phiếu khác (`tray.match` = `DIFFERENT` / `MULTIPLE`): phiên vẫn mở rồi chuyển ngay `MISMATCH` nguồn `CAM2` trong cùng transaction (v0.4, DEC-61) | S3, âm lỗi lặp |
 | `ALERT` | Không mở phiên, xem `alert.code` | S4, 2 bíp |
 | `IGNORED` | Đang `WAITING_APPROVAL` | giữ màn, nhắc "Đang chờ duyệt." |
 
@@ -349,7 +350,13 @@ Luôn trả **200** cho mọi kết quả nghiệp vụ (DEC-7). 4xx chỉ cho l
 { "items": [ { "id": "0192…", "type": "MISMATCH", "status": "PENDING",
   "station": { "id": "…", "name": "Station 01" }, "session_id": "…",
   "tracking_number": "SPX…789", "context": { "expected": "SPX…789", "actual": "SPX…788", "source": "SCAN", "tray_match": "DIFFERENT" },
-  "created_at": "…" } ], "page": 1, "page_size": 20, "total": 1 }
+  "created_at": "…",
+  "decision": null, "decided_by": null, "decided_at": null, "note": null } ],   // v0.4 (DEC-61)
+  "page": 1, "page_size": 20, "total": 1 }
+// status mặc định PENDING; page_size ≤ 100; cũ nhất trước.
+// decision: action API-21 đã chọn (RESOLVED) · decided_by: { id, display_name } (null nếu WITHDRAWN)
+// decided_at: lúc duyệt, hoặc lúc station rút (WITHDRAWN) — mốc tính lại đồng hồ quá giờ (DEC-60)
+// context mọi loại = { expected, actual, source, tray_match }; REPACK: actual, source = null
 
 // API-21 request
 { "action": "CONTINUE", "note": null }
@@ -365,7 +372,7 @@ Luôn trả **200** cho mọi kết quả nghiệp vụ (DEC-7). 4xx chỉ cho l
 ```
 | HTTP | Mã lỗi | Khi nào | FE xử lý |
 |---|---|---|---|
-| 409 | ALREADY_RESOLVED | Người khác đã xử lý / station đã rút; `details`: `status`, `decided_by` (null nếu WITHDRAWN), `decided_at` | RESOLVED: "Yêu cầu này đã được {decided_by} xử lý lúc {giờ}." · WITHDRAWN: "Station đã rút yêu cầu." |
+| 409 | ALREADY_RESOLVED | Người khác đã xử lý / station đã rút; `details`: `status`, `decided_by` (null nếu WITHDRAWN), `decided_at` (có cả khi WITHDRAWN — v0.4) | RESOLVED: "Yêu cầu này đã được {decided_by} xử lý lúc {giờ}." · WITHDRAWN: "Station đã rút yêu cầu." |
 | 409 | TRAY_STILL_DIFFERENT | CLOSE_WITH_NOTE khi Cam 2 còn thấy mã khác | "Cam 2 vẫn thấy phiếu sai trên khay. Yêu cầu bỏ phiếu sai trước." |
 | 422 | INVALID_ACTION | Action không hợp với `type` | lỗi chung |
 | 422 | VALIDATION_ERROR | CLOSE_WITH_NOTE thiếu note | lỗi dưới ô ghi chú |
@@ -388,11 +395,14 @@ Luôn trả **200** cho mọi kết quả nghiệp vụ (DEC-7). 4xx chỉ cho l
              "buyer_note": "…", "source": "API", "items": [ { "product_name": "…", "variation": "…", "quantity": 2, "image_url": "…" } ] },
   "sessions": [ { "id": "…", "status": "COMPLETED", "station_name": "Station 01",
                   "started_at": "…", "ended_at": "…", "duration_s": 134, "flags": [],
+                  "cancel_reason": null, "note": null,                                   // v0.3 (DEC-57)
                   "clips": [ { "id": "…", "camera_role": "CAM1", "status": "READY", "sha256": "9f2c…",
-                               "duration_s": 144, "held": false, "retention_until": "2027-01-02T00:00:00Z" } ] } ],
-  "timeline": [ { "at": "…", "source": "WAREHOUSE", "to_status": "PACKED", "actor": "Station 01" } ] }
+                               "duration_s": 144, "held": false, "retention_until": "2027-01-02T00:00:00Z",
+                               "deleted_at": null, "flags": [] } ] } ],                 // v0.3: deleted_at, flags (DEC-57)
+  "timeline": [ { "at": "…", "source": "WAREHOUSE", "from_status": "PACKING", "to_status": "PACKED", "actor": "Station 01" } ] }
+// retention_until: READY không giữ → ngày sẽ xóa; held = true → null; DELETED → ngày đã xóa (= deleted_at, v0.3 — DEC-57)
 ```
-Lỗi: chung (`404 NOT_FOUND`). Ngày lọc theo giờ Việt Nam, API nhận `YYYY-MM-DD`.
+Lỗi: chung (`404 NOT_FOUND`). Ngày lọc theo giờ Việt Nam, API nhận `YYYY-MM-DD`, khoảng ngày ≤ 92 ngày.
 </details>
 
 <details><summary><b>API-32</b> — GET /reports/daily?date=2026-10-04</summary>
@@ -400,12 +410,17 @@ Lỗi: chung (`404 NOT_FOUND`). Ngày lọc theo giờ Việt Nam, API nhận `Y
 ```json
 { "date": "2026-10-04",
   "counts": { "packed": 312, "had_mismatch": 3, "abandoned": 1, "cancelled": 4, "packed_not_handed_over": 27, "cancelled_after_pack": 2 },
-// packed: phiên COMPLETED trong ngày · had_mismatch: phiên bắt đầu trong ngày có flag HAD_MISMATCH · abandoned / cancelled: phiên kết thúc trong ngày với status đó
+// packed: phiên COMPLETED kết thúc trong ngày (phiên SUPERSEDED không đếm) · had_mismatch: phiên bắt đầu trong ngày có flag HAD_MISMATCH · abandoned / cancelled: phiên kết thúc trong ngày với status đó
 // packed_not_handed_over: kiện đang PACKED (mọi ngày) · cancelled_after_pack: kiện đang CANCELLED_AFTER_PACK
-  "stations": [ { "id": "…", "name": "Station 01", "state": "READY", "cameras": [ { "role": "CAM1", "status": "ONLINE" } ], "last_scan_at": "…" } ],
+  "stations": [ { "id": "…", "name": "Station 01", "state": "PACKING", "tracking_number": "SPX…789",   // tracking_number: tùy chọn, v0.3
+                  "cameras": [ { "role": "CAM1", "status": "ONLINE" } ], "last_scan_at": "…" } ],
+// stations[]: chỉ station đang bật; state = WAITING_APPROVAL khi có yêu cầu PENDING; tracking_number = kiện đang đóng gói (null khi không có phiên mở)
   "attention": [ { "kind": "CANCELLED_AFTER_PACK", "count": 2 }, { "kind": "CAMERA_OFFLINE", "camera_id": "…", "station_name": "Station 02", "role": "CAM2" },
-                 { "kind": "CLOCK_DRIFT", "camera_id": "…", "offset_ms": 1400 }, { "kind": "APPROVAL_PENDING", "count": 1 },
+                 { "kind": "CLOCK_DRIFT", "camera_id": "…", "offset_ms": 1400, "station_name": "Station 01", "role": "CAM1" },   // station_name, role: tùy chọn, v0.3
+                 { "kind": "APPROVAL_PENDING", "count": 1 }, { "kind": "CLIP_FAILED", "count": 1 },                            // CLIP_FAILED: v0.3
                  { "kind": "SYNC_ERROR", "shop_id": "…", "at": "…" }, { "kind": "DISK_USAGE", "percent": 83 } ] }
+// CLIP_FAILED: số clip FAILED tạo trong 7 ngày gần nhất · DISK_USAGE: khi ổ video ≥ 80 % · client bỏ qua kind không biết
+// Cache 5 giây theo ngày, xóa cache trước khi phát WS report.updated
 ```
 </details>
 
@@ -422,8 +437,8 @@ Lỗi: chung (`404 NOT_FOUND`). Ngày lọc theo giờ Việt Nam, API nhận `Y
 ```
 | HTTP | Mã lỗi | Khi nào | FE xử lý |
 |---|---|---|---|
-| 409 | CLIP_NOT_READY | `status=PENDING` | EmptyState "Clip đang được cắt…" |
-| 410 | CLIP_DELETED | Đã xóa theo retention | "Clip đã bị xóa ngày … theo chính sách lưu trữ …" |
+| 409 | CLIP_NOT_READY | Clip chưa phát được; `details.status` = `PENDING` (đang cắt) hoặc `FAILED` (cắt lỗi — v0.3) | `PENDING`: EmptyState "Clip đang được cắt…" · `FAILED`: "Không cắt được clip" + "Thử lại" (API-46) cho ADMIN, SUPERVISOR |
+| 410 | CLIP_DELETED | Đã xóa theo retention; `details.deleted_at`, `details.retention_clip_days` | "Clip đã bị xóa ngày … theo chính sách lưu trữ …" |
 | 403 | SIGNATURE_INVALID | API-41 chữ ký sai / hết hạn | lấy lại API-40 một lần |
 </details>
 
@@ -434,14 +449,27 @@ Lỗi: chung (`404 NOT_FOUND`). Ngày lọc theo giờ Việt Nam, API nhận `Y
 { "layout": "SIDE_BY_SIDE" }   // CAM1 | CAM2 | SIDE_BY_SIDE
 // 202
 { "id": "0192…", "status": "QUEUED", "progress": 0 }
-// API-44 (FE poll mỗi 2 giây hoặc nghe WS export.updated)
-{ "id": "…", "status": "READY", "progress": 100, "sha256": "…", "source_clip_sha256": { "CAM1": "…", "CAM2": "…" },
+// API-44 (FE poll mỗi 2 giây hoặc nghe WS export.updated). Chỉ người tạo và ADMIN; người khác nhận 404 (v0.3)
+{ "id": "…", "session_id": "…", "layout": "SIDE_BY_SIDE", "status": "READY", "progress": 100, "sha256": "…", "source_clip_sha256": { "CAM1": "…", "CAM2": "…" },
   "files": { "video": "/api/v1/media/exports/…/video.mp4?uid=…&exp=…&sig=…", "info": "/api/v1/media/exports/…/info.json?uid=…&exp=…&sig=…" },
-  "expires_at": "…" }
+  "expires_at": "…" }   // hạn link ký: 10 phút
+// File xuất giữ 24 giờ kể từ khi tạo (EXPORT_TTL_HOURS, DEC-58); sau đó file và bản ghi bị xóa → API-44 404, tạo bản xuất mới khi cần
+// API-45 info.json (v0.7, DEC-67) — mọi mốc giờ UTC hậu tố Z
+{ "export_id": "…", "session_id": "…", "layout": "SIDE_BY_SIDE",
+  "tracking_number": "SPXVN…", "platform_order_sn": "2410…" /* null nếu chưa gắn đơn */, "station_name": "Station 01",
+  "session_started_at": "…Z", "session_ended_at": "…Z",
+  "video_start_at": "…Z", "video_end_at": "…Z",          // cửa sổ giờ thực của bản xuất
+  "video_gaps": [ { "camera_role": "CAM2", "from": "…Z", "to": "…Z", "seconds": 3.2 } ],   // khe hở > 0,5 giây, mọi layout; [] nếu liền mạch
+  "sha256": "…",                                          // của video.mp4
+  "source_clip_sha256": { "CAM1": "…", "CAM2": "…" },
+  "exported_by": { "id": "…", "display_name": "…" }, "exported_at": "…Z",
+  "generator": "Hệ thống X (aicam <version>)" }
 ```
+Làm rõ v0.7 (DEC-67): bản `SIDE_BY_SIDE` khi một clip có khe hở được **căn theo giờ thực** — hai nửa luôn cùng giờ từng khung, đoạn thiếu là khung đen chữ "Không có video"; bản căn giờ **không có âm thanh**. Clip liền mạch giữ cách ghép cũ. Có khe hở > 0,5 giây (mọi layout) → overlay thêm dòng "Có đoạn không có video" và `video_gaps` liệt kê từng khe.
 | HTTP | Mã lỗi | Khi nào | FE xử lý |
 |---|---|---|---|
-| 409 | CLIP_NOT_READY | Một clip nguồn chưa READY | "Clip đang được cắt…" |
+| 404 | NOT_FOUND | API-44: bản xuất không tồn tại, đã quá 24 giờ, hoặc người gọi không phải người tạo / ADMIN (không lộ sự tồn tại) | đóng theo dõi, cho xuất lại |
+| 409 | CLIP_NOT_READY | Một clip nguồn chưa READY (`details.status` như API-40). Chưa có dòng clip của camera (J-01 chưa tạo) → `details.status: "PENDING"`, kèm `details.camera_role` (v0.7, DEC-67; trước là `null`) | "Clip đang được cắt…" |
 | 410 | CLIP_DELETED | Clip nguồn đã xóa | thông báo đã xóa |
 | — | `status=FAILED` | Encode lỗi | "Không tạo được file xuất. Bấm Thử lại…" |
 </details>
@@ -460,11 +488,16 @@ Lỗi: chung (`404 NOT_FOUND`). Ngày lọc theo giờ Việt Nam, API nhận `Y
 ```
 Cột mẫu: `platform_order_sn`, `tracking_number`, `sku`, `product_name`, `variation`, `quantity`, `buyer_note`. Một đơn nhiều dòng = nhiều sản phẩm; nhiều `tracking_number` = nhiều kiện.
 
+Làm rõ v0.5 (DEC-62): `counts.new` / `updated` / `skipped` đếm theo **đơn**, `counts.error` đếm **dòng** lỗi. File có dòng lỗi vẫn trả 201 `PREVIEW` (`errors` tối đa 1.000 dòng đầu), commit bị chặn. `sample` tối đa 20 dòng, `action` ∈ `NEW` / `UPDATE` / `SKIP`. Commit đọc lại file gốc và phân loại lại trong cùng transaction: đơn đã có nguồn `API` → `SKIP` (BR-17). Commit lại bản đã `COMMITTED` → 200 trả kết quả cũ.
+
 | HTTP | Mã lỗi | Khi nào | FE xử lý |
 |---|---|---|---|
 | 422 | FILE_INVALID | Sai loại / > 5 MB / > 5.000 dòng / thiếu cột bắt buộc (`details.missing_columns`) | "File thiếu cột bắt buộc: …" |
+| 413 | PAYLOAD_TOO_LARGE | API-50: body > 6 MB (`details.max_bytes`); từ Caddy có thể không có body JSON (v0.7, DEC-67) | Chặn trước khi gửi: file > 5 MB → "File lớn hơn 5 MB."; nhận 413 vẫn hiện câu này |
 | 409 | IMPORT_HAS_ERRORS | Commit khi `counts.error > 0` | nút Nhập đã khóa; hiện lại lỗi |
-| 409 | IMPORT_EXPIRED | Commit sau 30 phút | "Bản xem trước đã hết hạn. Tải file lại." |
+| 409 | IMPORT_EXPIRED | Commit sau 30 phút, hoặc file gốc đã mất | "Bản xem trước đã hết hạn. Tải file lại." |
+| 403 | FORBIDDEN | API-51: người commit không phải người tạo bản xem trước (v0.5, DEC-62) | Alert `message` server ("Chỉ người tải file lên mới xác nhận nhập được.") |
+| 409 | IMPORT_CONFLICT | API-51: dữ liệu đơn đổi trong lúc nhập — đồng bộ Shopee hoặc lần nhập khác ghi cùng đơn / mã vận đơn (v0.5, DEC-62); kể cả deadlock / xung đột ghi đồng thời ở DB (v0.7, DEC-67 — BE DEC-162) | Alert `message` server ("Dữ liệu đơn vừa thay đổi trong lúc nhập. Bấm Nhập lại.") |
 </details>
 
 <details><summary><b>API-60..65</b> — station và camera</summary>
@@ -486,7 +519,7 @@ Cột mẫu: `platform_order_sn`, `tracking_number`, `sku`, `product_name`, `var
 | 409 | NAME_TAKEN | Tên station trùng | "Tên station đã tồn tại." |
 | 409 | ACCOUNT_IN_USE | Tài khoản station đã gắn station khác | lỗi dưới ô tài khoản |
 | 422 | CAMERA_UNREACHABLE | API-62 không kết nối được (`details.reason`: `TIMEOUT` / `AUTH` / `STREAM`) | "Không kết nối được Cam 1. Kiểm tra địa chỉ và mật khẩu camera." |
-| 422 | ROI_INVALID | Ngoài [0,1] hoặc w,h < 0.05 | lỗi trên RoiEditor |
+| 422 | VALIDATION_ERROR | ROI ngoài [0,1], x+w > 1, y+h > 1 hoặc w,h < 0.05; `details.fields` như mọi lỗi kiểm dữ liệu (v0.4 thay `ROI_INVALID`, DEC-61) | Alert trên RoiEditor |
 | 409 | ROI_ONLY_CAM2 | Đặt ROI cho CAM1 | không hiện công cụ ROI cho Cam 1 |
 </details>
 
@@ -502,7 +535,10 @@ Cột mẫu: `platform_order_sn`, `tracking_number`, `sku`, `product_name`, `var
 | HTTP | Mã lỗi | Khi nào | FE xử lý |
 |---|---|---|---|
 | 409 | SYNC_IN_PROGRESS | Đang đồng bộ | "Đang đồng bộ, thử lại sau." |
-| 503 | PLATFORM_NOT_CONFIGURED | Chưa có partner key (Q11) | Alert "Chưa cấu hình Shopee Open Platform. Dùng Nhập đơn từ file." |
+| 409 | SHOP_NOT_CONNECTED | API-73: shop không ở `CONNECTED` (hết hạn / đã thay bằng shop khác) (v0.5, DEC-62) | Alert `message` server; D7 chỉ hiện "Đồng bộ ngay" khi `CONNECTED` |
+| 503 | PLATFORM_NOT_CONFIGURED | API-71, API-73 khi `SHOPEE_ENABLED=false` hoặc chưa có partner key (Q11) | Alert "Chưa cấu hình Shopee Open Platform. Dùng Nhập đơn từ file." |
+
+Làm rõ v0.5 (DEC-62): `last_error` = `{ "code", "message", "at" }`, `code` ∈ `SYNC_FAILED` (J-04 hết lượt thử, vẫn `CONNECTED`), `AUTH_EXPIRED` (token bị từ chối → `EXPIRED`), `REFRESH_FAILED` (J-12 lỗi tạm, vẫn `CONNECTED`), `CREDENTIALS_UNREADABLE` (v0.7, DEC-67: không giải mã được token đã lưu — thường do `FERNET_KEY` sai sau khôi phục → shop `EXPIRED`, cần "Kết nối lại"; quét vẫn chạy, kiện `UNVERIFIED`); shop có `last_error` → API-32 `attention` `SYNC_ERROR`. `today_synced_orders` = số đơn nguồn `API` của shop có `updated_at` từ 00:00 giờ Việt Nam hôm nay. API-72: `state` dùng một lần (10 phút, gắn người tạo URL); không có `code` → `denied`; `state` sai / đổi `code` lỗi → `error`; redirect là đường dẫn tương đối. API-71 đặt cookie `aicam_shopee_state` = SHA-256(`state`), `HttpOnly`, `SameSite=Lax`, `Secure` theo cấu hình, path `/api/v1/shops/shopee/callback`, hạn 10 phút; API-72 so cookie **trước** khi tiêu `state` — thiếu / sai cookie → `result=error`, `state` không bị tiêu; xong thì xóa cookie (v0.7, DEC-67). Kết nối shop khác → shop cũ `DISCONNECTED`, xóa token (MVP một shop). MVP **không có API ngắt kết nối** (DEC-63).
 </details>
 
 <details><summary><b>API-80 / API-81</b> — cài đặt và sức khỏe</summary>
@@ -518,7 +554,7 @@ Cột mẫu: `platform_order_sn`, `tracking_number`, `sku`, `product_name`, `var
 ```
 | HTTP | Mã lỗi | Khi nào | FE xử lý |
 |---|---|---|---|
-| 422 | VALIDATION_ERROR | ngày 1–365; `retention_clip_days ≥ retention_raw_days`; `session_abandon_minutes > session_warn_minutes` | lỗi theo field |
+| 422 | VALIDATION_ERROR | PUT gửi đủ 4 trường; ngày 1–365; phút 1–1440; `retention_clip_days ≥ retention_raw_days`; `session_abandon_minutes > session_warn_minutes` | lỗi theo field |
 </details>
 
 <details><summary><b>API-90..92</b> — người dùng và nhật ký</summary>
@@ -560,6 +596,10 @@ Cột mẫu: `platform_order_sn`, `tracking_number`, `sku`, `product_name`, `var
 // API-60 PATCH /stations/{id} { "name"?, "is_active"?, "account_user_id"? } → item
 // API-63 GET /cameras/{id}/snapshot → image/jpeg · 422 CAMERA_UNREACHABLE
 // API-65 GET /live → { "stations": [ { "id", "name", "cameras": [ { "id", "role", "status", "whep_url": "/live/cam-0192…/whep" } ] } ] }
+//   WHEP: POST whep_url (SDP, Authorization: Bearer) → 201 + header Location tính từ gốc MediaMTX (/cam-…/whep/<id>, THIẾU tiền tố /live)
+//   → client tự ghép <id> vào sau whep_url khi DELETE phiên (v0.4, ghi chú DEC-61)
+//   Xác thực /live/*: Caddy forward_auth → GET /api/v1/live (API-65) với cùng header Authorization: 2xx → proxy tới MediaMTX;
+//   401 / 403 trả nguyên cho client (STATION, CSKH → 403). Chỉ path WHEP /live/cam-…/whep(/<id>) đi qua, còn lại 404 (v0.6, DEC-66)
 // API-90 GET /users?page=&role= → { "items": [ { "id", "username", "display_name", "role", "is_active", "station": { "id", "name" } | null, "created_at" } ], … }
 // API-90 PATCH /users/{id} { "display_name"?, "role"?, "is_active"?, "password"? } → item
 // API-91 POST /users/{id}/revoke-sessions → 204
@@ -574,10 +614,13 @@ Kết nối: `wss://<host>/ws/station?token=<access_token>` (tương tự `/ws/d
 |---|---|---|---|
 | WS-01 | `station.state` | như API-10 | Mọi thay đổi: Cam 2 đổi `tray.match`, phiên bị `MISMATCH` do Cam 2, duyệt xong, quá giờ, `ABANDONED`, camera online/offline |
 | WS-01 | `session.clip_ready` | `{ "session_id", "clip_ids": [] }` | Clip phiên gần đây sẵn sàng |
-| WS-02 | `approval.created` / `approval.resolved` | như item API-20 | Chỉ gửi cho ADMIN, SUPERVISOR |
-| WS-02 | `report.updated` | `{ "date" }` → client gọi lại API-32 (tối đa 1 lần / 5 giây) | Phiên đóng / đổi trạng thái |
+| WS-01 | `alert` | `{ "code", "session_id", "tracking_number" }` | `code` = `SESSION_ABANDONED` (J-07 bỏ dở) hoặc `SESSION_CANCELLED_BY_SUPERVISOR` (API-21 `CANCEL_SESSION`) → station hiện thông báo trên S1 (v0.4, DEC-61) |
+| WS-02 | `approval.created` / `approval.resolved` | như item API-20 | Chỉ gửi cho ADMIN, SUPERVISOR. Station rút → `approval.resolved` với `status = WITHDRAWN` |
+| WS-02 | `approval.updated` | như item API-20 | Khay Cam 2 đổi trong lúc yêu cầu MISMATCH / ASSIST đang chờ → `context.tray_match` mới; chỉ ADMIN, SUPERVISOR (v0.4, DEC-61) |
+| WS-02 | `report.updated` | `{ "date" }` → client gọi lại API-32 (tối đa 1 lần / 2 giây, có lần chạy cuối — DEC-69) | Phiên đóng / đổi trạng thái |
 | WS-02 | `camera.status` | `{ "camera_id", "status" }` | |
-| WS-02 | `export.updated` | như API-44 (chỉ gửi cho người tạo) | |
+| WS-02 | `export.updated` | như API-44 (chỉ gửi cho người tạo) | Tiến độ tăng ≥ 5 %, READY, FAILED |
+| WS-02 | `session.clip_ready` | `{ "session_id", "clip_ids": [] }` (như WS-01) | Clip của một phiên vừa READY → dashboard làm mới D3 / D4 (v0.3, DEC-57) |
 </details>
 
 ## 7. Luồng chính (end-to-end)
@@ -644,6 +687,7 @@ sequenceDiagram
 | NFR | NFR-01: API-11 chỉ ghi DB + đọc Redis, không gọi worker. NFR-03: cắt clip `-c copy`. NFR-09: mọi thứ trên LAN, Shopee chỉ ở worker / tra 2 giây |
 | Observability | Log JSON có `station_id`, `session_id`, `tracking_number`; metric độ trễ API-11 (p95), độ dài queue, thời gian cắt clip, camera online, lỗi Shopee |
 | Feature flag | N/A — hệ thống mới, chưa có người dùng. Shopee bật khi có partner key (`SHOPEE_ENABLED`) |
+| Adapter sàn (v0.5, DEC-62) | Interface `PlatformAdapter` (02a): `build_auth_url`, `exchange_code`, `refresh`, `shop_name`, `get_order`, `find_by_tracking`, `list_updated_orders`, **`get_shipping_statuses(creds, [ShipmentRef(order_sn, tracking)])` theo lô** (≤ 50 kiện / lời gọi; thay `get_shipping_status(tracking)` từng kiện — Shopee cần mã đơn). Thử lại trong adapter: 5 lần, giãn cách mũ hoặc theo `Retry-After`. Token bucket theo shop (ADR-007) chưa làm — chờ hạn mức thật (T-3). Adapter TikTok / Lazada sau này cài cùng interface |
 | Thời gian | Server là nguồn giờ; `server_time` trong API-10 để station hiển thị đồng hồ đúng |
 
 ## 9. Phương án đã cân nhắc
@@ -672,7 +716,9 @@ sequenceDiagram
 |---|:---:|---|
 | Cam 2 đọc mã < 95% (AC-04) | Cao | Spike S2 trước khi code vision; `tray.match = UNAVAILABLE` không chặn phiên |
 | Chưa có quyền Shopee API (Q11) | Cao | `SHOPEE_ENABLED=false` + CSV; adapter mock cho dev/test |
-| Tên API / trạng thái Shopee chưa xác minh | Trung bình | Spike S1; ánh xạ trạng thái trong adapter (02a) |
+| Tên API / trạng thái Shopee chưa xác minh | Trung bình | Spike S1; ánh xạ trạng thái trong adapter (02a). M4: adapter chỉ chạy trên HTTP giả — chờ T-3 (DEC-123 02a) |
+| Shopee không có API công khai tra đơn theo mã vận đơn | Trung bình | Tạm dò đơn cập nhật `SHOPEE_LOOKUP_LOOKBACK_MIN` (60) phút gần nhất; đơn cũ hơn → kiện chưa xác minh, J-05 xác minh lại sau. Xác nhận với Shopee ở T-3 (DEC-123 02a) |
+| Backlog sau MVP (DEC-63) | Thấp | API ngắt kết nối shop; `held_clips` trong API-81 |
 | Mã vận đơn Shopee ngoài `[A-Z0-9-]{8,40}` | Thấp | Kiểm với 50 phiếu thật ở spike; regex cấu hình được |
 | WS qua Caddy bị ngắt khi idle | Thấp | ping 20 giây |
 
@@ -719,6 +765,14 @@ sequenceDiagram
 | DEC-29 | Response khi `client_scan_id` trùng | Trả nguyên outcome/alert cũ, state mới | Retry an toàn, station vẫn phản hồi đúng | khanhtt (tự quyết) | 2026-10-04 |
 | DEC-33 | Duyệt G2 sau 2 vòng review (subagent `ai-lead-review`) | Duyệt có điều kiện: AC-17 (camera không ONVIF) là rủi ro spike T-4/T-5; nếu camera không hỗ trợ ONVIF → đổi cách đo lệch giờ (OSD + OCR hoặc chọn camera có ONVIF) bằng change request | Mọi blocker/major đã đóng; còn rủi ro phần cứng chưa kiểm được | khanhtt (tự quyết, ủy quyền DEC-15) | 2026-10-04 |
 | DEC-10 | Nguồn sự thật contract | `02` §6 cho tới khi có `/openapi.json`; sau đó OpenAPI | Repo chưa có code | khanhtt (architect) | 2026-10-04 |
+| DEC-57 | Đổi contract sau G2 (v0.3) — **chỉ thêm, tương thích ngược**. Gom lệch BE/FE ghi khi làm M2: FE DEC-71, 72, 76 ([02b-admin](02b-fe-spec-admin.md#decisions)); BE DEC-102, 104, 105 ([02a](02a-be-spec.md#decisions)) | Chốt vào §6: (1) WS-02 thêm `session.clip_ready` `{session_id, clip_ids}` (BE đã phát cả WS-01 và WS-02). (2) API-32: trường tùy chọn `stations[].tracking_number`, `CLOCK_DRIFT.station_name`, `CLOCK_DRIFT.role`, `CAMERA_OFFLINE.role`; attention kind mới `CLIP_FAILED {count}` (clip FAILED trong 7 ngày); ghi rõ `packed` không đếm phiên SUPERSEDED, `stations[]` chỉ station đang bật, `WAITING_APPROVAL` khi có yêu cầu chờ, `DISK_USAGE` ≥ 80 %, cache 5 giây. (3) API-40/41/43: clip FAILED → `409 CLIP_NOT_READY` kèm `details.status = FAILED` (không thêm mã mới); `410 CLIP_DELETED` kèm `details.deleted_at`, `retention_clip_days`. (4) API-31: clip DELETED có `retention_until` = ngày đã xóa (FE DEC-76); `clips[]` thêm `deleted_at`, `flags`; phiên thêm `cancel_reason`, `note`; timeline thêm `from_status`. (5) API-44: người không phải người tạo và không phải ADMIN → 404; response thêm `session_id`, `layout`. (6) API-80 PUT gửi đủ 4 trường, phút 1–1440 (ghi rõ ràng buộc đã có trong code) | Code M2 đã chạy theo các điểm này và qua E2E BE thật 20/20, QA API live 78/78. Chỉ thêm trường / kind / sự kiện; client cũ bỏ qua trường lạ, nên không cần `/v2`. Phương án loại: thêm mã lỗi riêng `CLIP_FAILED` cho API-40 (phá nhánh xử lý `CLIP_NOT_READY` FE đã có); 403 ở API-44 (lộ sự tồn tại bản xuất của người khác) | khanhtt (architect, tự quyết theo ủy quyền DEC-15) | 2026-10-05 |
+| DEC-58 | Thời hạn giữ file xuất: 02a / code giữ 24 giờ, architecture §8.2 và ADR-008 ghi 30 ngày (BE DEC-104 nêu lệch) | **24 giờ** (`EXPORT_TTL_HOURS`), sau đó J-10 xóa file và bản ghi `export`; sửa architecture §8.2 và ADR-008 (phần Hệ quả) cho khớp | File xuất tạo lại được bất cứ lúc nào khi clip gốc còn (clip giữ 90 ngày, "Giữ clip" khi có khiếu nại — BR-09). Người dùng tải file về máy ngay để gửi sàn. Giữ 30 ngày tốn ổ vô ích; dev vừa có sự cố đầy ổ 64 GB. Phương án loại: 30 ngày (tốn ổ, không thêm bằng chứng — clip gốc mới là bằng chứng); 7 ngày (vẫn tốn ổ, không có nhu cầu tải lại sau 1 ngày) | khanhtt (architect, tự quyết theo ủy quyền DEC-15) | 2026-10-05 |
+| DEC-61 | Đổi contract sau G2 (v0.4) — **chỉ thêm / làm rõ**. Gom lệch khi làm M3: BE [DEC-111, DEC-112](02a-be-spec.md#decisions), FE [DEC-82, DEC-83](02b-fe-spec-admin.md#decisions) | Chốt vào §6: (a) API-11 quét mở khi khay đang có phiếu khác (`DIFFERENT` / `MULTIPLE`) → phiên mở rồi chuyển ngay `MISMATCH` nguồn `CAM2`, `outcome = MISMATCH` (không phải `SESSION_OPENED`). (b) WS-02 thêm `approval.updated` (khay đổi khi yêu cầu đang chờ). (c) WS-01 `alert` `{code, session_id, tracking_number}`, code `SESSION_CANCELLED_BY_SUPERVISOR` (cùng kênh `SESSION_ABANDONED` của J-07, nay ghi vào bảng). (d) API-20 item thêm `decision`, `decided_by`, `decided_at`, `note`; `decided_at` có cả khi `WITHDRAWN` (DEC-60). (e) API-64 ROI sai → `422 VALIDATION_ERROR` kèm `details.fields`, bỏ `ROI_INVALID`. (f) Ghi chú WHEP: `Location` trả về thiếu tiền tố `/live` → client tự ghép | (a) Vision không phát sự kiện mới khi khay không đổi, nên phải xét khay ngay lúc mở; trả `MISMATCH` để station phát âm lỗi thay cho bíp "ok" — người đứng bàn biết ngay có phiếu sai (BR-06). (d), (b), (c): code M3 đã phát, FE đã xử lý (invalidate mọi `approval.*`). (e) Nhất quán với mọi lỗi kiểm dữ liệu khác (Pydantic); FE đã xử lý cả `ROI_INVALID` và `VALIDATION_ERROR`, nên không phá client. Code M3 qua QA live 88/88, E2E BE thật 25/25 (+2 live). Phương án loại: (a) giữ `SESSION_OPENED` rồi đẩy `MISMATCH` qua WS (station bíp "ok" rồi mới báo lỗi — dễ bỏ qua); (e) BE trả riêng `ROI_INVALID` (thêm validator riêng chỉ để đổi tên mã, không thêm giá trị cho người dùng) | khanhtt (architect, tự quyết theo ủy quyền DEC-15) | 2026-10-05 |
+| DEC-62 | Đổi contract sau G2 (v0.5) — **chỉ thêm / làm rõ**. Gom lệch khi làm M4: BE [DEC-121, DEC-122, DEC-124](02a-be-spec.md#decisions) (DEC-123 là điểm Shopee chưa chắc, không đổi contract), FE [DEC-91, DEC-92, DEC-93](02b-fe-spec-admin.md#decisions) (không đổi contract) | Chốt vào §6, §8: (a) API-51 thêm `403 FORBIDDEN` (người commit ≠ người tạo bản xem trước) và `409 IMPORT_CONFLICT` (ghi đồng thời đụng nhau); `IMPORT_EXPIRED` gồm cả file gốc mất. (b) API-73 thêm `409 SHOP_NOT_CONNECTED`; API-71 / 73 trả `503 PLATFORM_NOT_CONFIGURED` khi `SHOPEE_ENABLED=false`. (c) Làm rõ `counts` (đơn vs dòng lỗi), file có lỗi vẫn 201, commit phân loại lại (BR-17), commit lặp → 200. (d) Dạng `last_error` + 3 mã; `today_synced_orders`; `state` một lần; kết nối shop khác → shop cũ `DISCONNECTED`. (e) §8: `PlatformAdapter.get_shipping_statuses` theo lô thay hàm từng kiện | (a) Commit của người khác là lỗi quyền, dùng mã chung `FORBIDDEN` thay vì mã riêng. `IMPORT_CONFLICT` cho người dùng bấm lại thay vì `500`. (b) Đồng bộ shop đã hết hạn không chạy được; báo rõ hơn `SYNC_IN_PROGRESS`. (e) Shopee tra vận chuyển theo mã đơn, 1 lời gọi / 50 đơn — gọi từng kiện tốn hạn mức. FE đã hiện `message` server cho mã lạ, nên không phá client. Code M4 qua BE 345 pass, QA live 94 pass + 2 skip, E2E BE thật 37/37. Phương án loại: (a) mã riêng `IMPORT_NOT_OWNER` (thêm mã không thêm giá trị); cho mọi ADMIN commit bản của người khác (mất dấu người chịu trách nhiệm trong audit) | khanhtt (architect, tự quyết theo ủy quyền DEC-15) | 2026-10-05 |
+| DEC-63 | FE DEC-92 (02b-admin) hỏi: 01 §10.5 D7 / D8 nêu "Ngắt kết nối" và "số clip đang giữ" nhưng 02 §6 không có API | **MVP không thêm cả hai.** (1) Không có API ngắt kết nối shop: chủ shop thu hồi ủy quyền ở Shopee Seller Center; khi token bị từ chối, J-12 / J-04 đặt shop `EXPIRED` + `last_error AUTH_EXPIRED` → D2 "Cần xử lý" có dòng lỗi đồng bộ, D7 chip "Hết hạn" + nút "Kết nối lại". (2) Không thêm `held_clips` vào API-81: số clip đang giữ xem ở D3 bằng lọc. Cả hai vào backlog sau MVP (03 §5) | MVP một shop, ngắt kết nối hiếm (đổi shop thì kết nối shop mới đã tự `DISCONNECTED` shop cũ — DEC-62 d). Số clip giữ chỉ để tham khảo dung lượng, D3 đã trả lời được. Không thêm API giữ phạm vi M5 gọn. Phương án loại: thêm `DELETE /shops/{id}` (cần gọi Shopee hủy ủy quyền — chưa có tài khoản để thử); thêm `held_clips` (thêm truy vấn đếm vào health 30 giây một lần, ít giá trị) | khanhtt (architect / PO, tự quyết theo ủy quyền DEC-15) | 2026-10-05 |
+| DEC-66 | Đổi contract sau G2 (v0.6) — **chỉ làm rõ**, không đổi API. Gom từ T-19: BE [DEC-136, DEC-132](02a-be-spec.md#decisions), đóng RB-11 (02a) | Chốt vào §6: (a) `/live/*` (WHEP) xác thực bằng Caddy `forward_auth` tới `GET /api/v1/live` (API-65), không phải `/api/v1/me`: chỉ vai được xem live (ADMIN, SUPERVISOR) qua; STATION, CSKH nhận 403; thiếu / hết hạn token → 401. Chỉ path WHEP qua Caddy, còn lại 404. (b) Mọi mốc giờ trong response API và khung WS dạng UTC có hậu tố `Z`, kể cả JSON tự ghép (`core.clock.iso_z`) | (a) `/me` trả 200 cho mọi vai đã đăng nhập → STATION / CSKH xem được live, sai ma trận quyền 01 §5.1 cho FR-01.05; dùng chính API-65 thì quyền live view chỉ khai một chỗ. (b) Quy ước §6 đã ghi `Z` nhưng một số JSON tự ghép trả `+00:00` (review M1 #19); FE parse được cả hai nên không phá client. Contract test 119 test xanh, staging local `/live` 401 / 403 đúng. Phương án loại: (a) giữ `/me` + kiểm vai trong Caddy (Caddy không đọc được JWT, lặp logic quyền); MediaMTX tự xác thực JWT (cần JWKS, thêm cấu hình) | khanhtt (architect, tự quyết theo ủy quyền DEC-15) | 2026-10-05 |
+| DEC-67 | Đổi contract sau G2 (v0.7) — **chỉ thêm / làm rõ**. Gom từ sửa review G3: BE [DEC-142, DEC-153, DEC-159, DEC-161, DEC-162](02a-be-spec.md#decisions) và commit `c4c825a` (G3-N2) trong `ai-cam-be` | Chốt vào §6: (a) mã chung `413 PAYLOAD_TOO_LARGE` + `details.max_bytes`; giới hạn body 6 MB `/api/v1/imports*`, 1 MB API khác; 413 từ Caddy có thể không có body JSON → client chặn trước theo kích thước file. (b) API-70..73 `last_error.code` thêm `CREDENTIALS_UNREADABLE` → shop `EXPIRED`, cần Kết nối lại. (c) API-43 chưa có dòng clip → `409 CLIP_NOT_READY` `details.status: "PENDING"`. (d) API-45 liệt kê schema `info.json`, thêm `video_gaps[] {camera_role, from, to, seconds}`; `SIDE_BY_SIDE` có khe hở căn theo giờ thực (khung đen "Không có video", không âm thanh). (e) API-71 / 72 cookie `aicam_shopee_state` gắn `state` với trình duyệt. (f) API-51 deadlock / xung đột ghi đồng thời → `409 IMPORT_CONFLICT` | (a) Chặn body lớn trước khi Starlette ghi multipart ra đĩa (G3-N2); proxy không trả JSON chuẩn nên client phải tự chặn. (b) Sai `FERNET_KEY` không được làm quét 500 (G3-P2-6). (d) Bằng chứng ghép phải cùng giờ thực; người xem cần biết đoạn nào thiếu (G3-F2). (e) Link callback lộ không gắn được shop lạ (G3-N7). Mọi điểm chỉ thêm mã / trường; FE hiện `message` server cho mã lạ, nên không phá client. Phương án loại: (a) chỉ chặn ở Caddy (chạy api không qua Caddy thì không chặn); (d) từ chối 422 khi clip có khe hở (mất bản ghép đúng lúc cần nhất) | khanhtt (architect, tự quyết theo ủy quyền DEC-15) | 2026-10-05 |
+| DEC-69 | QA G4: TC-09.03 "D2 cập nhật ≤ 5 giây" fail khi đóng phiên < 5 giây sau lần mở — throttle `report.updated` 5 giây (có lần chạy cuối) làm trường hợp xấu nhất > 5 giây | Throttle FE còn 2 giây (WS-02). BE vẫn cache API-32 5 giây nhưng xóa cache trước khi phát sự kiện | Ít client dashboard; thỏa ngưỡng ≤ 5 giây với dư 3 giây | khanhtt (tự quyết) |
 
 ## Chốt G2 (áp cho bộ 02 + 02a + 02b)
 - [x] Mọi FR/BR/NFR trong phạm vi có chỗ trong spec (bảng FR coverage)

@@ -43,6 +43,7 @@ Thư mục `<docs_root>/items/<NN>-<slug>/`. `NN` = max hiện có + 1 (đội n
 | `04-test-cases.md` | `ai-qa-write-cases` | người chạy test | |
 | `04a-test-report.md` (1 file / lần chạy, hoặc cập nhật theo lần) | `ai-qa-run-tests` | người duyệt release | **G4** |
 | `05-release.md` | `ai-ops-release` | ops, chủ sản phẩm | **G5** |
+| `<business_docs_root>/<NN>-<slug>/<lat>-<slug>.md` — giải thích nghiệp vụ (1 file / lát) | `ai-dev-explain-business` | dev mới, reviewer, QA | — (bắt buộc trước G3) |
 
 Viết tắt trong skill: `01` SRS · `02` tổng quan · `02a` BE spec · `02b` FE spec · `03` plan · `04` cases · `04a` report · `05` release.
 
@@ -71,7 +72,8 @@ làm trên bản nháp có đóng dấu `Draft` + DEC rủi ro · dừng.
 | 7 | `ai-qa-write-cases` | G2 ✅ | `04` | chờ G3 |
 | 8a | `ai-be-implement` | Plan ✅, task BE, `02a` | code + test + PR | 9 |
 | 8b | `ai-fe-implement` | Plan ✅, task FE, `02b` (BE chưa xong → mock theo `02` §6) | code + test + PR | 9 |
-| 9 | `ai-lead-review` (code) | PR / diff + spec | findings → **G3** | 10 |
+| 8c | `ai-dev-explain-business` | code của lát (CP8 ✅) + `01` | `<business_docs_root>/…` | 9 |
+| 9 | `ai-lead-review` (code) | PR / diff + spec + tài liệu nghiệp vụ | findings → **G3** | 10 |
 | 10 | `ai-qa-run-tests` | G3 ✅, `04`, build trên môi trường test | `04a` + bug → **G4** | 11 |
 | 11 | `ai-ops-release` | G4 ✅ | `05` → **G5** | đóng item |
 
@@ -91,7 +93,7 @@ chore `ai-architect-write-spec` (gọn) → 4a/4b nếu cần → 8 → 9 → 11
 | **G1** | Yêu cầu | PO | Mọi vấn đề có FR; FR mức M có AC kiểm được; phạm vi rõ; câu hỏi chặn = 0 |
 | **G2** | Thiết kế | Tech lead (`ai-lead-review`) | Mọi FR/BR/NFR có chỗ trong spec; contract đủ để BE ∥ FE ∥ QA; 02a/02b khớp 02 |
 | **Plan** | Kế hoạch | PM (+ PO, tech lead ở M/L) | Mọi FR mức M có task; thứ tự & phụ thuộc rõ |
-| **G3** | Build | Tech lead (`ai-lead-review`) | Task Done theo DoD; review đạt; build/lint/test không thêm lỗi |
+| **G3** | Build | Tech lead (`ai-lead-review`) | Task Done theo DoD; review đạt; build/lint/test không thêm lỗi; mỗi lát có tài liệu nghiệp vụ |
 | **G4** | Kiểm thử | QA | Mọi AC + FR mức M có TC pass có bằng chứng; bug Critical/High = 0 |
 | **G5** | Release | Ops + chủ sản phẩm | Lên đích, hậu kiểm xong, có rollback |
 
@@ -135,7 +137,8 @@ chore `ai-architect-write-spec` (gọn) → 4a/4b nếu cần → 8 → 9 → 11
 Theo lối design doc của các đội kỹ thuật lớn (Airbnb, Google, Uber): người đọc bận, đọc lướt, phải ra quyết định.
 
 1. **TL;DR đầu tài liệu** — ≤ 5 dòng; chỉ đọc TL;DR vẫn biết làm gì, vì sao, rủi ro gì.
-2. **Header metadata** — owner, reviewer, trạng thái (Draft → In review → Approved → Implemented), link nguồn, last update.
+2. **Header metadata** — owner/tác giả, reviewer, trạng thái (Draft → In review → Approved → Implemented), link nguồn, last update.
+   Áp cho **mọi artifact** (`01`–`05`, ADR, tài liệu nghiệp vụ). Ngoại lệ: `00-status`, `profile.md`, `system-map.md` (file theo dõi, không phải design doc).
 3. **Mỗi mục trả lời một câu hỏi.** Mục rỗng → "N/A — lý do", không xoá.
 4. **Bảng hơn đoạn văn; một dòng một ý; câu chủ động có chủ ngữ.**
 5. **Con số thay tính từ** — "≤ 1 giây", không "nhanh".

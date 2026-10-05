@@ -1,0 +1,24 @@
+Mon Oct  5 19:00:38 +07 2026
+$ RUN_PERF=1 uv run pytest -m perf tests/integration/test_perf_packages.py -s
+== df -h before
+/dev/disk3s1s1   460Gi    11Gi    47Gi    20%    453k  496M    0%   /
+/dev/vdb1                97.9G     16.1G     76.8G  17% /etc/resolv.conf
+47.2M	/var/lib/postgresql/data/base
+992.0M	/var/lib/postgresql/data/pg_wal
+aicam|13 MB
+aicam_test|11 MB
+TC-N.05: nạp 1000000 kiện trong 67.7s
+  API-30 ma_van_don {'q': 'spxperf00654321'}: total=1 n=20 min=603ms p95=697ms max=935ms
+  API-30 ma_don {'q': 'PERF00123457'}: total=1 n=20 min=596ms p95=812ms max=921ms
+  API-30 theo_ngay {'date_from': '2026-09-25', 'date_to': '2026-09-25'}: total=2740 n=20 min=164ms p95=196ms max=334ms
+.
+1 passed in 99.41s (0:01:39)
+exit=0
+== df -h after
+/dev/disk3s1s1   460Gi    11Gi    47Gi    20%    453k  495M    0%   /
+/dev/vdb1                97.9G     16.2G     76.6G  17% /etc/resolv.conf
+46.7M	/var/lib/postgresql/data/base
+1.0G	/var/lib/postgresql/data/pg_wal
+aicam|13 MB
+aicam_test|11 MB
+package rows left: 0

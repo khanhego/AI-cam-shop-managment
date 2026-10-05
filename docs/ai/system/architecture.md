@@ -4,8 +4,26 @@
 | --- | --- |
 | Phiên bản | 0.1 (bản nháp) |
 | Ngày | 2026-10-04 |
-| Đầu vào | [SRS.md](SRS.md) |
+| Owner | khanhtt (Architect) |
+| Reviewer | khanhtt |
+| Trạng thái | Approved — làm nền cho item 01 (G2 2026-10-04) |
+| Đầu vào | [SRS.md](SRS.md) · ADR: [decisions/](decisions/) · áp dụng: [02-tech-spec item 01](../items/01-packing-mvp/02-tech-spec.md) |
 | Repo | `ai-cam-be` (backend + worker), `ai-cam-fe` (station app + dashboard), repo gốc chứa tài liệu |
+| Last update | 2026-10-05 (§14.2 theo compose production T-19, DEC-135 / DEC-136 item 01; §12 `unless-stopped`) |
+
+> **TL;DR** — Modular monolith Python 3.12 / FastAPI (tiến trình `api`, `worker`, `beat`, `vision`) + MediaMTX + PostgreSQL 16 + Redis 7 + Caddy, chạy tại kho bằng Docker Compose; FE một app React cho `/station` (Chromium kiosk) và `/admin`.
+> Quyết định chính (ADR-001..008): on-premise, cloud chỉ sao lưu; ghi liên tục fMP4 segment 60 giây, cắt clip `-c copy`; logic phiên trong `api` để quét ≤ 1 giây; Cam 2 đọc mã bằng zxing-cpp; sàn qua adapter + polling; clip gốc bất biến + SHA-256.
+> Rủi ro: Cam 2 đọc < 95% (spike S2), quyền / endpoint Shopee (S1), lệch giờ camera làm sai clip, đầy ổ NAS.
+
+| Goals (theo nguyên tắc §1) | Non-goals |
+| --- | --- |
+| Mất Internet vẫn đóng gói, ghi hình (P1, NFR-09) | Chạy nghiệp vụ trên cloud — cloud chỉ sao lưu và truy cập từ xa |
+| Không phụ thuộc phiên mở đúng lúc: ghi liên tục, cắt theo mốc (P2) | Bật/tắt ghi theo phiên |
+| Đồng bộ giờ mọi máy và camera, lệch > 1 giây thì cảnh báo (P3) | — |
+| Clip gốc không sửa được, có hash (P4) | Encode overlay cho mọi clip |
+| Quét bằng máy quét, phản hồi ≤ 1 giây (P5, NFR-01) | Bàn phím / chuột trong phiên |
+| Ít thành phần: một codebase BE, một FE, một file Compose (P6) | Microservice khi chưa có lý do đo được |
+| Thêm sàn = thêm adapter (P7, NFR-28) | Lõi nghiệp vụ biết chi tiết từng sàn |
 
 Hệ thống X là một **modular monolith Python (FastAPI)** cùng các tiến trình worker, chạy **tại kho** bằng Docker Compose. Bên cạnh đó có **MediaMTX** lo ghi hình và phát live từ camera, **PostgreSQL** lưu nghiệp vụ, **Redis** làm hàng đợi và pub/sub, và một **frontend React** phục vụ cả màn hình station lẫn dashboard. Cloud chỉ dùng để sao lưu clip và truy cập từ xa, không nằm trên đường đi của nghiệp vụ.
 
@@ -66,11 +84,11 @@ Hệ thống X là một **modular monolith Python (FastAPI)** cùng các tiến
 | Đọc mã từ Cam 2 | OpenCV (lấy khung hình) + zxing-cpp (giải mã 1D/QR) | |
 | HTTP client tới sàn | httpx (async) + tenacity (retry) | |
 | Ngôn ngữ frontend | TypeScript | 5.x |
-| Framework FE | React + Vite | React 18/19, Vite 5+ |
-| Router | React Router | 6+ |
+| Framework FE | React + Vite | React 19, Vite 8 (đang dùng trong `ai-cam-fe`, 2026-10-05) |
+| Router | React Router | 7 |
 | Data fetching | TanStack Query | 5 |
 | State cục bộ station | Zustand | |
-| UI kit | Tailwind CSS + component tự viết theo [design system](../../design-system/README.md) (Material 3) | Tailwind 3/4 |
+| UI kit | Tailwind CSS + component tự viết theo [design system](../../design-system/README.md) (Material 3) | Tailwind 4 |
 | API client FE | Sinh từ OpenAPI bằng `orval` (hoặc `openapi-typescript`) | |
 | Phát video | `<video>` gốc cho MP4; WebRTC (WHEP) cho live view | |
 | Test BE | pytest, pytest-asyncio, testcontainers (Postgres) | |
@@ -289,13 +307,13 @@ ai-cam-fe/
 | Nhận cập nhật | WebSocket `/ws/station/{id}`: trạng thái phiên, mã Cam 2 đọc được, cảnh báo camera |
 | Trạng thái màn hình | Một state machine ở FE (Zustand) phản chiếu trạng thái server: `READY`, `PACKING`, `RETURN_INSPECTING`, `MISMATCH`, `WARNING`, `OFFLINE` |
 | Mất kết nối tới server | Hiện nền đỏ "Mất kết nối server", chặn quét. (Mất Internet thì không ảnh hưởng vì server ở LAN) |
-| Kiosk | Chromium `--kiosk`, tự đăng nhập bằng device token của station, nhân viên đăng nhập bằng thẻ / PIN |
+| Kiosk | Chromium `--kiosk`; đăng nhập một lần bằng tài khoản chung của station (refresh 30 ngày trượt), không có đăng nhập nhân viên (item 01 DEC-2, DEC-55) |
 
 ### 5.3 Dashboard
 
 - SPA, gọi REST qua TanStack Query, phân quyền theo role trong JWT (ẩn menu + server vẫn kiểm tra).
 - Trình phát clip: `<video>` với URL có chữ ký thời hạn ngắn (`/api/v1/clips/{id}/stream?sig=...`), hỗ trợ HTTP Range để tua.
-- Live view: WebRTC WHEP từ MediaMTX qua Caddy, không qua backend.
+- Live view: WebRTC WHEP từ MediaMTX qua Caddy; Caddy hỏi quyền `/api/v1/live` (`forward_auth`) trước khi chuyển, luồng video không qua backend (§14.2).
 
 ---
 
@@ -324,7 +342,7 @@ Nếu phiên đóng khi segment hiện tại chưa ghi xong, job tự hẹn lạ
 
 ### 6.3 Xuất bằng chứng
 
-`media.export_clip` tạo bản dẫn xuất, **encode lại H.264** với overlay `drawtext`: mã vận đơn, mã đơn sàn, station, nhân viên, và thời gian chạy theo mốc thực. Tùy chọn ghép Cam 1 + Cam 2 cạnh nhau (`hstack`). Kết quả kèm file `.json` thông tin (hash clip gốc, hash bản xuất, thời gian, người xuất). Clip gốc không bao giờ bị sửa.
+`media.export_clip` tạo bản dẫn xuất, **encode lại H.264** với overlay `drawtext`: mã vận đơn, mã đơn sàn, station và thời gian chạy theo mốc thực (không có tên nhân viên — station dùng tài khoản chung, item 01 DEC-2). Tùy chọn ghép Cam 1 + Cam 2 cạnh nhau (`hstack`). Kết quả kèm file `.json` thông tin (hash clip gốc, hash bản xuất, thời gian, người xuất). Clip gốc không bao giờ bị sửa.
 
 ### 6.4 Vision Cam 2
 
@@ -436,13 +454,14 @@ Nếu sàn hỗ trợ push/webhook thì endpoint `POST /api/v1/webhooks/{platfor
 
 ```
 /data/video/
-├── raw/{camera_id}/YYYY/MM/DD/HH-MM-SS.mp4     # MediaMTX ghi, giữ 30 ngày
-├── clips/YYYY/MM/DD/{session_id}_{cam}.mp4     # clip gốc, chỉ đọc, giữ 90–180 ngày
-├── exports/YYYY/MM/DD/{export_id}.mp4|.json    # bản xuất, giữ 30 ngày
-└── snapshots/YYYY/MM/DD/{session_id}_{n}.jpg   # ảnh chụp phiên hoàn
+├── raw/cam-{camera_id}/YYYY/MM/DD/HH-MM-SS-ffffff.mp4   # MediaMTX ghi (giờ UTC), giữ 30 ngày (dev: 1 giờ)
+├── clips/YYYY/MM/DD/{session_id}-{CAM1|CAM2}.mp4       # clip gốc, chỉ đọc, giữ 90 ngày (cấu hình được), "giữ" thì không xóa
+├── exports/{export_id}/video.mp4|info.json             # bản xuất, giữ 24 giờ (DEC-58 item 01)
+└── snapshots/YYYY/MM/DD/{session_id}_{n}.jpg           # ảnh chụp phiên hoàn (Phase 2)
 ```
 
 - DB chỉ lưu đường dẫn tương đối, gốc `/data/video` cấu hình qua env.
+- Bản xuất chỉ giữ 24 giờ: tạo lại được bất cứ lúc nào khi clip gốc còn; người dùng tải về máy ngay (DEC-58 trong [02-tech-spec item 01](../items/01-packing-mvp/02-tech-spec.md), 2026-10-05 — trước đó ghi 30 ngày).
 - Backup DB: `pg_dump` hằng ngày lên NAS + S3, giữ 30 bản.
 
 ### 8.3 Ước tính dung lượng
@@ -527,7 +546,7 @@ class PlatformAdapter(Protocol):
 | Chủ đề | Thiết kế |
 | --- | --- |
 | Xác thực web | JWT access (15 phút) + refresh (7 ngày, lưu cookie httpOnly, xoay vòng) |
-| Xác thực station | Device token cấp khi Admin đăng ký station, lưu trong máy kiosk; nhân viên đăng nhập trên station bằng mã nhân viên + PIN, hoặc quét thẻ |
+| Xác thực station | Một tài khoản chung cho mỗi station do Admin cấp (item 01 DEC-2); JWT access 15 phút + refresh cookie `rt_station` 30 ngày trượt; Admin thu hồi được (hiệu lực ≤ 15 phút, DEC-55). Người đóng gói nhận diện qua video Cam 1 |
 | Phân quyền | RBAC theo ma trận SRS 5.11, kiểm tra bằng dependency FastAPI ở từng router |
 | Mật khẩu / PIN | Argon2id |
 | Bí mật | Token sàn mã hóa bằng Fernet, khóa trong env / Docker secret. Không commit `.env` |
@@ -544,7 +563,7 @@ class PlatformAdapter(Protocol):
 | --- | --- | --- |
 | Mất Internet | Không đồng bộ được với sàn | Quét, phiên, ghi hình vẫn chạy trên LAN. Đơn chưa có thì mở chế độ "chưa xác minh". Job đồng bộ chạy lại khi có mạng |
 | Camera mất tín hiệu | Thiếu video | MediaMTX tự kết nối lại; `check_health` cảnh báo ≤ 10s; clip gắn cờ `video_incomplete` |
-| `api` crash | Station không quét được | Docker `restart: always`; phiên đang mở lưu trong DB nên khôi phục nguyên trạng |
+| `api` crash | Station không quét được | Docker `restart: unless-stopped` (DEC-135 item 01: vẫn tự lên sau crash / khởi động lại máy, `docker compose stop` khi bảo trì có hiệu lực); phiên đang mở lưu trong DB nên khôi phục nguyên trạng |
 | `worker` crash | Clip chậm có | Job nằm trong Redis (acks late), chạy lại khi worker lên. Job cắt clip idempotent theo `session_id` |
 | `vision` crash | Không có kiểm tra Cam 2 | Phiên vẫn chạy, gắn cờ `cam2_unverified` (EX-P6) |
 | Mất điện | Toàn bộ | UPS ≥ 15 phút, NUT tắt máy an toàn; MediaMTX ghi fMP4 nên segment dở vẫn đọc được |
@@ -575,9 +594,21 @@ class PlatformAdapter(Protocol):
 ### 14.2 Đóng gói và triển khai
 
 - `ai-cam-be` build **một image** dùng cho `api`, `worker`, `beat`, `vision` (khác lệnh khởi động). Image có sẵn FFmpeg.
-- `ai-cam-fe` build ra file tĩnh, đóng vào image Caddy hoặc mount vào Caddy.
-- `compose.yml` (trong `ai-cam-be/docker/`) là nguồn chuẩn của stack kho, tham chiếu image FE theo tag.
-- Cập nhật tại kho: `docker compose pull && docker compose up -d`, migration Alembic chạy trước khi `api` khởi động.
+- `ai-cam-fe` build ra file tĩnh, đóng vào image Caddy hoặc mount vào Caddy. MVP: mount `ai-cam-fe/dist` (`FE_DIST_DIR`), chưa đóng image.
+- [`ai-cam-be/docker/compose.yml`](../../../ai-cam-be/docker/compose.yml) là nguồn chuẩn của stack kho; vận hành (cài đặt, cert, sao lưu / khôi phục, nâng cấp, sự cố) theo [`ai-cam-be/docs/ops.md`](../../../ai-cam-be/docs/ops.md).
+- Cập nhật tại kho: build / pull image rồi `docker compose up -d`; service `migrate` chạy `alembic upgrade head` xong mới tới `api`.
+
+Chốt khi làm T-19 (item 01 DEC-135..137 trong [02a](../items/01-packing-mvp/02a-be-spec.md#decisions)):
+
+| Điểm | Quyết định | Khác mô tả trước |
+| --- | --- | --- |
+| HTTPS | Caddy `tls internal` theo `SITE_ADDRESS`; máy station / dashboard cài root cert của Caddy (cookie refresh `Secure`) | Ghi rõ CA nội bộ |
+| Khởi động lại | `restart: unless-stopped` | Thay `always` (§12) |
+| Cổng mở ra LAN | 80 (→ 308 HTTPS), 443, ICE 8189 UDP + TCP; api, postgres, redis, API MediaMTX không publish | — |
+| Proxy tin cậy | Caddy IP tĩnh (`CADDY_IP`) = `FORWARDED_ALLOW_IPS` của `api` | Mới |
+| Live view | `/live/*` qua Caddy `forward_auth` → `/api/v1/live` (chỉ ADMIN / SUPERVISOR), chỉ path WHEP | §5.3 ghi "không qua backend": video vẫn đi thẳng MediaMTX, chỉ bước xác thực qua backend |
+| Sao lưu | Service `backup`: `pg_dump -Fc` + file nhập, 01:00 giờ VN, giữ 14 ngày | Mới |
+| Image | BE build tại chỗ (`AICAM_IMAGE`); CI đẩy GHCR (§14.3) chưa làm | §14.3 chưa có |
 
 ### 14.3 CI (GitHub Actions)
 
@@ -608,14 +639,14 @@ Phiên bản theo SemVer, BE và FE gắn tag độc lập; `compose.yml` ghim c
 
 | ID | Quyết định | Trạng thái |
 | --- | --- | --- |
-| ADR-001 | Chạy on-premise tại kho, cloud chỉ để sao lưu / truy cập từ xa | Đề xuất |
-| ADR-002 | Modular monolith Python (FastAPI), một image nhiều tiến trình | Đề xuất |
-| ADR-003 | Ghi liên tục bằng MediaMTX, cắt clip theo mốc thời gian bằng FFmpeg stream copy | Đề xuất |
-| ADR-004 | Logic phiên đồng bộ trong `api`, việc nặng qua Celery | Đề xuất |
-| ADR-005 | Cam 2 đọc mã bằng OpenCV + zxing-cpp, không chặn quy trình khi đọc thất bại | Đề xuất |
-| ADR-006 | Một app React cho cả station và dashboard, station chạy Chromium kiosk | Đề xuất |
-| ADR-007 | Sàn tích hợp qua adapter, polling là nền, webhook là bổ sung | Đề xuất |
-| ADR-008 | Clip gốc bất biến + SHA-256; overlay chỉ trên bản xuất; bật OSD thời gian của camera | Đề xuất |
+| ADR-001 | Chạy on-premise tại kho, cloud chỉ để sao lưu / truy cập từ xa | Accepted (2026-10-04, qua G2 item 01) |
+| ADR-002 | Modular monolith Python (FastAPI), một image nhiều tiến trình | Accepted (2026-10-04, qua G2 item 01) |
+| ADR-003 | Ghi liên tục bằng MediaMTX, cắt clip theo mốc thời gian bằng FFmpeg stream copy | Accepted (2026-10-04, qua G2 item 01) |
+| ADR-004 | Logic phiên đồng bộ trong `api`, việc nặng qua Celery | Accepted (2026-10-04, qua G2 item 01) |
+| ADR-005 | Cam 2 đọc mã bằng OpenCV + zxing-cpp, không chặn quy trình khi đọc thất bại | Accepted (2026-10-04, qua G2 item 01) |
+| ADR-006 | Một app React cho cả station và dashboard, station chạy Chromium kiosk | Accepted (2026-10-04, qua G2 item 01) |
+| ADR-007 | Sàn tích hợp qua adapter, polling là nền, webhook là bổ sung | Accepted (2026-10-04, qua G2 item 01) |
+| ADR-008 | Clip gốc bất biến + SHA-256; overlay chỉ trên bản xuất; bật OSD thời gian của camera | Accepted (2026-10-04, qua G2 item 01) |
 
 Mỗi ADR có file riêng trong [decisions/](decisions/).
 

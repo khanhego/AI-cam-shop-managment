@@ -1,0 +1,31 @@
+## S17 log không lộ secret (mọi service)
+grep -E 'token=|sig=|access_token=' trên logs mọi service: 19 dòng
+caddy-1          | {"level":"warn","ts":1791203349.5333664,"logger":"http.handlers.reverse_proxy","msg":"aborting with incomplete response","upstream":"api:8000","duration":0.007315955,"request":{"remote_ip":"172.30.20.1","remote_port":"59902","client_ip":"172.30.20.1","proto":"HTTP/2.0","method":"GET","host":"localhost:8443","uri":"/api/v1/media/clips/49aeb901-b47c-4821-b192-3e2a4ae83343?uid=01a10c06-7e93-732e-9076-837a4ae976ea&exp=1791203945&sig=<64 hex — đã che trong bằng chứng>","headers":{"Priority":["i"],"Accept-Encoding":["identity;q=1, *;q=0"],"User-Agent":["Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.8010.12 Safari/537.36"],"Accept":["*/*"],"Sec-Fetch-Dest":["video"],"X-Forwarded-For":["172.30.20.1"],"Range":["bytes=0-"],"Sec-Fetch-Site":["same-origin"],"Sec-Fetch-Mode":["no-cors"],"X-Forwarded-Proto":["https"],"X-Forwarded-Host":["localhost:8443"],"Via":["2.0 Caddy"],"Sec-Ch-Ua":["\"HeadlessChrome\";v=\"153\", \"Not_A Brand\";v=\"8\", \"Chromium\";v=\"153\""],"Sec-Ch-Ua-Mobile":["?0"],"Sec-Ch-Ua-Platform":["\"macOS\""]},"tls":{"resumed":false,"version":772,"cipher_suite":4865,"proto":"h2","server_name":"localhost","ech":false}},"error":"writing: http2: stream closed"}
+caddy-1          | {"level":"warn","ts":1791203395.3952777,"logger":"http.handlers.reverse_proxy","msg":"aborting with incomplete response","upstream":"api:8000","duration":0.00508663,"request":{"remote_ip":"172.30.20.1","remote_port":"51742","client_ip":"172.30.20.1","proto":"HTTP/2.0","method":"GET","host":"localhost:8443","uri":"/api/v1/media/clips/49aeb901-b47c-4821-b192-3e2a4ae83343?uid=01a10c06-7e93-732e-9076-837a4ae976ea&exp=1791203995&sig=<64 hex — đã che trong bằng chứng>","headers":{"Sec-Ch-Ua-Platform":["\"macOS\""],"Sec-Fetch-Mode":["no-cors"],"Range":["bytes=0-"],"Accept-Encoding":["identity;q=1, *;q=0"],"Sec-Fetch-Site":["same-origin"],"X-Forwarded-For":["172.30.20.1"],"Via":["2.0 Caddy"],"Priority":["i"],"User-Agent":["Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/153.0.8010.12 Safari/537.36"],"X-Forwarded-Proto":["https"],"Sec-Fetch-Dest":["video"],"Sec-Ch-Ua":["\"HeadlessChrome\";v=\"153\", \"Not_A Brand\";v=\"8\", \"Chromium\";v=\"153\""],"X-Forwarded-Host":["localhost:8443"],"Sec-Ch-Ua-Mobile":["?0"],"Accept":["*/*"]},"tls":{"resumed":false,"version":772,"cipher_suite":4865,"proto":"h2","server_name":"localhost","ech":false}},"error":"writing: http2: stream closed"}
+-- mẫu access log Caddy đã che:
+"uri":"/api/v1/media/clips/49aeb901-b47c-4821-b192-3e2a4ae83343"
+"uri":"/api/v1/media/clips/49aeb901-b47c-4821-b192-3e2a4ae83343?exp=1791203833&sig=REDACTED&uid=01a10c06-7e93-732e-9076-837a4ae976ea"
+"uri":"/api/v1/media/clips/49aeb901-b47c-4821-b192-3e2a4ae83343?exp=1791203945&sig=REDACTED&uid=01a10c06-7e93-732e-9076-837a4ae976ea"
+"uri":"/api/v1/media/clips/49aeb901-b47c-4821-b192-3e2a4ae83343?exp=1791203995&sig=REDACTED&uid=01a10c06-7e93-732e-9076-837a4ae976ea"
+## S18 volume-init (không chown -R)
+        find /data/video /data/imports -maxdepth 2 ! -user 10001 -exec chown 10001:10001
+        {} + || echo "CẢNH BÁO volume-init: không chown được /data/video hoặc /data/imports
+        (NFS root_squash?) — xem docs/ops.md §2" >&2; exit 0'
+    image: alpine:3
+logs volume-init: [] exit=0
+10001:10001 /data/video
+10001:10001 /data/video/raw
+10001:10001 /data/video/clips
+10001:10001 /data/imports
+## S19 FORWARDED_ALLOW_IPS / cổng publish
+FORWARDED_ALLOW_IPS=172.30.20.10
+caddy 443/udp, 2019/tcp, 0.0.0.0:8088->80/tcp, [::]:8088->80/tcp, 0.0.0.0:8443->443/tcp, [::]:8443->443/tcp
+mediamtx 0.0.0.0:8190->8190/tcp, 0.0.0.0:8190->8190/udp, [::]:8190->8190/tcp, [::]:8190->8190/udp
+## S20 MediaMTX quyền nội bộ
+MTX_WEBRTCADDITIONALHOSTS=127.0.0.1
+MTX_WEBRTCLOCALUDPADDRESS=:8190
+MTX_WEBRTCLOCALTCPADDRESS=:8190
+MTX_AUTHINTERNALUSERS_0_IPS=127.0.0.1/32,::1/128,172.30.20.0/24
+## S17b sau sửa + toàn bộ smoke + khôi phục — 2026-10-05T19:35:23+07:00
+dòng có 'token=|sig=|access_token=' chưa che (mọi service): 0
+dòng có giá trị đã che: 25

@@ -16,6 +16,10 @@ Không viết lại API — trỏ API-xx trong 02. Mục không áp dụng: "N/A
 ---
 
 ## 1. Phạm vi
+| Goals (lát/spec này làm) | Non-goals (cố ý không làm — để đâu) |
+|---|---|
+| | |
+
 | Màn / luồng | Route / deep link | FR / UC | REUSE / EXTEND / NEW |
 |---|---|---|:---:|
 
@@ -73,6 +77,15 @@ flowchart LR
 
 ## 14. Task
 | # | Việc | Màn / FR | Phụ thuộc (API-xx) | Ước lượng |
+|---|---|---|---|---|
+
+## Phương án đã cân nhắc
+<!-- Chỉ các lựa chọn riêng của phía này (cấu trúc code, lock, cache, thư viện, state…). Lựa chọn xuyên suốt nằm ở 02 §9. -->
+| Phương án | Ưu | Nhược | Chọn? (lý do) |
+|---|---|---|---|
+
+## Rủi ro & câu hỏi mở
+| ID | Rủi ro / câu hỏi | Ảnh hưởng | Giảm thiểu / ai trả lời | Hạn |
 |---|---|---|---|---|
 
 ## Decisions

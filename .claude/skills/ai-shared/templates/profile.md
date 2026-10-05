@@ -13,6 +13,7 @@
 | Quy mô | S / M / L |
 | Ngôn ngữ tài liệu | vi / en |
 | `docs_root` | docs/ai |
+| `business_docs_root` | docs/nghiep-vu (tài liệu giải thích nghiệp vụ cho dev, `ai-dev-explain-business`) |
 
 ## 2. Thành phần (component)
 | Component | Loại `be`/`fe` | Path | Ngôn ngữ / framework | build | lint | test | run (local) |

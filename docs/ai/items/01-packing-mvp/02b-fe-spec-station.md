@@ -6,7 +6,7 @@
 | Reviewer | khanhtt (tech lead, review qua subagent ở bước 5) |
 | Trạng thái | Approved (G2 2026-10-04, có điều kiện DEC-33) |
 | Tổng quan & contract | [02-tech-spec.md](02-tech-spec.md) · Màn: [01-srs.md §10.4](01-srs.md) (S0–S6) · [Design system](../../../design-system/README.md) mục Station kiosk |
-| Last update | 2026-10-04 · FE |
+| Last update | 2026-10-05 · FE (chuẩn hoá template 2026-10-05: Goals/Non-goals, Phương án, Rủi ro) |
 
 > **TL;DR** — Route `/station` trong app `ai-cam-fe`: 7 màn S0–S6 render từ **một** state server (`station.state`, API-10 / WS-01). FE không tự suy luận phiên.
 > Mọi thao tác bằng máy quét: `ScanListener` gom phím HID → API-11 (kèm `client_scan_id`) → `outcome` quyết định màn + âm thanh.
@@ -18,6 +18,14 @@ Không viết lại API — trỏ API-xx trong [02 §6](02-tech-spec.md#6-api-co
 ---
 
 ## 1. Phạm vi
+
+| Goals (lát/spec này làm) | Non-goals (cố ý không làm — để đâu) |
+|---|---|
+| 7 màn S0–S6 trên `/station`, render từ **một** state server (API-10 / WS-01) | FE tự suy luận trạng thái phiên — server quyết (DEC-18) |
+| Quét → đổi màn + âm thanh ≤ 1 giây p95 (NFR-01) | Duyệt yêu cầu trên station — duyệt ở dashboard D13 (DEC-5, [02b-admin](02b-fe-spec-admin.md)) |
+| Không mất lần quét khi mạng chập chờn: retry cùng `client_scan_id`, S6 khi mất WS > 5 giây (NFR-09) | Mobile, Safari, Firefox cho station — chỉ Chromium ≥ 120 kiosk, 1920×1080 / 1366×768 |
+| Nền FE dùng chung cho cả hai client: khung repo, tokens, `shared/ui`, API client, auth, WS client (T-30..T-33, DEC-16) | Đa ngôn ngữ / thư viện i18n (DEC-17) |
+| Bundle `/station` ≤ 250 KB gzip, chạy offline trong LAN | Gửi lỗi JS về BE (DEC-23 → Phase 3); màn mở hàng hoàn (M04 → Phase 2) |
 
 | Màn / luồng | Route | FR / UC | REUSE / EXTEND / NEW |
 |---|---|---|:---:|
@@ -142,7 +150,7 @@ Guard: `/station/*` yêu cầu `role = STATION` (từ API-04). Tài khoản khá
 - Máy quét: USB HID, hậu tố Enter. `useScanListener`: gom ký tự khi khoảng cách giữa 2 phím ≤ 50 ms; kết thúc bằng Enter; chuỗi ≥ 4 ký tự → scan. Phím gõ tay (> 50 ms) bị bỏ qua khi không có ô nhập đang focus. Bố cục bàn phím máy quét: US.
 - Màn không được ngủ: dùng Screen Wake Lock API khi có, kèm hướng dẫn tắt sleep trong README triển khai.
 - Bundle: route `/station` tách chunk riêng (lazy) không kéo theo trang admin; mục tiêu ≤ 250 KB gzip.
-- Âm thanh: `public/sounds/{ok,warn,error}.mp3` ≤ 30 KB mỗi file.
+- Âm thanh: tổng hợp bằng Web Audio trong `features/station/sound.ts` (ok / warn / error), không dùng file mp3 — DEC-50.
 
 ## 11. Analytics & theo dõi lỗi
 
@@ -183,6 +191,43 @@ Guard: `/station/*` yêu cầu `role = STATION` (từ API-04). Tài khoản khá
 
 Tổng ≈ 16 ngày công (T-30..T-33 là nền dùng chung cho admin).
 
+## Phương án đã cân nhắc
+
+Chỉ lựa chọn riêng phía FE station (+ nền dùng chung). Scan trả 200 + `outcome` và WebSocket thay poll ở [02 §9](02-tech-spec.md#9-phương-án-đã-cân-nhắc); một app React cho cả station và dashboard, Chromium kiosk ở [ADR-006](../../system/decisions/ADR-006-single-react-app-kiosk.md).
+
+| Phương án | Ưu | Nhược | Chọn? (lý do) |
+|---|---|---|---|
+| **Zustand `stationStore` (một nguồn state station, thay cả object) + TanStack Query cho dữ liệu phụ (API-15, API-40)** | Một chỗ nhận state từ API-10, WS-01 và response API-11..14; giữ được hàng đợi quét, timer cảnh báo 5 giây, `wsStatus` — những thứ không phải server cache | Hai cơ chế state trong cùng màn | ✔ ([architecture.md](../../system/architecture.md) chọn Zustand cho state station; `features/station/stationStore.ts`) |
+| Chỉ TanStack Query (`setQueryData` từ WS và response scan) | Một thư viện | Hàng đợi quét, alert, trạng thái WS không phải dữ liệu server — phải nhét vào cache hoặc `useState` rời rạc; dễ lệch thứ tự mở → đóng | ✗ |
+| **Một trang, chọn panel S1–S5 theo `state` server** | Reload luôn đúng; URL không lệch trạng thái thật | Không deep link từng màn | ✔ DEC-18 |
+| Mỗi màn một route | Deep link, test theo URL | URL có thể khác trạng thái server sau WS / reload | ✗ |
+| **Phân biệt máy quét theo nhịp phím (≤ 50 ms giữa 2 phím) + Enter, ≥ 4 ký tự** | Không cần ô nhập có focus; gõ tay tự bị bỏ qua | Ngưỡng phụ thuộc máy quét thật; máy chậm có thể bị bỏ qua | ✔ (`shared/scan/scanBuffer.ts`, `MAX_GAP_MS = 50`) |
+| Luôn focus một ô nhập ẩn | Đơn giản | Mất focus khi mở Dialog / bấm nút → mất lần quét; gõ tay lẫn vào | ✗ |
+| Cấu hình prefix / suffix riêng trên máy quét | Phân biệt chắc chắn | Phải cấu hình từng máy; thay máy là hỏng | ✗ |
+| **Hàng đợi quét tối đa 1 + retry 2 lần cùng `client_scan_id`** | Giữ thứ tự mở → đóng; BE dedup (DEC-29) | Lần quét thứ 3 khi đang chờ bị bỏ | ✔ (§4) |
+| **MSW ở lớp fetch, WS mock bằng `ws.link` của MSW** | Mock đúng contract 02 §6, không đổi code gọi API; build production không chứa mock | Phải giữ handler khớp contract khi 02 đổi | ✔ DEC-19, DEC-50 |
+| json-server / mock trong code | Dễ dựng | Thêm tiến trình hoặc nhánh code riêng; không mock WS | ✗ |
+| **Type sinh bằng `openapi-typescript` + client fetch tự viết mỏng** | Tự kiểm refresh 401 một lần cho nhiều request, retry cùng `client_scan_id` | Tự viết interceptor | ✔ DEC-41 |
+| `orval` / `openapi-fetch` | Sinh sẵn hook / client | Khó gắn refresh đơn luồng và retry quét | ✗ |
+| **Âm thanh tổng hợp bằng Web Audio** | Không cần asset, chạy offline | Âm đơn giản | ✔ DEC-50 (thay file mp3 trong §10) |
+| **Font đóng gói `@fontsource/*` + `material-symbols`** | Chạy khi mất Internet (NFR-09) | Material Symbols 5,4 MB | ✔ DEC-42 |
+| Google Fonts | Nhẹ repo | Mất WAN → icon hiện chữ | ✗ |
+| **Chữ gom ở `copy.ts` / `labels.ts`** | Không thêm thư viện | Chuyển i18n sau phải tách lại | ✔ DEC-17 |
+
+## Rủi ro & câu hỏi mở
+
+Nguồn: [02 §11](02-tech-spec.md#11-rủi-ro--câu-hỏi-mở), [03 §5](03-plan.md#5-rủi-ro-tiến-độ), review code M1 (2026-10-05). Ai trả lời: khanhtt nếu không ghi khác.
+
+| ID | Rủi ro / câu hỏi | Ảnh hưởng | Giảm thiểu / ai trả lời | Hạn |
+|---|---|---|---|---|
+| RS-1 | Nút "Gọi quản lý" (S2, S3) và "Yêu cầu đóng gói lại" (S4) gọi API-13 / API-14, BE chưa có tới T-13 — với BE thật hiện toast lỗi (MSW chạy đủ) (review code M1) | Trung bình — chưa demo được luồng duyệt với BE thật | Giữ toast lỗi, không giấu nút; kiểm lại khi T-13 xong | T-13, kiểm ở T-38 |
+| RS-2 | Ngưỡng 50 ms / phím chưa thử với máy quét thật (spike S5, ADR-006); bố cục bàn phím máy quét phải là US | Trung bình — quét bị bỏ qua hoặc gõ tay lọt vào | Thử với máy quét mua ở T-4; `MAX_GAP_MS` là hằng số chỉnh được | T-4, T-38 |
+| RS-3 | Phản hồi ≤ 1 giây p95 (NFR-01) chưa đo trên mạng LAN kho | Trung bình | Log `scan_roundtrip_ms`; locust phía BE | T-19, T-38 |
+| RS-4 | Thu hồi đăng nhập station: station vẫn quét được ≤ 15 phút sau API-91 (access JWT), WS chưa đóng ngay (review code M1) | Trung bình | BE đóng WS ngay (RB-9 trong 02a); FE: WS 4401 → refresh thất bại → S0 | T-13 / T-59 |
+| RS-5 | Âm thanh tự phát và màn không ngủ phụ thuộc cờ Chromium `--autoplay-policy` và Wake Lock API | Thấp — không có âm báo / màn tắt | Ghi cờ kiosk + hướng dẫn tắt sleep trong README vận hành | T-19 |
+| RS-6 | Material Symbols 5,4 MB tải lần đầu (DEC-42) | Thấp — lần mở đầu chậm | Cache trong LAN; subset nếu cần | T-38 |
+| RS-7 | Định dạng giờ API chưa thống nhất hậu tố `Z` (RB-11 trong 02a) → đồng hồ / giờ phiên lệch nếu parse sai | Thấp | Parse ISO 8601 có múi; chờ BE chuẩn hoá | T-19 |
+
 ## Decisions
 
 | DEC | Bối cảnh | Lựa chọn | Lý do | Người chốt |
@@ -194,4 +239,5 @@ Tổng ≈ 16 ngày công (T-30..T-33 là nền dùng chung cho admin).
 | DEC-42 | Font khi mất Internet (T-30) | Đóng gói font qua `@fontsource/*` + `material-symbols`, bỏ Google Fonts | Station phải chạy offline (NFR-09); icon font tải hỏng sẽ hiện chữ thay icon. Material Symbols đủ bộ 5,4 MB — chấp nhận trong LAN (cache); subset nếu cần | khanhtt (tự quyết) |
 | DEC-43 | Nguồn token (T-31) | Sinh `tokens.css` từ seed bằng script của livesstream-ai-fe (`pnpm tokens`, material-color-utilities); test `src/design/tokens.test.ts` kiểm khớp `docs/design-system/tokens.json` (49 vai trò × light/dark) | Cùng engine sinh ra tài liệu; tránh viết parser riêng | khanhtt (tự quyết) |
 | DEC-44 | UI kit (T-32, T-39) | Sao `ui.tsx`, `Dialog`, `Pagination` từ livesstream-ai-fe vào `src/shared/ui/`; NEW: `Toast` (store zustand, 4 giây), `Skeleton`, `TrackingNumber`; EXTEND: `LinearProgress` không giá trị. Trang `/_ui` chỉ có khi `pnpm dev` để xem UI kit (không vào build production) | Reuse design system gốc; trang xem nhanh thay Storybook | khanhtt (tự quyết) |
+| DEC-50 | Lệch spec khi code T-35..T-40 | (1) Âm thanh tổng hợp bằng Web Audio, không dùng file mp3 (không cần asset, chạy offline). (2) Nút trên nền màu trạng thái dùng biến thể `elevated` (outlined chữ primary trên primary-container không đủ tương phản — thấy khi chụp màn thật). (3) Mock WS bằng `ws.link` của MSW; video mẫu `public/mock/` bị loại khỏi build production. (4) Làm T-36, T-37, T-40 cùng lúc (chung trang và store) | Phát hiện khi chạy app thật | khanhtt (tự quyết) |
 | DEC-19 | Mock | MSW ở lớp fetch | Mock đúng contract, không đổi code gọi API | khanhtt (tự quyết) |

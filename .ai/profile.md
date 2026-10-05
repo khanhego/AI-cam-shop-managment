@@ -13,6 +13,7 @@
 | Quy mô | M, solo dev giữ mọi vai qua `ai-solo-build-feature` (user chốt 2026-10-04) |
 | Ngôn ngữ tài liệu | vi |
 | `docs_root` | docs/ai |
+| `business_docs_root` | docs/nghiep-vu (tài liệu giải thích nghiệp vụ cho dev, `ai-dev-explain-business`; thêm 2026-10-05 theo bộ skill mới) |
 
 ## 2. Thành phần (component)
 

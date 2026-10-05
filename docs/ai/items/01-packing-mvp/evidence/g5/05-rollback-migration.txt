@@ -1,0 +1,10 @@
+# Thử rollback migration trên staging — 2026-10-05T19:34:50+07:00 (docs/ops.md §7)
+stopped: 6
+## dc run --rm migrate alembic downgrade -1
+INFO  [alembic.runtime.migration] Running downgrade 0002 -> 0001, clip: deleted_at, timeline (T-14, DEC-102)
+exit=0
+0001
+## dc up -d (migrate chạy lại upgrade head)
+INFO  [alembic.runtime.migration] Running upgrade 0001 -> 0002, clip: deleted_at, timeline (T-14, DEC-102)
+0002 (head)
+{"status":"ok","version":"0.1.0"} HTTP 200

@@ -1,0 +1,12 @@
+Mon Oct  5 19:16:23 +07 2026
+$ E2E_M3_BE=1 E2E_M4_BE=1 npx playwright test -c playwright.real.config.ts station-g4.spec.ts admin-g4.spec.ts session-refresh-g4.spec.ts  (lần 2 — lần 1 cũng 5/5 pass)
+[WebServer] $ vite --port 5181 --strictPort
+Running 5 tests using 1 worker
+  ✓  1 [chromium] › e2e/real/admin-g4.spec.ts:35:1 › TC-02.13: mở D4 không ghi VIEW_CLIP; bấm phát + tua → đúng 1 dòng VIEW_CLIP của Lan (31.3s)
+  ✓  2 [chromium] › e2e/real/session-refresh-g4.spec.ts:75:1 › TC-10.05: access token 1 phút hết hạn → mỗi tab refresh theo client của mình, không ghi đè cookie của nhau (1.3m)
+  ✓  3 [chromium] › e2e/real/station-g4.spec.ts:21:1 › TC-03.30: station chưa đăng nhập quét → nhắc đăng nhập, không gọi API-11, ô tài khoản không bị điền mã (8.5s)
+  ✓  4 [chromium] › e2e/real/station-g4.spec.ts:40:1 › TC-03.31: gõ tay 200 ms/phím + Enter → không coi là quét, giữ SẴN SÀNG (11.3s)
+  ✓  5 [chromium] › e2e/real/station-g4.spec.ts:53:1 › TC-03.32: mất kết nối máy chủ > 5 giây → S6, không nhận quét; có lại → về ĐANG ĐÓNG GÓI rồi đóng được (23.3s)
+  5 passed (2.6m)
+exit=0
+container tạm còn: 0

@@ -43,6 +43,7 @@ quay về pipeline này, chạy checkpoint/gate, rồi mới sang bước kế.*
 | 6 | Kế hoạch | `ai-pm-plan-tasks` | `03` | **Plan** |
 | 7 | Test cases | `ai-qa-write-cases` | `04` | CP7 |
 | 8 | Implement — **lặp từng task** theo thứ tự `03` (BE trước FE dùng nó) | `ai-be-implement` / `ai-fe-implement` | code + test | CP8 / task |
+| 8c | Tài liệu nghiệp vụ — **mỗi lát một file**, ngay sau task cuối của lát | `ai-dev-explain-business` | `<business_docs_root>/…` | CP8c |
 | 9 | Commit / PR *(hỏi)* | — | commit, PR | CP9 |
 | 10 | Review code | `ai-lead-review` (subagent) | findings | **G3** |
 | 11 | Chạy test | `ai-qa-run-tests` | `04a` | **G4** |
@@ -52,7 +53,8 @@ Không có component fe → bỏ 2b, 4b và G1 đặt ở cuối bước 2. Khô
 
 ### Vòng lặp bước 8
 Với mỗi task `T-n` chưa Done: gọi skill implement theo component của task → CP8 cho task đó (checklist đã phủ, build/lint/test
-không thêm lỗi, bằng chứng chạy) → Duyệt → task kế. Hết task → bước 9.
+không thêm lỗi, bằng chứng chạy) → Duyệt → task kế. Xong task cuối của một lát (vertical slice trong `03`) → bước 8c cho lát đó
+(tài liệu nghiệp vụ, CP8c) → lát kế. Hết task → bước 9. Không có tài liệu nghiệp vụ cho lát → không qua G3.
 
 ### Vòng lặp G3 / G4
 - Review code có blocker/major → quay về bước 8 cho đúng task, sửa, rồi chạy lại bước 10.

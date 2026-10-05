@@ -1,0 +1,50 @@
+# Dọn staging — 2026-10-05T19:35:34+07:00
+## down -v
+ Container aicam-staging-volume-init-1 Removing 
+ Container aicam-staging-volume-init-1 Removed 
+ Volume aicam-staging_video Removing 
+ Volume aicam-staging_redisdata Removing 
+ Volume aicam-staging_imports Removing 
+ Volume aicam-staging_pgdata Removing 
+ Volume aicam-staging_caddy_data Removing 
+ Volume aicam-staging_caddy_config Removing 
+ Network aicam-staging_aicam Removing 
+ Volume aicam-staging_redisdata Removed 
+ Volume aicam-staging_imports Removed 
+ Volume aicam-staging_caddy_config Removed 
+ Volume aicam-staging_video Removed 
+ Volume aicam-staging_pgdata Removed 
+ Volume aicam-staging_caddy_data Removed 
+ Network aicam-staging_aicam Removed 
+## xóa image staging
+Deleted: sha256:2fc4b2cc6426f5448d2acdbb2d1fc025b190250db35e6fdc6b7e22c16131baa6
+## xóa backup staging
+ls: /Users/admin/KhanhCode/AI-cam-shop-managment/ai-cam-be/docker/backups: No such file or directory
+## còn gì của aicam-staging
+containers: 0
+volumes: 0
+networks: 0
+## volume dev còn nguyên
+local     aicam-dev_imports
+local     aicam-dev_pgdata
+local     aicam-dev_video
+aicam-dev-worker-1 Up 2 hours
+aicam-dev-worker-export-1 Up 2 hours
+aicam-dev-beat-1 Up 2 hours
+aicam-dev-worker-sync-1 Up 2 hours
+aicam-dev-vision-1 Up 17 minutes
+aicam-dev-api-1 Up 2 hours (healthy)
+aicam-dev-mediamtx-1 Up 6 hours
+aicam-dev-fake-cam1-1 Up 6 hours
+aicam-dev-fake-cam2-1 Up 2 hours
+aicam-dev-postgres-1 Up 11 hours (healthy)
+aicam-dev-redis-1 Up 11 hours (healthy)
+{"status":"ok","version":"0.1.0"} HTTP 200
+## df -h / (sau)
+/dev/disk3s1s1   460Gi    11Gi    46Gi    20%    453k  486M    0%   /
+## docker system df (sau)
+TYPE            TOTAL     ACTIVE    SIZE      RECLAIMABLE
+Images          43        9         9.492GB   1.835GB (19%)
+Containers      18        15        6.627MB   180.2kB (2%)
+Local Volumes   10        7         8.109GB   267B (0%)
+Build Cache     0         0         0B        0B

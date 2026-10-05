@@ -1,0 +1,16 @@
+$ playwright test
+[WebServer] $ VITE_MOCK=1 vite
+
+Running 9 tests using 1 worker
+
+  ✓  1 [chromium] › e2e/mock/admin-d11.spec.ts:4:1 › TC-01.10 (UI, mock): Live view hiện ô camera có REC, Cam 2 mất tín hiệu + Thử lại (1.2s)
+  ✓  2 [chromium] › e2e/mock/admin-d13.spec.ts:7:1 › TC-03.43 / 03.44 (UI): D2 → Duyệt → D13, khóa Đóng phiên khi khay sai, Cho tiếp tục → hết yêu cầu (1.1s)
+  ✓  3 [chromium] › e2e/mock/admin-d5.spec.ts:13:1 › UC-09 / TC-05.11, 05.12 (UI, mock): file lỗi bị chặn, file tốt nhập được và vào Lịch sử (1.1s)
+  ✓  4 [chromium] › e2e/mock/admin-settings.spec.ts:4:1 › TC-02.09 / TC-05.01 (UI, mock): D8 chặn clip < video thô, lưu được; D7 hiện shop + đồng bộ ngay (1.2s)
+  ✓  5 [chromium] › e2e/mock/admin-uc03.spec.ts:12:1 › UC-03: tra cứu bằng máy quét → chi tiết → giữ clip → xuất Ghép → 2 nút tải (5.8s)
+  ✓  6 [chromium] › e2e/mock/admin-uc03.spec.ts:41:1 › TC-09.02: thẻ D2 dẫn sang D3 đúng bộ lọc, số dòng = số trên thẻ (947ms)
+  ✓  7 [chromium] › e2e/mock/admin-uc03.spec.ts:52:1 › D3 ở 360px: không cuộn ngang, kết quả dạng card (TC-07.12 trên Chromium) (1.0s)
+  ✓  8 [chromium] › e2e/mock/admin-users.spec.ts:4:1 › FR-10.01 / TC-10.07 (UI, mock): tạo tài khoản, khóa Admin cuối bị chặn, D10 có dòng Sửa tài khoản (1.3s)
+  ✓  9 [chromium] › e2e/mock/smoke.spec.ts:3:1 › app khởi động: chưa đăng nhập vào / → màn đăng nhập dashboard (610ms)
+
+  9 passed (15.4s)
