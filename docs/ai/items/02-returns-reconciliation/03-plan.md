@@ -58,16 +58,16 @@ Owner tất cả: khanhtt (profile §7). Ticket: chưa tạo (tracker `none` cho
 | T-157 | D16 danh sách hồ sơ | fe | D16 / FR-08.01, 08.03, 08.04 | 02b-ad §14 | T-151 (BE thật: T-110) | 1 | M8 | | ✅ `fe cb4ab87` |
 | T-158 | D17 chi tiết hồ sơ | fe | D17 / FR-08.02, 08.03, 08.06 | 02b-ad §14 | T-157 (BE thật: T-110) | 2 | M8 | | ✅ `fe c90c24f` |
 | T-159 | `EvidencePackDialog` | fe | D17 / FR-08.05 | 02b-ad §14 | T-158 (BE thật: T-112) | 1 | M8 | | ✅ `fe b014e76` |
-| T-105 | J-13 `sync_returns`, J-06 / J-04 mở rộng (giao thất bại, boom COD, `NEW → RETURN_EXPECTED`) | be | FR-05.05, 05.11, 05.12, 03.15 | 02a §12 | T-104, T-117 | 1,5 | M9 | | ⬜ |
-| T-113 | Module `reconciliation`: 7 quy tắc, J-14, API-120, 121, 123 | be | FR-06.02, 06.03, 06.06 | 02a §12 | T-104, T-110 | 2 | M9 | | ⬜ |
-| T-114 | Settings: API-80 mở rộng, API-82 (L2) | be | FR-02.10 | 02a §12 | T-111 | 1 | M9 | | ⬜ |
-| T-115 | API-30, 31, 32 mở rộng, API-113 | be | FR-07.01, 07.02, 09.01, 04.11 | 02a §12 | T-113 | 1,5 | M9 | | ⬜ |
-| T-153 | D14 Hàng hoàn | fe | D14 / FR-05.05, 05.11, 05.12 | 02b-ad §14 | T-151 (BE thật: T-104, T-105) | 1,5 | M9 | | ⬜ |
-| T-156 | D15 Lệch trạng thái + Dialog xử lý | fe | D15 / FR-06.01..03, 05 | 02b-ad §14 | T-151 (BE thật: T-113) | 1,5 | M9 | | ⬜ |
-| T-160 | D2, D3, D6, D13 mở rộng | fe | FR-09.01, 07.01, 01.01, 03.14 | 02b-ad §14 | T-152 (BE thật: T-115, T-106) | 1,5 | M9 | | ⬜ |
-| T-161 | D8 ngưỡng + sàn retention + xác nhận hạ | fe | D8 / FR-02.10 | 02b-ad §14 | T-151 (BE thật: T-114) | 1 | M9 | | ⬜ |
+| T-105 | J-13 `sync_returns`, J-06 / J-04 mở rộng (giao thất bại, boom COD, `NEW → RETURN_EXPECTED`) | be | FR-05.05, 05.11, 05.12, 03.15 | 02a §12 | T-104, T-117 | 1,5 | M9 | | ✅ `be a6684d6` |
+| T-113 | Module `reconciliation`: 7 quy tắc, J-14, API-120, 121, 123 | be | FR-06.02, 06.03, 06.06 | 02a §12 | T-104, T-110 | 2 | M9 | | ✅ `be 38bf40c` |
+| T-114 | Settings: API-80 mở rộng, API-82 (L2) | be | FR-02.10 | 02a §12 | T-111 | 1 | M9 | | ✅ `be 6e293d6` |
+| T-115 | API-30, 31, 32 mở rộng, API-113 | be | FR-07.01, 07.02, 09.01, 04.11 | 02a §12 | T-113 | 1,5 | M9 | | ✅ `be 008b42b` |
+| T-153 | D14 Hàng hoàn | fe | D14 / FR-05.05, 05.11, 05.12 | 02b-ad §14 | T-151 (BE thật: T-104, T-105) | 1,5 | M9 | | ✅ `fe 47e9e0a` |
+| T-156 | D15 Lệch trạng thái + Dialog xử lý | fe | D15 / FR-06.01..03, 05 | 02b-ad §14 | T-151 (BE thật: T-113) | 1,5 | M9 | | ✅ `fe 10ba98d` |
+| T-160 | D2, D3, D6, D13 mở rộng | fe | FR-09.01, 07.01, 01.01, 03.14 | 02b-ad §14 | T-152 (BE thật: T-115, T-106) | 1,5 | M9 | | ✅ `fe db3a370` |
+| T-161 | D8 ngưỡng + sàn retention + xác nhận hạ | fe | D8 / FR-02.10 | 02b-ad §14 | T-151 (BE thật: T-114) | 1 | M9 | | ✅ `fe 5bf2cb7` |
 | T-120 | Downgrade 0003 → `phase2_archive`, upgrade khôi phục, test up → down → up | be | §3, DEC-252, 270 | 02a §12 | T-101..T-119 | 2 | M10 | | ⬜ |
-| T-121 | Ảnh chụp lấy khung hình mới nhất do vision giữ (Cam 1 + Cam 2, ~1 hình/giây trong Redis) thay vì mở RTSP mỗi lần — API-103 / J-17 ≤ 2 giây (NFR-32, RB-21) | be | NFR-32, FR-04 ảnh | DEC-311+ (QA M8 TC-04.40 3,2 s > 3 s) | T-108 | 1 | | ⬜ |
+| T-121 | Ảnh chụp lấy khung hình mới nhất do vision giữ (Cam 1 + Cam 2, ~1 hình/giây trong Redis) thay vì mở RTSP mỗi lần — API-103 / J-17 ≤ 2 giây (NFR-32, RB-21) | be | NFR-32, FR-04 ảnh | DEC-311+ (QA M8 TC-04.40 3,2 s > 3 s) | T-108 | 1 | | ✅ `be 6a01c51 (ảnh 0,02 s)` |
 | T-116 | Contract test, `openapi.json`, `seed-demo` hàng hoàn, `docs/ops.md` | be | 02 §6 | 02a §12 | T-101..T-115 | 1,5 | M10 | | ⬜ |
 | T-118 | QA live `test_m6_live.py`, locust `returns`, đo J-14 100.000 kiện | be | NFR-01, 32..35 | 02a §12 | T-116 | 1,5 | M10 | | ⬜ |
 | T-162 | Test FE admin, E2E mock 3 bộ, E2E BE thật hồ sơ + đối soát | fe | — | 02b-ad §14 | T-153..T-161, BE M9 | 1,5 | M10 | | ⬜ |
@@ -101,7 +101,7 @@ Ngày mục tiêu tính tuần tự 1 dev, 5 ngày / tuần, bắt đầu 2026-1
 | **M6** Nền tảng (xong 2026-10-06; E2E BE thật 43/43) | T-101, 102, 103, 106, 131, 151, 152 | 10 | 2026-10-19 | `alembic upgrade head` trên dữ liệu Phase 1 (retention nâng lên sàn); Admin đặt loại station (API); adapter mock trả 4 loại yêu cầu trả; FE `pnpm dev:mock` hiện R1–R5 và drawer mới; API-122 điều chỉnh tay (L6) |
 | **M7** Nhận hàng hoàn tại station + hardening station (xong 2026-10-06; E2E BE thật 44/44) | T-104, 107, 108, 117, 109, 132..137 | 17,5 | 2026-11-11 | UC-02 trên camera giả: quét mã chiều về → R2 → kết luận + ảnh F2 → quét mã gốc đóng; tự hoàn tất quá giờ; S3 chữ mới (L3), S1 thông báo cờ (L4), S2 đơn hủy (L9), ảnh lúc đóng gói (L8); E2E BE thật UC-02 |
 | **M8** Hồ sơ khiếu nại + bảo vệ bằng chứng (xong 2026-10-06; E2E BE thật 45/45) | T-110, 111, 119, 112, 154, 155, 157, 158, 159 | 15 | 2026-12-02 | Phiên hoàn "Hộp rỗng" → KN tự tạo có 2 phiên → D17 đổi trạng thái → gói zip (SHA-256 khớp); migration 0004 chuyển clip giữ → hồ sơ (L7); D4 chip "Đang được giữ"; gắn đơn kiện chưa xác định; `info.json` L5 |
-| **M9** Đồng bộ hoàn + đối soát | T-105, 113, 114, 115, 153, 156, 160, 161 | 11,5 | 2026-12-17 | J-13 mock → D14 "Đang về"; J-14 → kiện quá 7 ngày → D15 + D2; xử lý cảnh báo; D8 sàn 60 ngày + xác nhận hạ (L2); D2 / D3 số mới |
+| **M9** Đồng bộ hoàn + đối soát (xong 2026-10-06; E2E BE thật 45 + 1 skip có chủ đích) | T-105, 113, 114, 115, 153, 156, 160, 161 | 11,5 | 2026-12-17 | J-13 mock → D14 "Đang về"; J-14 → kiện quá 7 ngày → D15 + D2; xử lý cảnh báo; D8 sàn 60 ngày + xác nhận hạ (L2); D2 / D3 số mới |
 | **M10** Hoàn thiện | T-120, 116, 118, 162 | 6,5 | 2026-12-29 | Up → down → up không mất dữ liệu; contract test xanh; QA live + locust; E2E BE thật hồ sơ + đối soát → sẵn sàng G3 |
 
 ## 5. Rủi ro tiến độ
