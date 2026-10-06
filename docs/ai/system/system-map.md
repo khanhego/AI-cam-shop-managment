@@ -131,6 +131,15 @@ Kiến trúc: [architecture.md](architecture.md).
 | `SHOPEE_TIMEOUT_S`, `SHOPEE_MAX_ATTEMPTS`, `SHOPEE_BACKOFF_S` | `10`, `5`, `0.5` | Mỗi request Shopee; thử lại giãn cách mũ hoặc theo `Retry-After` |
 | `SHOPEE_LOOKUP_LOOKBACK_MIN`, `SHOPEE_INITIAL_SYNC_DAYS` | `60`, `3` | Tra mã khi quét / J-05 dò đơn cập nhật 60 phút (DEC-123 02a); lần đồng bộ đầu lùi 3 ngày |
 
+## Phase 2 (item 02, đang làm — nhánh `feat/02-returns-reconciliation`)
+| Hạng mục | Nội dung | Nguồn |
+|---|---|---|
+| Migration 0003 | 9 bảng: `return_case`, `return_case_package`, `inspection_line`, `snapshot`, `recon_alert`, `claim`, `claim_evidence`, `claim_note`, `evidence_pack`; cột mới `station`, `package` (`status_changed_at`, `is_placeholder`), `session`, `setting`, `shop`; 3 sequence (HH-, KN-, `placeholder_code_seq`); retention sàn 60 ngày | `ai-cam-be/alembic/versions/0003_*.py` |
+| API mới (M6) | API-100 `PUT /station/work-mode`, API-101 `PUT /station/operator`, API-122 `POST /packages/{id}/warehouse-status`; API-60 thêm `kind` | `ai-cam-be/openapi.json` |
+| Adapter | Shopee returns (`list_returns`, `get_return`) — mock, chưa test thật (T-3) | `modules/platforms/` |
+| Config | `RETENTION_CLIP_MIN_DAYS`, `SHOPEE_RETURNS_PAGE_SIZE`, `SHOPEE_RETURNS_WINDOW_DAYS` | `core/settings.py` |
+| FE | Client `lib/api/{returns,recon,claims}.ts`, `shared/returns/*`, `NavBadge`; màn R1–R5 / D14–D17 từ M7 | `ai-cam-fe/src/` |
+
 ## Tích hợp ngoài
 | Hệ thống | Mục đích | Cách gọi | Config |
 |---|---|---|---|

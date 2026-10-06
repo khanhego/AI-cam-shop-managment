@@ -63,6 +63,7 @@ Số item: 02 (`docs/ai/items/` chỉ có 01; remote 3 repo có `main`, `feat/01
 ## Lịch sử
 | Ngày | Role | Việc |
 |---|---|---|
+| 2026-10-06 | BE, FE | M6 Nền tảng xong: BE T-101 (migration 0003), T-102, T-103, T-106 (727 pytest, QA live 101 + 2 skip); FE T-131, T-151, T-152 (384 vitest); E2E BE thật 43/43. Sự cố máy hết RAM / ngủ → chạy tuần tự, `caffeinate` |
 | 2026-10-05 | ai-flow-route | Mở item 02-returns-reconciliation, lane feature, quy mô M, component be + fe (station, admin); CP1 tự quyết theo ủy quyền user (DEC-201) |
 | 2026-10-05 | PO | Viết 01-srs.md v0.1: 43 FR (M 38 / S 5), 8 UC, BR-07..14 + BR-19..28, EX-R1..R13 + EX-P12, P13, NFR-32..36, AC-06, 07, 22..38; hardening L2–L9; Q6 tự quyết DEC-202 (đề xuất, cần xác nhận); camera bàn hoàn DEC-203; tài khoản bàn hoàn DEC-204 (giữ tài khoản chung + tên người kiểm); DEC-205..214 — tự quyết theo ủy quyền user |
 | 2026-10-05 | UX | 01 §10: kiểm kê REUSE / EXTEND / NEW, journey, 5 màn station (R1–R5) + 3 mở rộng, 4 màn dashboard (D14–D17) + 6 mở rộng, phác thảo ASCII, chữ thật, đủ trạng thái; DEC-215, 216 — tự quyết theo ủy quyền user. 01 → v0.2 |

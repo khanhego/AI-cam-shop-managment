@@ -6,7 +6,7 @@
 | Reviewer | khanhtt (tech lead, review subagent ở bước 5) |
 | Trạng thái | **Approved (G2 2026-10-05 có điều kiện, DEC-274)** · **v0.4** (lượt 3: R3-1 `FORCE_NEW_NOT_ALLOWED`) · v0.2 (sửa review G2 lượt 1 — R-5, R-9, R-24, R-27, R-30; DEC-239, 281) · **v0.3** (review G2 lượt 2: R2-3, R2-8, R2-11 — DEC-264..273) |
 | Tổng quan & contract | [02-tech-spec.md](02-tech-spec.md) · Màn: [01-srs.md §10.4](01-srs.md) (R1–R5, S1/S2/S3 mở rộng) · nền Phase 1 [item 01 02b-station](../01-packing-mvp/02b-fe-spec-station.md) · [Design system](../../../design-system/README.md) mục Station kiosk |
-| Last update | 2026-10-05 · FE |
+| Last update | 2026-10-05 · FE (T-131: DEC-321) |
 
 > **TL;DR** — Không thêm route: `StationPage` chọn panel theo `station.work_mode` + `state` (một nguồn state server, DEC-18 item 01). Thêm 5 màn bàn hoàn R1–R5 (R2 nền `secondary-container`), sửa chữ S3, thông báo cờ sau đóng ở S1, banner đơn vừa hủy ở S2.
 > Quét vẫn qua `ScanListener` → API-11 (hoặc API-105 khi mở từ tìm thủ công); kết luận lưu tự động API-102 (chờ 1 giây) và **luôn lưu xong trước khi gửi lần quét đóng**.
@@ -242,3 +242,4 @@ Tổng ≈ 10 ngày công.
 | DEC-238 | Thời gian tự đóng R4 | 8 giây | Chữ R4 dài hơn S4, có 2 nút ở `RETURN_NOT_FOUND` | khanhtt (tự quyết) |
 | DEC-239 | Bố cục R2 ở 1366×768 (RF-12) | Khối Kết luận + hướng dẫn quét dính đáy (sticky), bảng dòng cuộn trong khung | Luôn thấy kết luận và hướng dẫn quét đóng; không phải cuộn trang | khanhtt (tự quyết) |
 | DEC-281 | Review G2 lượt 1 phần station (đổi số từ DEC-244 — trùng 01, R2-11) | `lines_mode`, tự hoàn tất quá giờ, lỗi API-103 / 105, kiện hoàn ở bàn đóng gói, R5 sau đăng xuất | Theo 02 §6.3 | khanhtt (tự quyết) |
+| DEC-321 | T-131 mock RETURN (§12) | Mã mock theo dữ liệu 04 §1 (`SPXRTTST000041` Khách trả hàng, `SPXTST0000042` giao thất bại, `2410TST00043` → `RETURN_MULTIPLE_PACKAGES`, `SPXTST0000053` đã nhận, `SPXTST0000055` đang kiểm ở station khác, `SPXTST0000050` không có clip, `SPXVN0000000000` không tìm thấy) thay tên minh họa `SPXTST-RT…` / `2410MULTI`; trạng thái là **sau khi** J-13 / J-06 đã đồng bộ (mock không chạy job). Kiện ở `packagesDb` (D3 / D4 thấy), hồ sơ + hồ sơ khiếu nại ở `returnsDb.ts`. API-106 mock trả 302 tới `public/mock/snapshot.jpg` (bị xóa khỏi `dist` như video mẫu). J-07 / J-04 giả lập bằng `stationJobs.expireReturnSession()` / `orderCancelled()` (phát WS-01). Kiểu `StationState` mở rộng là **bắt buộc** theo contract (BE deploy trước FE — 02 §10); nhãn loại hoàn / trạng thái hồ sơ cũng nằm ở `src/shared/returns/inspection.ts` | Một bộ dữ liệu chung với seed BE (QA chạy cùng mã trên mock và BE thật); không thêm cờ / route dev | khanhtt (FE, tự quyết theo ủy quyền user) |

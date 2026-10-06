@@ -31,13 +31,13 @@ Owner tất cả: khanhtt (profile §7). Ticket: chưa tạo (tracker `none` cho
 
 | T | Tên | Comp | Phủ (FR / API / màn) | Nguồn | Phụ thuộc | Ước lượng | Milestone | Ticket | Trạng thái |
 |---|---|---|---|---|---|---|---|---|---|
-| T-101 | Migration 0003 upgrade + model, CHECK `NOT VALID`, sequence (gồm `placeholder_code_seq`), backfill, `recon_start_at`, nâng retention lên sàn | be | §3 02a | 02a §12 | — | 1,5 | M6 | | ⬜ |
-| T-102 | `orders.transition` mở rộng + `status_changed_at` + `MANUAL_TRANSITIONS` + API-122; audit actions; `/me` permissions | be | FR-06.05, 10.02, 10.03; API-122, 04, 92 | 02a §12 | T-101 | 1 | M6 | | ⬜ |
-| T-103 | Adapter returns (`PlatformReturn`, mock 4 fixture, Shopee chưa test), `_RANK`, hint `RETURN_EXPECTED` | be | FR-05.05, 05.07, 05.11, 05.12 | 02a §12 | T-101 | 2 | M6 | | ⬜ |
-| T-106 | Station `kind` / `work_mode` / `operator_name` (API-60, 100, 101), xóa tên ở API-03 / 91 | be | FR-01.01, 01.07, 04.10 | 02a §12 | T-101 | 1 | M6 | | ⬜ |
-| T-131 | API client station mở rộng, `shared/returns/inspection.ts`, copy, MSW `StationSim` RETURN + `returnsDb.ts` | fe | nền R1–R5 | 02b-st §14 | 02 §6 (mock) | 1,5 | M6 | | ⬜ |
-| T-151 | API client admin (`returns`, `recon`, `claims`, mở rộng), `shared/returns/labels.ts`, MSW handlers | fe | nền D14–D17 | 02b-ad §14 | 02 §6 (mock) | 2 | M6 | | ⬜ |
-| T-152 | Route + drawer + `NavBadge` + `useDashboardSocket` 4 sự kiện | fe | FR-10.02 | 02b-ad §14 | T-151 | 1 | M6 | | ⬜ |
+| T-101 | Migration 0003 upgrade + model, CHECK `NOT VALID`, sequence (gồm `placeholder_code_seq`), backfill, `recon_start_at`, nâng retention lên sàn | be | §3 02a | 02a §12 | — | 1,5 | M6 | | ✅ `be 101477c` |
+| T-102 | `orders.transition` mở rộng + `status_changed_at` + `MANUAL_TRANSITIONS` + API-122; audit actions; `/me` permissions | be | FR-06.05, 10.02, 10.03; API-122, 04, 92 | 02a §12 | T-101 | 1 | M6 | | ✅ `be 9abc83c` |
+| T-103 | Adapter returns (`PlatformReturn`, mock 4 fixture, Shopee chưa test), `_RANK`, hint `RETURN_EXPECTED` | be | FR-05.05, 05.07, 05.11, 05.12 | 02a §12 | T-101 | 2 | M6 | | ✅ `be a0f4fa1` |
+| T-106 | Station `kind` / `work_mode` / `operator_name` (API-60, 100, 101), xóa tên ở API-03 / 91 | be | FR-01.01, 01.07, 04.10 | 02a §12 | T-101 | 1 | M6 | | ✅ `be 1746cee` |
+| T-131 | API client station mở rộng, `shared/returns/inspection.ts`, copy, MSW `StationSim` RETURN + `returnsDb.ts` | fe | nền R1–R5 | 02b-st §14 | 02 §6 (mock) | 1,5 | M6 | | ✅ `fe 580bcde` |
+| T-151 | API client admin (`returns`, `recon`, `claims`, mở rộng), `shared/returns/labels.ts`, MSW handlers | fe | nền D14–D17 | 02b-ad §14 | 02 §6 (mock) | 2 | M6 | | ✅ `fe 3c8c7e0` |
+| T-152 | Route + drawer + `NavBadge` + `useDashboardSocket` 4 sự kiện | fe | FR-10.02 | 02b-ad §14 | T-151 | 1 | M6 | | ✅ `fe dbb6497` |
 | T-104 | Module `returns` lõi: `attach_or_create`, `resolve_code`, `merge_unidentified_by_code`, `recompute`, API-110, 111 | be | FR-04.08, 05.05, 05.11, 05.12; API-110, 111 | 02a §12 | T-102, T-103 | 2 | M7 | | ⬜ |
 | T-107 | Phiên RETURN mở: API-11 nhánh RETURN, API-104, `init_lines`, `build_state()` | be | FR-04.01, 04.02, 04.09; API-10, 11, 104 | 02a §12 | T-104, T-106 | 2 | M7 | | ⬜ |
 | T-108 | Phiên RETURN đóng / hủy: API-102, đóng API-11 (BR-07, 23, 24), API-12, `camera_clock`, API-15 | be | FR-04.03, 04.05, 04.08; API-11, 12, 15, 102 | 02a §12 | T-107 | 2 | M7 | | ⬜ |
@@ -97,7 +97,7 @@ Ngày mục tiêu tính tuần tự 1 dev, 5 ngày / tuần, bắt đầu 2026-1
 
 | Milestone | Gồm task | Công | Ngày mục tiêu | Demo được gì |
 |---|---|---|---|---|
-| **M6** Nền tảng | T-101, 102, 103, 106, 131, 151, 152 | 10 | 2026-10-19 | `alembic upgrade head` trên dữ liệu Phase 1 (retention nâng lên sàn); Admin đặt loại station (API); adapter mock trả 4 loại yêu cầu trả; FE `pnpm dev:mock` hiện R1–R5 và drawer mới; API-122 điều chỉnh tay (L6) |
+| **M6** Nền tảng (xong 2026-10-06; E2E BE thật 43/43) | T-101, 102, 103, 106, 131, 151, 152 | 10 | 2026-10-19 | `alembic upgrade head` trên dữ liệu Phase 1 (retention nâng lên sàn); Admin đặt loại station (API); adapter mock trả 4 loại yêu cầu trả; FE `pnpm dev:mock` hiện R1–R5 và drawer mới; API-122 điều chỉnh tay (L6) |
 | **M7** Nhận hàng hoàn tại station + hardening station | T-104, 107, 108, 117, 109, 132..137 | 17,5 | 2026-11-11 | UC-02 trên camera giả: quét mã chiều về → R2 → kết luận + ảnh F2 → quét mã gốc đóng; tự hoàn tất quá giờ; S3 chữ mới (L3), S1 thông báo cờ (L4), S2 đơn hủy (L9), ảnh lúc đóng gói (L8); E2E BE thật UC-02 |
 | **M8** Hồ sơ khiếu nại + bảo vệ bằng chứng | T-110, 111, 119, 112, 154, 155, 157, 158, 159 | 15 | 2026-12-02 | Phiên hoàn "Hộp rỗng" → KN tự tạo có 2 phiên → D17 đổi trạng thái → gói zip (SHA-256 khớp); migration 0004 chuyển clip giữ → hồ sơ (L7); D4 chip "Đang được giữ"; gắn đơn kiện chưa xác định; `info.json` L5 |
 | **M9** Đồng bộ hoàn + đối soát | T-105, 113, 114, 115, 153, 156, 160, 161 | 11,5 | 2026-12-17 | J-13 mock → D14 "Đang về"; J-14 → kiện quá 7 ngày → D15 + D2; xử lý cảnh báo; D8 sàn 60 ngày + xác nhận hạ (L2); D2 / D3 số mới |
