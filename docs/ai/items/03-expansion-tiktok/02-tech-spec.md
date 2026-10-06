@@ -4,11 +4,11 @@
 |---|---|
 | Tác giả (Architect) | khanhtt (agent soạn, tự quyết theo ủy quyền user) |
 | Reviewer | BE lead · FE lead (khanhtt, solo — review ở bước 5) |
-| Trạng thái | **In review** · v0.3 (sửa theo review G2 lượt 2 — DEC-526; v0.2 theo lượt 1 — DEC-512) |
-| SRS | [01-srs.md](01-srs.md) v0.4 (G1 ✅ DEC-427; change request DEC-490, DEC-513) · FR phủ: FR-02.08, 02.13–02.18, FR-03.03, 03.16, FR-04.14, FR-05.07, 05.08, 05.13–05.22, FR-06.04, 06.07–06.11, FR-07.01, 07.05, 07.07–07.09, FR-08.07–08.10, FR-09.01–09.07, FR-10.02, 10.03 (46 FR) |
+| Trạng thái | Approved — G2 ✅ có điều kiện 2026-10-07 (DEC-533) |
+| SRS | [01-srs.md](01-srs.md) v0.5 (G1 ✅ DEC-427; change request DEC-490, DEC-513, DEC-527) · FR phủ: FR-02.08, 02.13–02.18, FR-03.03, 03.16, FR-04.14, FR-05.07, 05.08, 05.13–05.22, FR-06.04, 06.07–06.11, FR-07.01, 07.05, 07.07–07.09, FR-08.07–08.10, FR-09.01–09.07, FR-10.02, 10.03 (46 FR) |
 | Spec con | BE: [02a-be-spec.md](02a-be-spec.md) · FE: [02b-fe-spec-admin.md](02b-fe-spec-admin.md), [02b-fe-spec-station.md](02b-fe-spec-station.md) · W1 (trang người nhận link) do BE dựng — không có 02b riêng (DEC-428) |
 | Nền | Contract Phase 1 [item 01 02 v0.7](../01-packing-mvp/02-tech-spec.md) §6 (quy ước giữ nguyên) · Phase 2 [item 02 02 v0.5](../02-returns-reconciliation/02-tech-spec.md) · [architecture.md](../../system/architecture.md) · ADR-001..009 · **ADR mới:** [ADR-010](../../system/decisions/ADR-010-shared-cloud-object-store.md) (kho lưu cloud dùng chung), [ADR-011](../../system/decisions/ADR-011-multi-platform-shops-status-groups.md) (nhiều sàn / shop, nhóm trạng thái) · ADR-009 **bổ sung** (bỏ bằng chứng — L15) |
-| Last update | 2026-10-07 · Architect (v0.3: G2R2-1..G2R2-9 — bảng "Sửa theo review G2 lượt 2" cuối tài liệu; v0.2: G2-1..G2-20) |
+| Last update | 2026-10-07 · Architect (v0.4: G2R3-1..G2R3-4 — bảng "Sửa theo review G2 lượt 3" cuối tài liệu; v0.3: G2R2-1..G2R2-9 — bảng "Sửa theo review G2 lượt 2" cuối tài liệu; v0.2: G2-1..G2-20) |
 
 > **TL;DR** — Mở rộng hệ thống Phase 2, không dựng mới: `platforms` thành **đa sàn đa shop** (adapter TikTok thứ hai + mock; nhóm trạng thái chung; mã đơn duy nhất trong shop; job một task / shop) — ADR-011. Bốn module BE mới: `cloud` (S3-compatible + mã hóa), `backup`, `shares`, `notify`; `reports` thêm 3 báo cáo + CSV. Hardening L11 / L13 / L14 / L15 trong `sessions`, `claims`, `reports`, `media.protection`.
 > Kho lưu cloud **hai** bucket riêng tư cùng nhà cung cấp, chỉ gọi ra ngoài: bucket sao lưu (bật phiên bản, khóa ứng dụng không xóa vĩnh viễn được) chứa bản mã AES-256-GCM; bucket link (không phiên bản) chứa trang HTML tĩnh + video, link = URL ký ≤ 7 ngày, thu hồi = xóa đối tượng (ADR-010, DEC-501). Thông báo = bộ quét điều kiện 30 giây + hàng đợi chống spam → Telegram / Zalo OA (mock sink ở dev).
@@ -153,10 +153,10 @@ erDiagram
 | ORDER (đổi) | + `shop` `{id, name, platform}` \| null (đơn file chưa gắn shop), `platform_status` (chữ sàn), `platform_status_group` (§5.2), `merged_orders[]` (kiện gộp) | Unique (shop, `platform_order_sn`) — BR-29 |
 | PACKAGE_ORDER (mới) | (kiện, đơn) — đơn **thêm** cùng mã vận đơn | FR-05.22 (S, chờ Q19) |
 | RETURN_CASE (đổi) | + `platform`, `shop` `{id, name}`, `platform_status_group` (§5.2), `response_due_at`, `response_due_source` (`PLATFORM`/`DEFAULT`) (chỉ đọc, tính lúc đọc — DEC-451), `claim` `{id, code}` \| null | Unique (shop, `platform_return_sn`) |
-| SESSION (đổi) | `operator_name` nay có cả ở phiên PACK (người đóng gói — FR-03.16); `self_cancel_until` (phiên RETURN `OPEN`, chỉ đọc); flag mới `AMBIGUOUS_SHOP`, `ORDER_CANCEL_REQUESTED` (BR-21 làm rõ); `cancel_reason` trả ở mọi chỗ có phiên RETURN (FE nhãn "Hủy: quét nhầm" — BR-39); **v0.3:** `cancel_cause` (`WRONG_SCAN`/`NOT_A_RETURN`/`OTHER` \| null — mã lý do Supervisor chọn ở API-21; `cancel_reason` vẫn `SUPERVISOR`), `wrong_scan` `{at, by {id, display_name}, code, note}` \| null (API-189), `review_needed` (bool, chỉ đọc), `evidence_exclusion` (`STATION_CANCEL`/`SUPERVISOR_CANCEL`/`MARKED` \| null, chỉ đọc) | Lý do hiệu lực = `cancel_cause` nếu có, không thì `cancel_reason`; loại khỏi bằng chứng khi lý do hiệu lực ∈ {`WRONG_SCAN`, `NOT_A_RETURN`} **hoặc** `wrong_scan` ≠ null (BR-39 v0.4) |
+| SESSION (đổi) | `operator_name` nay có cả ở phiên PACK (người đóng gói — FR-03.16); `self_cancel_until` (phiên RETURN `OPEN`, chỉ đọc); flag mới `AMBIGUOUS_SHOP`, `ORDER_CANCEL_REQUESTED` (BR-21 làm rõ); `cancel_reason` trả ở mọi chỗ có phiên RETURN (FE nhãn "Hủy: quét nhầm" — BR-39); **v0.3:** `cancel_cause` (`WRONG_SCAN`/`NOT_A_RETURN`/`OTHER` \| null — mã lý do Supervisor chọn ở API-21; `cancel_reason` vẫn `SUPERVISOR`), `wrong_scan` `{at, by {id, display_name}, code, note}` \| null (API-189), `review_needed` (bool, chỉ đọc), `evidence_exclusion` (`STATION_CANCEL`/`SUPERVISOR_CANCEL`/`MARKED` \| null, chỉ đọc); **v0.4:** `return_confirmed` `{at, by {id, display_name}, note}` \| null (API-189 `CONFIRM_RETURN`) | Lý do hiệu lực = `cancel_cause` nếu có, không thì `cancel_reason`; loại khỏi bằng chứng khi lý do hiệu lực ∈ {`WRONG_SCAN`, `NOT_A_RETURN`} mà `return_confirmed` = null (v0.4 — DEC-529) **hoặc** `wrong_scan` ≠ null (BR-39 v0.5) |
 | CLAIM (đổi) | + `submitted_at`, `result_at` (chỉ đọc); `deadline_source` thêm `DEFAULT_PLATFORM_PASSED` | BR-41, BR-42 |
 | CLAIM_EVIDENCE (đổi) | + `removed` `{at, by {id, display_name}, reason, keep_until}` \| null; `prior_return` (bool), `primary` (bool), `removal_keep_until` (chỉ đọc) | BR-38, BR-39; dòng không bị xóa |
-| CLIP (đổi) | `status` thêm `MISSING` (chỉ do lệnh khôi phục / `backup-verify --accept` đặt — EX-K8) | Không phải `DELETED`: J-23 không xóa bản cloud (DEC-499); không phát, không cắt lại, không vào link / gói (DEC-520) |
+| CLIP (đổi) | `status` thêm `MISSING` = DB có clip nhưng máy chủ không có tệp. Đặt bởi: lệnh khôi phục / `backup-verify --accept` (EX-K8); J-22 khi nguồn `READY` không thấy tệp 4 lần liền; API-188 `IGNORE` cho `SOURCE_MISSING` (EX-K9 — v0.4, DEC-530). Về `READY` khi J-22 / lệnh khôi phục thấy lại tệp băm khớp, hoặc Admin `UPLOAD_ANYWAY` (lệch đã chấp nhận) | Không phải `DELETED`: J-23 không xóa bản cloud (DEC-499); không phát, không cắt lại, không vào link / gói (DEC-520) |
 | SNAPSHOT (đổi, v0.3) | `status` thêm `MISSING` (như clip) | `url = null`; không vào link / gói; CHECK mở rộng ở 0006 (DEC-524) |
 | SHARE_LINK (mới) | `id`, `status` (§5.2), `source` `{type: CLAIM\|SESSION, claim_id, claim_code, package_id, tracking_number, platform, shop_name}`, `recipient` (3–100), `layout` (`SIDE_BY_SIDE`/`CAM1`), `include_snapshots`, `session_count`, `expires_at`, `created_by`, `created_at`, `revoked_at`, `revoked_by`, `revoke_pending`, `url` (chỉ khi `ACTIVE`), `progress`, `step`, `error` | Thư mục cloud `share/{token}/` (token 256 bit, không trả API) |
 | SHARE_ITEM (mới) | `session_id`, `order` (1..4), `video_sha256`, `size_bytes`, `source_sha256` `{CAM1, CAM2}`, `snapshot_count` | |
@@ -187,7 +187,7 @@ erDiagram
 | `backup.state` | `ON` Đang bật · `NOT_CONFIGURED` Chưa cấu hình · `KEY_UNCONFIRMED` Chưa xác nhận khóa · `KEY_CHANGED` Khóa đã đổi · `DISABLED` Đã tắt · `RESTORE_PENDING` Chờ kiểm khôi phục (DEC-499) |
 | `backup_object.status` | `PENDING` Đang chờ · `UPLOADING` Đang tải · `UPLOADED` Đã sao lưu · `FAILED` Lỗi (đang thử lại; `last_error = SOURCE_MISSING` → "Không thấy tệp tại kho" — DEC-517) · `HASH_MISMATCH` Lệch mã băm · `SOURCE_DELETED` Tệp đã bị xóa theo lưu trữ trước khi tải (**chỉ** khi clip / ảnh `DELETED`; cuối, không tính chờ) · `IGNORED` Bỏ qua (Admin, cuối) · `CLOUD_DELETED` Đã xóa trên cloud |
 | `backup_object.resolution.action` | `UPLOAD_ANYWAY` Vẫn sao lưu · `IGNORE` Bỏ qua · `RETRY` Thử lại ngay (v0.3) · `ACCEPT_RESTORED` Chấp nhận khi kiểm khôi phục (v0.3, CLI) |
-| `clip.status`, `snapshot.status` (thêm) | `MISSING` Thiếu tệp (khôi phục) |
+| `clip.status`, `snapshot.status` (thêm) | `MISSING` Thiếu tệp (sau khôi phục hoặc không thấy tệp tại kho — v0.4) |
 | `notify_channel.type` | `TELEGRAM` Telegram · `ZALO_OA` Zalo OA |
 | `notify.event_code` (§7.5 01) | `N01`..`N10` (nhãn + mức trả trong API-170 `events[]`) |
 | `notify_message.status` (01 §7.4) | `QUEUED` Đang chờ · `HELD` Tạm giữ (giờ yên lặng / vượt trần) · `SENT` Đã gửi · `RETRYING` Lỗi · đang thử lại · `DROPPED` Bị bỏ · `SKIPPED` Trùng, bỏ qua |
@@ -265,7 +265,7 @@ Loại yêu cầu TikTok (BR-31): `REFUND_ONLY` → `needs_parcel = false` → h
 | API-186 | CLI `aicam backup-restore`, `aicam backup-verify`, `aicam backup-keygen` | Khôi phục (nhiều khóa), kiểm SHA-256, tạo khóa | ops (dòng lệnh) | FR-02.16 | — |
 | API-187 | `POST /backup/reupload-old-key` | Tải lại bằng chứng còn ở kho đang mã hóa bằng khóa cũ (EX-K7) | ADMIN | FR-02.17 | admin D23 |
 | API-188 | `POST /backup/issues/{object_id}/resolve` | Xử lý tệp lệch mã băm (vẫn sao lưu / bỏ qua) hoặc không thấy tệp tại kho (thử lại ngay / bỏ qua) + lý do (EX-K6, EX-K9) | ADMIN | FR-02.15, EX-K6, EX-K9 | admin D23 |
-| API-189 | `POST /claims/{id}/return-sessions/{session_id}/review` | Đánh dấu / bỏ đánh dấu phiên mở hoàn "Quét nhầm"; xác nhận phiên "Cần soát" là phiên hoàn thật (v0.3 — DEC-515, 516) | ADMIN, SUPERVISOR, CSKH | FR-08.07, EX-R21 | admin D17 |
+| API-189 | `POST /claims/{id}/return-sessions/{session_id}/review` | Đánh dấu / bỏ đánh dấu phiên mở hoàn "Quét nhầm"; xác nhận phiên "Cần soát" hoặc phiên bị loại theo lý do hủy là phiên hoàn thật (v0.3 — DEC-515, 516; v0.4 — DEC-529) | ADMIN, SUPERVISOR, CSKH (gỡ lý do hủy: ADMIN, SUPERVISOR) | FR-08.07, EX-R21 | admin D17 |
 | W1 | `GET <kho lưu>/share/{token}/index.html?X-Amz-…` | Trang người nhận link | ai có link còn hạn | FR-07.07 | trình duyệt người nhận |
 | WS-02 | `share.updated`, `backup.updated`, `shop.updated` | Làm mới D21 / dialog, D23, D7 | ADMIN, SUPERVISOR, CSKH (`backup.updated`, `shop.updated` chỉ ADMIN) | FR-07.05, 02.15, 05.13 | admin |
 
@@ -292,12 +292,12 @@ Loại yêu cầu TikTok (BR-31): `REFUND_ONLY` → `needs_parcel = false` → h
 | API-110 | Lọc `platform`, `shop_id`, `pending_only`, `sort`; item thêm `platform`, `shop`, `platform_status_group`, `response_due_at`, `response_due_source`, `claim` | FR-08.08, 07.01 |
 | API-120, API-130 | Lọc `platform`, `shop_id`; item thêm `platform`, `shop` | FR-07.01 |
 | API-131 | Hạn sàn đã qua → BR-42; bằng chứng tự chọn gồm phiên mở hoàn trước (BR-39) | FR-08.07, 08.10 |
-| API-132 | `evidence[]` thêm `prior_return`, `primary`, `removal_keep_until`, `session.{cancel_reason, cancel_cause, wrong_scan, review_needed, evidence_exclusion}`; `removed_evidence[]`; `prior_return_sessions[]`; `excluded_return_sessions[]` (BR-39 phiên quét nhầm, gồm phiên đánh dấu); `review_sessions[]` (v0.3); `shares[]` + `shares_active_count`; `deadline_source` giá trị mới | FR-08.07, 08.09, 07.09 |
+| API-132 | `evidence[]` thêm `prior_return`, `primary`, `removal_keep_until`, `session.{cancel_reason, cancel_cause, wrong_scan, review_needed, evidence_exclusion}`; `removed_evidence[]`; `prior_return_sessions[]`; `excluded_return_sessions[]` (BR-39 phiên quét nhầm, gồm phiên đánh dấu); `review_sessions[]` (v0.3); `session.return_confirmed` (v0.4); `shares[]` + `shares_active_count`; `deadline_source` giá trị mới | FR-08.07, 08.09, 07.09 |
 | API-134 | Bỏ **mọi** bằng chứng cần `note` 5–500 (**mới, có chủ đích**); bỏ mềm (BR-38); thêm lại bằng chứng đã bỏ = khôi phục | FR-08.09 |
 | API-136..138 / zip | Phiên chính = phiên mở hoàn có clip sớm nhất trừ phiên bị loại (BR-39 v0.4) và phiên `review_needed`; thư mục `…-phien-truoc-…`; clip `MISSING` → danh sách thiếu `CLIP_MISSING` (v0.3) | FR-08.07 |
-| API-40 / 41 / 42 / 46, API-43 | Clip `MISSING`: API-40 / 41 / 42 / 43 → `409 CLIP_NOT_READY` `details.status = "MISSING"`, `message` "Thiếu tệp clip sau khôi phục hệ thống — không phát được."; API-46 → `409 CLIP_NOT_FAILED` `details.status = "MISSING"`, `message` "Clip thiếu tệp sau khôi phục — không cắt lại được." (v0.3 — DEC-520) | FR-02.16 |
+| API-40 / 41 / 42 / 46, API-43 | Clip `MISSING`: API-40 / 41 / 42 / 43 → `409 CLIP_NOT_READY` `details.status = "MISSING"`, `message` "Thiếu tệp clip trên máy chủ — không phát được."; API-46 → `409 CLIP_NOT_FAILED` `details.status = "MISSING"`, `message` "Clip thiếu tệp trên máy chủ — không cắt lại được." (v0.4 bỏ "sau khôi phục" — `MISSING` còn do EX-K9) (v0.3 — DEC-520) | FR-02.16 |
 | API-31, API-132 (ảnh) | `snapshots[].status` thêm `MISSING` (`url = null`) (v0.3 — DEC-524) | FR-02.16 |
-| API-164 | `unavailable_reason` thêm `CLIP_MISSING`; phiên thêm `review_needed` (không chọn sẵn); ảnh `MISSING` không đếm trong `snapshot_count` (v0.3) | FR-07.05 |
+| API-164 | `unavailable_reason` thêm `CLIP_MISSING`; phiên thêm `review_needed` (không chọn sẵn); ảnh `MISSING` không đếm trong `snapshot_count` (v0.3); `review_pending_count` (v0.4 — DEC-531) | FR-07.05 |
 | API-180, 181, 184, 185 | API-180 thêm `key.old_keys[]` (đọc theo `cloud_present` / `cloud_key_fingerprint` — v0.3), `state = RESTORE_PENDING`, `evidence.{ignored, source_deleted, source_missing}`, `db.consecutive_failures`, `history[].key_fingerprint`; API-184 / API-187 khi `state = DISABLED` → `409 BACKUP_DISABLED` (v0.3); API-185 `kind=SOURCE_MISSING` (v0.3); API-181 bật khi `RESTORE_PENDING` → 409; API-185 item thêm `status`, `sha256_expected`, `sha256_actual`, `resolution` | FR-02.15, 02.17, EX-K6..K8 |
 | API-92 | `action` mới (§6.2 API-92) | FR-10.03 |
 
@@ -519,7 +519,7 @@ API-81 thêm:
 ```
 
 - `prior_return` = phiên RETURN `CANCELLED` / `ABANDONED` bắt đầu trước phiên RETURN hoàn tất mới nhất của kiện (hoặc hồ sơ chưa có phiên hoàn tất), trừ phiên bị loại (BR-39 v0.4). `primary` = đúng một phiên RETURN có clip sớm nhất (theo `started_at`) trong `evidence`, **trừ** phiên bị loại (kể cả khi thêm tay) và phiên `review_needed`; không có → phiên PACK hiệu lực. Một hàm `claims.views.primary_session()` dùng cho API-132, J-16, link (DEC-448).
-- `excluded_return_sessions[]` = `[{session_id, status, cancel_reason, cancel_cause, evidence_exclusion, wrong_scan, started_at, has_clip, in_evidence}]` — phiên RETURN của kiện / hồ sơ hàng hoàn bị BR-39 v0.4 loại (gồm phiên `ABANDONED` đã đánh dấu), có ≥ 1 clip không `DELETED`. `review_sessions[]` (v0.3) = `[{session_id, status, started_at, in_evidence}]` — phiên `review_needed` của kiện; D17 Alert vàng "Cần soát" khi khác rỗng. D17 Alert "Kiện có {n} phiên mở hoàn bị hủy vì quét nhầm ({dd/mm HH:mm}) — không đưa vào bằng chứng. Video vẫn được giữ; thêm tay nếu cần." khi có phần tử `in_evidence = false`. `evidence[].session.cancel_reason` để FE gắn chip "Hủy: quét nhầm".
+- `excluded_return_sessions[]` = `[{session_id, status, cancel_reason, cancel_cause, evidence_exclusion, wrong_scan, started_at, has_clip, in_evidence}]` — phiên RETURN của kiện / hồ sơ hàng hoàn bị BR-39 v0.4 loại (gồm phiên `ABANDONED` đã đánh dấu), có ≥ 1 clip không `DELETED`. `review_sessions[]` (v0.3) = `[{session_id, status, started_at, in_evidence}]` — phiên `review_needed` của kiện; D17 Alert vàng "Cần soát" khi khác rỗng. D17 Alert "Kiện có {n} phiên mở hoàn bị hủy vì quét nhầm ({dd/mm HH:mm}) — không đưa vào bằng chứng. Video vẫn được giữ; thêm tay nếu cần." khi có phần tử `in_evidence = false`. `evidence[].session.cancel_reason` để FE gắn chip "Hủy: quét nhầm". v0.4: phiên đã gỡ loại bằng `CONFIRM_RETURN` không còn trong `excluded_return_sessions` (`evidence_exclusion = null`, `session.return_confirmed` ≠ null — FE chip "Đã xác nhận phiên hoàn thật").
 - `removal_keep_until` = max(`clip.end_at` muộn nhất của phiên / `taken_at` của ảnh, lúc hiện tại) + max(`retention_clip_days`, sàn) — ngày Dialog bỏ bằng chứng hiển thị (FR-08.09). `keep_until` của dòng đã bỏ = tính theo `removed.at`. Clip / ảnh còn được bảo vệ vì lý do khác thì vẫn giữ lâu hơn (Dialog ghi "trừ khi thuộc hồ sơ khác").
 - `evidence[]` chỉ gồm bằng chứng đang dùng; zip / link chỉ dùng `evidence[]`.
 
@@ -533,22 +533,26 @@ API-81 thêm:
 Bỏ = ghi `removed_*` (không xóa dòng); thêm lại phiên / ảnh đã bỏ = xóa `removed_*`. Audit `CLAIM_EVIDENCE_REMOVE` mỗi bằng chứng bị bỏ (`{evidence_id, session_id | snapshot_id, reason, keep_until}`) + `CLAIM_EVIDENCE_UPDATE` như cũ.
 </details>
 
-<details><summary><b>API-189</b> — POST /claims/{id}/return-sessions/{session_id}/review (v0.3 — DEC-515, 516, 521)</summary>
+<details><summary><b>API-189</b> — POST /claims/{id}/return-sessions/{session_id}/review (v0.3 — DEC-515, 516, 521; v0.4 — DEC-529, 531)</summary>
 
 ```json
 // request
 { "version": 7, "action": "MARK_WRONG_SCAN", "reason_code": "WRONG_SCAN",
   "note": "Xem video: kiện của đơn 2410AAA, không phải kiện này" }
-// 200 = API-132 của hồ sơ {id} (version mới)
+// 200 = API-132 của hồ sơ {id} (version mới) + affected_shares (v0.4)
+{ "…": "API-132",
+  "affected_shares": [ { "id": "…", "recipient": "CSKH Shopee – phiếu 98765", "status": "ACTIVE",
+      "expires_at": "…Z", "created_by": { "id": "…", "display_name": "Hoa" }, "can_revoke": true } ] }
+// affected_shares chỉ khác [] khi MARK_WRONG_SCAN
 ```
 
 | `action` | Điều kiện phiên | Làm gì |
 |---|---|---|
-| `MARK_WRONG_SCAN` (`reason_code` ∈ `WRONG_SCAN`/`NOT_A_RETURN` bắt buộc) | RETURN của kiện / hồ sơ hàng hoàn của hồ sơ `{id}`, `status ∈ {CANCELLED, ABANDONED}`, chưa bị loại | `session.wrong_scan = {now, người dùng, code, note}`; mọi hồ sơ **chưa đóng** đang có phiên này (và ảnh của phiên) trong `evidence` → bỏ mềm (`removed_reason = "Đánh dấu quét nhầm: {note}"`, BR-38 — video giữ tới `keep_until`); hồ sơ đã đóng giữ nguyên |
+| `MARK_WRONG_SCAN` (`reason_code` ∈ `WRONG_SCAN`/`NOT_A_RETURN` bắt buộc) | RETURN của kiện / hồ sơ hàng hoàn của hồ sơ `{id}`, `status ∈ {CANCELLED, ABANDONED}`, chưa bị loại | `session.wrong_scan = {now, người dùng, code, note}`; mọi hồ sơ **chưa đóng** đang có phiên này (và ảnh của phiên) trong `evidence` → bỏ mềm (`removed_reason = "Đánh dấu quét nhầm: {note}"`, BR-38 — video giữ tới `keep_until`); hồ sơ đã đóng giữ nguyên; **v0.4:** `affected_shares[]` = link `CREATING` / `ACTIVE` chứa phiên này (mọi nguồn, không chỉ hồ sơ `{id}`) — **không** tự thu hồi (DEC-531) |
 | `UNMARK_WRONG_SCAN` | Đã có `wrong_scan` | Xóa `wrong_scan`; **không** tự thêm lại vào bằng chứng (CSKH thêm qua API-134 "Thêm lại") |
-| `CONFIRM_RETURN` | `review_needed = true` | `review_confirmed_*` = (now, người dùng); phiên thành phiên thường (có thể là phiên chính) |
+| `CONFIRM_RETURN` | `review_needed = true` **hoặc** (v0.4) phiên bị loại theo lý do hủy (`evidence_exclusion ∈ {STATION_CANCEL, SUPERVISOR_CANCEL}`) | `review_confirmed_*` = (now, người dùng, `note`); phiên thành phiên thường (có thể là phiên chính); phiên bị loại theo lý do hủy chưa có trong `evidence` của `{id}` → thêm (`auto = false`) hoặc thêm lại dòng đã bỏ; hồ sơ khác không tự thêm (dùng API-134) — DEC-529 |
 
-Quyền ADMIN, SUPERVISOR, CSKH (`claims.manage` sẵn có — `users/permissions.py:4`). `note` 5–500 bắt buộc mọi `action`. Audit: `SESSION_WRONG_SCAN_MARK` `{session_id, claim_id, reason_code, note, removed_from_claims[]}` + `CLAIM_EVIDENCE_REMOVE` từng dòng bỏ · `SESSION_WRONG_SCAN_UNMARK` `{session_id, claim_id, note}` · `SESSION_RETURN_CONFIRM` `{session_id, claim_id, note}`.
+Quyền ADMIN, SUPERVISOR, CSKH (`claims.manage` sẵn có — `users/permissions.py:4`); **v0.4:** `CONFIRM_RETURN` cho phiên bị loại theo lý do hủy chỉ ADMIN, SUPERVISOR (gỡ quyết định của station / Supervisor). `note` 5–500 bắt buộc mọi `action`. Audit: `SESSION_WRONG_SCAN_MARK` `{session_id, claim_id, reason_code, note, removed_from_claims[], active_shares[]}` (v0.4) + `CLAIM_EVIDENCE_REMOVE` từng dòng bỏ · `SESSION_WRONG_SCAN_UNMARK` `{session_id, claim_id, note}` · `SESSION_RETURN_CONFIRM` `{session_id, claim_id, note, overridden_cause}` (`overridden_cause` = lý do hiệu lực được gỡ \| null — v0.4).
 
 | HTTP | Mã lỗi | Khi nào | FE xử lý |
 |---|---|---|---|
@@ -556,8 +560,8 @@ Quyền ADMIN, SUPERVISOR, CSKH (`claims.manage` sẵn có — `users/permission
 | 404 | NOT_FOUND | Hồ sơ không có; phiên không thuộc kiện / hồ sơ hàng hoàn của hồ sơ | Toast, tải lại API-132 |
 | 409 | VERSION_CONFLICT | `version` cũ | Như Phase 2 |
 | 409 | CLAIM_CLOSED | Hồ sơ đã đóng (như Phase 2) | Toast `message` |
-| 409 | SESSION_NOT_ELIGIBLE | Phiên `COMPLETED` / còn mở → "Phiên đã có kết luận — sửa ở chi tiết đơn."; đã bị loại → "Phiên đã được loại khỏi bằng chứng."; `UNMARK` khi chưa đánh dấu; `CONFIRM_RETURN` khi không cần soát | Toast `message`, tải lại API-132 |
-| 403 | FORBIDDEN | Vai không có quyền | Ẩn menu |
+| 409 | SESSION_NOT_ELIGIBLE | Phiên `COMPLETED` / còn mở → "Phiên đã có kết luận — sửa ở chi tiết đơn."; đã bị loại → "Phiên đã được loại khỏi bằng chứng."; `UNMARK` khi chưa đánh dấu; `CONFIRM_RETURN` khi phiên không cần soát và không bị loại theo lý do hủy (gồm phiên đã đánh dấu — dùng `UNMARK`) | Toast `message`, tải lại API-132 |
+| 403 | FORBIDDEN | Vai không có quyền; CSKH `CONFIRM_RETURN` phiên bị loại theo lý do hủy → "Chỉ Admin / Supervisor gỡ lý do hủy của phiên." (v0.4) | Ẩn menu / nút theo vai |
 </details>
 
 <details><summary><b>API-150</b> — GET /reports/returns?from&to&platform&shop_id</summary>
@@ -662,13 +666,14 @@ BR-41: `packed` = phiên PACK `COMPLETED` có `ended_at` trong kỳ (phiên đó
       "selectable": true, "unavailable_reason": null, "unavailable_at": null, "cameras": ["CAM1", "CAM2"] }
   ],
   "snapshot_count": 4,
+  "review_pending_count": 0,
   "limits": { "max_sessions": 4, "max_total_seconds": 1800, "max_snapshots": 20 },
   "default_expires_days": 7
 }
 ```
 
 - `CLAIM`: `sessions` = `evidence[]` của hồ sơ (phiên chính trước, rồi theo `started_at`); `default_selected` = 4 phiên đầu `selectable`. `SESSION`: đúng phiên đó, chọn sẵn.
-- `unavailable_reason`: `CLIP_PENDING` ("Chưa có clip") · `CLIP_FAILED` ("Clip lỗi") · `CLIP_DELETED` (+ `unavailable_at` — "Clip đã bị xóa ngày dd/mm") · `CLIP_MISSING` ("Clip thiếu tệp (khôi phục)" — v0.3). Phiên `review_needed: true` (v0.3) → `default_selected = false`, FE chip "Cần soát". Phiên có ít nhất Cam 1 `READY` là `selectable`; `cameras` = các camera `READY` (thiếu Cam 2 → bản ghép chỉ Cam 1).
+- `unavailable_reason`: `CLIP_PENDING` ("Chưa có clip") · `CLIP_FAILED` ("Clip lỗi") · `CLIP_DELETED` (+ `unavailable_at` — "Clip đã bị xóa ngày dd/mm") · `CLIP_MISSING` ("Clip thiếu tệp" — v0.3; v0.4 bỏ "(khôi phục)" vì `MISSING` còn do EX-K9). Phiên `review_needed: true` (v0.3) → `default_selected = false`, FE chip "Cần soát". `review_pending_count` (v0.4 — DEC-531) = số phiên "Cần soát" chưa xử lý của hồ sơ (= API-132 `review_sessions`, kể cả phiên không nằm trong `sessions`; nguồn `SESSION` → 0). FE: > 0 → Alert vàng "Hồ sơ còn {n} phiên mở hoàn Cần soát chưa xử lý — xem ở chi tiết hồ sơ trước khi gửi link."; nguồn `CLAIM`, có ≥ 1 phiên `RETURN` `selectable` mà không phiên `RETURN` nào đang được chọn → Alert vàng "Chưa chọn video mở hộp nào — link chỉ có video đóng gói." Cả hai không chặn "Tạo link". Phiên có ít nhất Cam 1 `READY` là `selectable`; `cameras` = các camera `READY` (thiếu Cam 2 → bản ghép chỉ Cam 1).
 - `storage_configured = false` → FE khóa nút, tooltip "Chưa cấu hình kho lưu cloud. Admin: Cài đặt → Sao lưu." (EX-S1).
 
 | HTTP | Mã lỗi | Khi nào | FE xử lý |
@@ -814,7 +819,7 @@ API-181 `PUT /backup/settings` `{enabled?, upload_mbps? (1–1000), all_pack_cli
 
 API-187 `POST /backup/reupload-old-key` (body rỗng) → `202 {"queued": 790, "bytes": 146028888064}`: mọi `backup_object` `status = UPLOADED`, `cloud_present = true`, kind `CLIP`/`SNAPSHOT` có `cloud_key_fingerprint` ≠ khóa hiện tại và tệp còn ở kho → `PENDING` (bản cũ vẫn trên cloud, `cloud_present` giữ `true`, `cloud_key_fingerprint` giữ khóa cũ tới khi J-22 tải đè cùng `object_key` bằng khóa mới xong → ghi khóa mới — DEC-522). Chỉ chạy khi `state = ON`: `DISABLED` → `409 BACKUP_DISABLED`. Bản DB cũ **không** mã hóa lại (hết hạn theo FR-02.14). Idempotent (gọi lại chỉ xếp tệp chưa xếp). Audit `BACKUP_REUPLOAD_OLD_KEY` `{fingerprints, queued}`.
 
-API-188 `POST /backup/issues/{object_id}/resolve` `{"action": "UPLOAD_ANYWAY" | "IGNORE" | "RETRY", "note": "5–500 ký tự"}` → `200` item API-185. `UPLOAD_ANYWAY` (chỉ `HASH_MISMATCH`): → `PENDING` với cờ `hash_override` — J-22 tải bản hiện có, metadata `sha256` = băm thực tế + `sha256-expected` = giá trị DB + `integrity=MISMATCH_ACCEPTED`; `RETRY` (chỉ `FAILED` + `SOURCE_MISSING` — v0.3): `attempts = 0`, `next_attempt_at = now` (sau khi IT chép lại tệp); `IGNORE` (`HASH_MISMATCH` hoặc `SOURCE_MISSING`) → `IGNORED` (cuối, không tính chờ / cảnh báo). Audit `BACKUP_ISSUE_RESOLVE` `{object_id, action, note, sha256_expected, sha256_actual, last_error}` (DEC-496, 517).
+API-188 `POST /backup/issues/{object_id}/resolve` `{"action": "UPLOAD_ANYWAY" | "IGNORE" | "RETRY", "note": "5–500 ký tự"}` → `200` item API-185. `UPLOAD_ANYWAY` (chỉ `HASH_MISMATCH`): → `PENDING` với cờ `hash_override` — J-22 tải bản hiện có, metadata `sha256` = băm thực tế + `sha256-expected` = giá trị DB + `integrity=MISMATCH_ACCEPTED`; `RETRY` (chỉ `FAILED` + `SOURCE_MISSING` — v0.3): `attempts = 0`, `next_attempt_at = now` (sau khi IT chép lại tệp); `IGNORE` (`HASH_MISMATCH` hoặc `SOURCE_MISSING`) → `IGNORED` (cuối, không tính chờ / cảnh báo). **v0.4 (DEC-530):** `IGNORE` cho `SOURCE_MISSING` còn đặt clip / ảnh nguồn `READY` → `MISSING` (mọi màn hiện "Thiếu tệp", không phát / cắt lại / vào link — §5.1 CLIP); máy chủ kiểm tệp lần cuối, đã có tệp → 409 `BACKUP_ISSUE_ACTION_INVALID` "Tệp đã có lại tại kho — bấm Thử lại ngay."; audit thêm `MEDIA_MARK_MISSING`. Audit `BACKUP_ISSUE_RESOLVE` `{object_id, action, note, sha256_expected, sha256_actual, last_error}` (DEC-496, 517).
 
 | HTTP | Mã lỗi | Khi nào | FE xử lý |
 |---|---|---|---|
@@ -824,7 +829,7 @@ API-188 `POST /backup/issues/{object_id}/resolve` `{"action": "UPLOAD_ANYWAY" | 
 | 409 | BACKUP_RUNNING | API-184 khi đang có lượt DB chạy | Toast "Đang sao lưu, thử lại sau." |
 | 409 | BACKUP_RESTORE_UNVERIFIED | API-181 `enabled: true` / API-184 / API-187 khi `state = RESTORE_PENDING` | Banner D23 "Hệ thống vừa được khôi phục…" |
 | 409 | BACKUP_ISSUE_RESOLVED | API-188 khi tệp không còn là vấn đề (không còn `HASH_MISMATCH` / `FAILED SOURCE_MISSING` — đã xử lý / trạng thái khác) | Toast `message`, tải lại API-185 |
-| 409 | BACKUP_ISSUE_ACTION_INVALID | API-188 hành động không hợp với loại vấn đề (`UPLOAD_ANYWAY` cho `SOURCE_MISSING`, `RETRY` cho `HASH_MISMATCH`) — v0.3 | Toast `message` (FE chỉ hiện nút đúng loại) |
+| 409 | BACKUP_ISSUE_ACTION_INVALID | API-188 hành động không hợp với loại vấn đề (`UPLOAD_ANYWAY` cho `SOURCE_MISSING`, `RETRY` cho `HASH_MISMATCH`) — v0.3; `IGNORE` cho `SOURCE_MISSING` khi tệp đã có lại — v0.4 | Toast `message` (FE chỉ hiện nút đúng loại) |
 | 409 | BACKUP_DISABLED | API-184 / API-187 khi `state = DISABLED` (Admin đã tắt) — v0.3: "Sao lưu đang tắt. Bật sao lưu rồi thử lại." | Toast `message`; FE khóa nút khi `state = DISABLED` |
 | 422 | VALIDATION_ERROR | API-188 `action` lạ / `note` < 5 hoặc > 500 → `fields.note = "Nhập lý do (5–500 ký tự)."` | Lỗi dưới ô |
 | 502 | CLOUD_AUTH_FAILED | API-183: sai khóa truy cập / không có quyền bucket | Alert "Kho lưu từ chối: sai khóa truy cập." |
@@ -860,7 +865,7 @@ Chi tiết runbook: `ai-cam-be/docs/ops.md` mục "Sao lưu cloud" (02a T-223).
 
 <details><summary><b>API-92 action mới</b></summary>
 
-`SHOP_DISCONNECT`, `SHARE_CREATE`, `SHARE_REVOKE`, `SHARE_EXPIRE` (người dùng `null` = hệ thống), `NOTIFY_CHANNEL_CREATE`, `NOTIFY_CHANNEL_UPDATE`, `NOTIFY_CHANNEL_DELETE`, `NOTIFY_TEST`, `NOTIFY_SETTINGS_UPDATE`, `BACKUP_SETTINGS_UPDATE`, `BACKUP_KEY_CONFIRM`, `BACKUP_TEST`, `BACKUP_RUN_NOW`, `REPORT_EXPORT`, `CLAIM_EVIDENCE_REMOVE`, `BACKUP_REUPLOAD_OLD_KEY`, `BACKUP_ISSUE_RESOLVE`, `BACKUP_RESTORE_VERIFIED` (người dùng `null` = hệ thống / CLI); v0.3: `SESSION_WRONG_SCAN_MARK`, `SESSION_WRONG_SCAN_UNMARK`, `SESSION_RETURN_CONFIRM` (API-189), `PACKAGE_CANCEL_REVERT` (trả lại kiện hủy oan — người dùng `null`, `data {package_id, from, to, order_platform_status, trigger: COMMAND|SYNC}`), `BACKUP_VERIFY_ACCEPT` (CLI). `SHOP_CONNECT` thêm `data.platform` (đã có). Quyết định hủy phiên hoàn: `APPROVAL_DECISION` có `note` (đã có) + `reason_code` (v0.3). FE D10 map nhãn tiếng Việt (02b-admin §9).
+`SHOP_DISCONNECT`, `SHARE_CREATE`, `SHARE_REVOKE`, `SHARE_EXPIRE` (người dùng `null` = hệ thống), `NOTIFY_CHANNEL_CREATE`, `NOTIFY_CHANNEL_UPDATE`, `NOTIFY_CHANNEL_DELETE`, `NOTIFY_TEST`, `NOTIFY_SETTINGS_UPDATE`, `BACKUP_SETTINGS_UPDATE`, `BACKUP_KEY_CONFIRM`, `BACKUP_TEST`, `BACKUP_RUN_NOW`, `REPORT_EXPORT`, `CLAIM_EVIDENCE_REMOVE`, `BACKUP_REUPLOAD_OLD_KEY`, `BACKUP_ISSUE_RESOLVE`, `BACKUP_RESTORE_VERIFIED` (người dùng `null` = hệ thống / CLI); v0.3: `SESSION_WRONG_SCAN_MARK`, `SESSION_WRONG_SCAN_UNMARK`, `SESSION_RETURN_CONFIRM` (API-189), `PACKAGE_CANCEL_REVERT` (trả lại kiện hủy oan — người dùng `null`, `data {package_id, from, to, order_platform_status, trigger: COMMAND|SYNC}`), `BACKUP_VERIFY_ACCEPT` (CLI); v0.4: `MEDIA_MARK_MISSING` `{clip_id | snapshot_id, cause: SOURCE_MISSING|BACKUP_IGNORE, object_id}` (người dùng `null` khi J-22), `MEDIA_MISSING_RECOVERED` (J-22, người dùng `null`); `SESSION_WRONG_SCAN_MARK` thêm `active_shares[]`, `SESSION_RETURN_CONFIRM` thêm `overridden_cause`. `SHOP_CONNECT` thêm `data.platform` (đã có). Quyết định hủy phiên hoàn: `APPROVAL_DECISION` có `note` (đã có) + `reason_code` (v0.3). FE D10 map nhãn tiếng Việt (02b-admin §9).
 </details>
 
 ### 6.3 W1 — nội dung trang người nhận link (FR-07.07, DEC-411, DEC-428)
@@ -1173,6 +1178,11 @@ Mọi DEC dưới đây: **tự quyết theo ủy quyền user** (user 2026-10-0
 | DEC-523 | (G2R2-9) Mã chiều về `return_case.return_tracking_number` không unique (`returns/models.py:49` chỉ index) nhưng bàn hoàn lấy `.limit(1)` | Hai hồ sơ **chưa kết thúc** của hai đơn khác nhau cùng mã chiều về → `RETURN_MULTIPLE_ORDERS` như mã đơn trùng; còn lại giữ thứ tự Phase 2; gộp hồ sơ chưa xác định theo mã chiều về trùng → không tự gộp | Không đoán đơn (cùng tinh thần DEC-492). Loại: thêm unique (dữ liệu sàn khác nhau có thể trùng thật) | khanhtt (Architect, tự quyết theo ủy quyền user) | 2026-10-07 |
 | DEC-524 | (G2R2-5) Ảnh thiếu tệp khi khôi phục: CHECK `snapshot.status` chỉ `READY`/`DELETED` | Mở rộng CHECK thêm `MISSING` ở 0006 (lùi → `DELETED` + archive `missing_snapshots`, lên lại khôi phục) | Ảnh `READY` không tệp → link vỡ + J-22 lặp `SOURCE_MISSING`; `DELETED` sai nghĩa và có thể kéo J-23 xóa bản cloud. Loại: bỏ ảnh khỏi `MISSING` | khanhtt (Architect, tự quyết theo ủy quyền user) | 2026-10-07 |
 | DEC-526 | Review G2 lượt 2 "Chưa đạt" (1 CRITICAL, 2 blocker, 2 major, 3 minor, 1 nit) | Sửa toàn bộ G2R2-1..G2R2-9: 01 v0.4 (CR DEC-513), 02 v0.3, 02a v0.3, 02b-admin v0.3, 02b-station v0.3, ADR-010, system-map; chờ review lượt 3 | Quy trình G2 | khanhtt (Architect + BE + FE, tự quyết theo ủy quyền user) | 2026-10-07 |
+| DEC-528 | (G2R3-1) Nâng cấp lại 0006 sau khi lùi: 4b chạy trước khi khôi phục `session_cols` → phiên đã loại / đã bỏ thành bằng chứng đang dùng | Khôi phục `session_cols` ở bước 3b (trước 4b); 4b cùng vị từ `excluded_return_sql`; archive chép nguyên dòng đã bỏ, 4b bỏ qua cặp đã bỏ; bước 6 chỉ coi "thêm lại" với dòng không do 4b lượt này (chi tiết 02a §3) | Lùi → lên không đổi bằng chứng. Loại: 4b join archive để đọc lý do (hai nguồn luật) | khanhtt (Architect + BE, tự quyết theo ủy quyền user) | 2026-10-07 |
+| DEC-529 | (G2R3-2) Phiên mở hộp thật bị gán nhầm lý do hủy (`WRONG_SCAN` / `NOT_A_RETURN`) không có đường gỡ | Mở rộng API-189 `CONFIRM_RETURN` cho phiên bị loại theo lý do hủy: chỉ ADMIN / SUPERVISOR, ghi chú bắt buộc, audit `overridden_cause`; dùng lại cột `review_confirmed_*` (+ `review_confirmed_note`); phiên vào bằng chứng hồ sơ đang xem, có thể là phiên chính. Đánh dấu quét nhầm vẫn thắng (gỡ bằng `UNMARK`) | Một hành động "Là phiên hoàn thật" cho mọi trường hợp nghi ngờ; quyền theo người ra quyết định gốc (station / Supervisor). Loại: action `OVERRIDE_EXCLUSION` riêng (thêm action + cột trùng nghĩa); cho CSKH gỡ (CSKH lật quyết định của Supervisor không qua quản lý) | khanhtt (Architect + PO, tự quyết theo ủy quyền user) | 2026-10-07 |
+| DEC-530 | (G2R3-3) `IGNORE` cho `SOURCE_MISSING` và mất tệp lâu vẫn để clip / ảnh `READY` → link / gói / player vỡ thay vì hiện "Thiếu tệp" | `MISSING` = "DB có, máy chủ không có tệp" bất kể nguyên nhân: J-22 đặt sau 4 lần liền không thấy (≈ 80 phút), API-188 `IGNORE` đặt ngay; về `READY` khi tệp có lại băm khớp | Một trạng thái cho mọi chỗ đọc (02a §5.2). Loại: trạng thái mới `LOST` (nhân đôi 15 điểm đọc); chỉ đổi khi Admin bấm | khanhtt (Architect + BE, tự quyết theo ủy quyền user) | 2026-10-07 |
+| DEC-531 | (G2R3-4) Đánh dấu quét nhầm khi phiên đang nằm trong link chia sẻ còn hiệu lực; tạo link khi hồ sơ còn phiên "Cần soát" / không có video mở hộp | API-189 trả `affected_shares[]` + audit, FE gợi ý thu hồi (API-163) — **không** tự thu hồi; API-164 `review_pending_count`, ShareLinkDialog 2 Alert không chặn | Người gửi link quyết định (sàn có thể đang xem link); không âm thầm gửi video kiện khác. Loại: tự thu hồi (người nhận mất link đang dùng mà không ai báo); chặn tạo link (phiên "Cần soát" vẫn có thể là video đúng) | khanhtt (Architect + FE, tự quyết theo ủy quyền user) | 2026-10-07 |
+| DEC-532 | Review G2 lượt 3 "Đạt có điều kiện" (điều kiện G2R3-1 major; 3 minor) | Sửa G2R3-1..G2R3-4: 01 v0.5 (CR DEC-527), 02 v0.4, 02a v0.4, 02b-admin v0.4; G2 chưa tick — chờ tech lead xác nhận điều kiện | Quy trình G2 | khanhtt (Architect + BE + FE, tự quyết theo ủy quyền user) | 2026-10-07 |
 
 ## Sửa theo review G2 lượt 1 (v0.2)
 
@@ -1212,6 +1222,17 @@ Mọi DEC dưới đây: **tự quyết theo ủy quyền user** (user 2026-10-0
 | G2R2-7 N08 thiếu `DB_FAILED_TWICE`, `SOURCE_MISSING` | minor | §6.2 API-32 | 01 §7.5 N08; 02a §7.5 J-26 N08 |
 | G2R2-8 phụ thuộc T-227 | minor | — | 02a §12 T-227 (→ T-273, T-279, T-283), T-273 (N08 ở T-227) |
 | G2R2-9 Non-goals; EX-K4; §5.1 #15 mã chiều về; ngày system-map; API-187 `DISABLED` | nit | §2 Non-goals; §6.2 API-187 + lỗi `BACKUP_DISABLED`; DEC-523 | 01 EX-K4; 02a §5.1 #15, T-288; system-map header 2026-10-07 |
+
+## Sửa theo review G2 lượt 3 (v0.4)
+
+Verdict lượt 3: **Đạt có điều kiện** — điều kiện G2R3-1; 3 minor sửa cùng lượt.
+
+| Finding | Mức | Sửa ở (02) | Spec con / khác |
+|---|---|---|---|
+| G2R3-1 nâng cấp lại 0006: 4b chạy trước khi khôi phục `session_cols` → phiên đã loại (Supervisor `WRONG_SCAN` / `NOT_A_RETURN`, đánh dấu API-189) thành bằng chứng đang dùng; bước 6 bỏ dòng đã bỏ của archive | major (điều kiện G2) | DEC-528 (§10 Rollback giữ nguyên — chi tiết ở 02a) | 02a §3 bước 3b, 4b, downgrade bước 2, nâng cấp lại, test `test_migration_0006_0007`; T-289 |
+| G2R3-2 lý do hủy gán sai không gỡ được | minor | §5.1 SESSION `return_confirmed`; §6.1 API-132, API-189; §6.2 API-132 `excluded_return_sessions`, API-189 `CONFIRM_RETURN` (điều kiện, quyền, audit, 409 / 403); DEC-529 | 01 v0.5 BR-39, §5 quyền, D17 (DEC-527); 02a §4, §5 BR-39 (14), (15), T-290; 02b-admin T-266 |
+| G2R3-3 `IGNORE` / mất tệp lâu không chuyển `MISSING` | minor | §5.1 CLIP (định nghĩa `MISSING`), §5.2 nhãn, §6.1 API-40 / 46 chữ, API-164 `CLIP_MISSING` chữ, §6.2 API-188 `IGNORE`, lỗi `BACKUP_ISSUE_ACTION_INVALID`, audit `MEDIA_MARK_MISSING` / `MEDIA_MISSING_RECOVERED`; DEC-530 | 01 v0.5 EX-K9, §10.5 "Thiếu tệp"; 02a §3, §5.2 #16, J-22, §9, T-291; 02b-admin T-266 |
+| G2R3-4 `MARK_WRONG_SCAN` không báo link đang chia sẻ phiên; ShareLinkDialog không cảnh báo | minor | §6.2 API-189 `affected_shares[]` + audit `active_shares[]`, API-164 `review_pending_count` + 2 Alert; DEC-531 | 01 v0.5 D17, ShareLinkDialog; 02a T-292; 02b-admin T-266 |
 
 ## Chốt G2 (áp cho bộ 02 + 02a + 02b)
 - [ ] Mọi FR/BR/NFR trong phạm vi có chỗ trong spec (bảng FR coverage)

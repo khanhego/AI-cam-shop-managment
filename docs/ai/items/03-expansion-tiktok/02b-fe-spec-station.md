@@ -4,7 +4,7 @@
 |---|---|
 | Tác giả | khanhtt (FE, agent soạn, tự quyết theo ủy quyền user) |
 | Reviewer | khanhtt (tech lead, review ở bước 5) |
-| Trạng thái | **In review** · v0.3 (soát theo review G2 lượt 2 — DEC-526: không đổi phạm vi station; v0.2 theo lượt 1 — DEC-512) |
+| Trạng thái | Approved — G2 ✅ có điều kiện 2026-10-07 (DEC-533) |
 | Tổng quan & contract | [02-tech-spec.md](02-tech-spec.md) v0.3 §6 (API-10, 11, 12, 101, 104) · Màn: [01-srs.md §10.4](01-srs.md) v0.4 (S1, S2, S4, R2, R1 / R3 mở rộng; R5 dùng lại) · nền [item 02 02b-station](../02-returns-reconciliation/02b-fe-spec-station.md) · [Design system](../../../design-system/README.md) |
 | Last update | 2026-10-07 · FE (v0.3: soát G2R2-1..9 — không chạm station, xem dưới; v0.2: G2-2, G2-3) |
 
