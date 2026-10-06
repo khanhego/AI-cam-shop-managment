@@ -142,7 +142,10 @@ Kiến trúc: [architecture.md](architecture.md).
 | Job / WS (M7) | J-07 xử lý phiên RETURN (tự hoàn tất / bỏ dở); task `sessions.flag_order_cancelled` (BR-21); J-17 `media.capture_pack_snapshot` (queue video); WS-01 `SESSION_AUTO_CLOSED`, `ORDER_CANCELLED_DURING_SESSION`, `SESSION_WARN`; WS-02 `return.updated`; thư mục `/data/video/snapshots` | `modules/sessions`, `modules/media` |
 | Config (M7) | `ORDER_SN_REGEX`, `RETURN_LOOKUP_PREFIX_MIN`, `SNAPSHOT_*` | `core/settings.py` |
 | FE station (M7) | `/station` chọn panel R1/R2/S1–S5 (`selectPanel`); `features/station/returns/*` (ReturnReadyPanel, InspectingPanel, InspectionTable, ConclusionPicker, PackReferenceCard, ReturnLookupDialog, OperatorDialog, ForceNewDialog), `ClosedNotice`, `RecentSessions`, `shared/media/SnapshotStrip`; `useScanListener({captureInInputs})` | `ai-cam-fe/src/features/station/` |
-| FE dùng chung | Client `lib/api/{returns,recon,claims}.ts`, `shared/returns/*`, `NavBadge`; màn D14–D17 từ M8–M9 | `ai-cam-fe/src/` |
+| Migration 0004 + bảo vệ (M8) | Clip `held` → hồ sơ `LEGACY_HOLD`; `media/protection.py` `protected_sessions_sql` (BR-09 a/b/c + held); J-02 dùng max(setting, sàn 60) và dọn ảnh; archive `phase2_archive` khi downgrade | `ai-cam-be/alembic/versions/0004_*.py`, `modules/media/protection.py` |
+| Claims (M8) | Module `claims`: API-130..138, J-15 `claims.check_deadlines` (mỗi giờ), J-16 gói bằng chứng (queue export, zip `ho-so.json`, `ket-luan.json`, clip + SHA-256); API-105, API-112; API-42 chỉ ADMIN; API-31 `protection`; API-30 `is_placeholder`; env `EVIDENCE_PACK_TTL_HOURS`, `EVIDENCE_PACK_TIMEOUT_S` | `modules/claims/` |
+| FE dashboard (M8) | `/admin/claims` (D16), `/admin/claims/:id` (D17); `features/claims/*`, `features/returns/{ReturnCaseSection,InspectionView,LinkOrderDialog,CorrectInspectionDialog}`, `features/reconciliation/AdjustStatusForm`, `orders/ProtectedChip` (thay `HoldToggle`), `shared/download.downloadUrl` | `ai-cam-fe/src/features/` |
+| FE dùng chung | Client `lib/api/{returns,recon,claims}.ts`, `shared/returns/*`, `NavBadge`; màn D14–D15 ở M9 | `ai-cam-fe/src/` |
 
 ## Tích hợp ngoài
 | Hệ thống | Mục đích | Cách gọi | Config |
