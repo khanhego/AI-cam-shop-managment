@@ -50,7 +50,7 @@ Owner tất cả: khanhtt (profile §7). Ticket: chưa tạo (tracker `none` cho
 | T-275 | 0006 v0.2: backfill 4b phiên trước + `backfilled`; downgrade bước 1b / 4–7 (đơn ngoài, `LEGACY_HOLD`, kiểm tập con, `MISSING`); nâng cấp lại xử lý trùng | be | §3; BR-38, 39 | 02a | T-202, T-213, T-214 | 2 | M11 | | ⬜ |
 | T-282 | 0006 v0.3: cột `session.cancel_cause`, `wrong_scan_*`, `review_confirmed_*`; CHECK `snapshot.status`; `cloud_present`, `cloud_key_fingerprint`; backfill `review_needed` + log; (4c) log hủy oan; downgrade / lên lại | be | §3 | 02a | T-275 | 1 | M11 | | ⬜ |
 | T-289 | 0006 v0.4 (G2R3-1): bước 3b trước 4b, vị từ = `excluded_return_sql`, archive nguyên dòng đã bỏ, 4b bỏ qua cặp đã bỏ; test khứ hồi C / A / E / F | be | §3; BR-38, 39 | 02a | T-282 | 1 | M11 | | ⬜ |
-| T-231 | Kiểu `lib/api/station.ts` (API-10 / 11 / 12 mới) + `stationSim` + MSW station | fe | nền S1, S2, S4, R2, R3 | 02b-st | 02 §6 (mock) | 1 | M11 | | ⬜ |
+| T-231 | Kiểu `lib/api/station.ts` (API-10 / 11 / 12 mới) + `stationSim` + MSW station | fe | nền S1, S2, S4, R2, R3 | 02b-st | 02 §6 (mock) | 1 | M11 | | ✅ `fe 9324d86` (MSW) |
 | T-251 | API client admin (`shops`, `reports`, `shares`, `notify`, `backup` + mở rộng) + `shared/labels.ts` + MSW handlers + db | fe | nền D2–D23 | 02b-ad | 02 §6 (mock) | 2 | M11 | | ⬜ |
 | T-252 | Route + drawer (mục mới, D7 đổi tên, chuyển hướng `/shopee`) + `PlatformChip`, `PlatformFilter`, `DueCountdown` + WS 3 sự kiện | fe | FR-10.02, 03.03, 07.01 | 02b-ad | T-251 (BE thật: T-207) | 1 | M11 | | ⬜ |
 | T-204 | Đa shop: `upsert_platform_order(…, shop)` (BR-29, nhận đơn file, EX-T2, `package_order`); tra (shop, mã) J-04 / 05 / 06; bỏ ngắt shop khác | be | FR-05.14, 05.22; BR-29 | 02a | T-202, T-203 | 2 | M12 | | ⬜ |
