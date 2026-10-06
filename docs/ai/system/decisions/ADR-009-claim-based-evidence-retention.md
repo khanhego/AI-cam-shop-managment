@@ -6,7 +6,7 @@
 | Tác giả | khanhtt (Architect, agent soạn) |
 | Reviewer | khanhtt (review subagent bước 5) |
 | Người chốt | khanhtt (tự quyết theo ủy quyền user) |
-| Ngày | 2026-10-05 (v0.3 sau review G2 lượt 2: giữ thêm 7 ngày sau khi nhận, rollback lặp lại được — DEC-268, DEC-270) |
+| Ngày | 2026-10-05 (v0.3 sau review G2 lượt 2: giữ thêm 7 ngày sau khi nhận, rollback lặp lại được — DEC-268, DEC-270) · **bổ sung 2026-10-06 (item 03, Proposed tới G2 item 03): luật "rời bảo vệ" khi bỏ bằng chứng — DEC-418, DEC-449, DEC-458** |
 | Work item / yêu cầu | [item 02](../../items/02-returns-reconciliation/02-tech-spec.md) §8, API-42, API-131..134, migration 0004 · FR-02.06, FR-02.09, BR-09 · [06-business-qa](../../items/01-packing-mvp/06-business-qa.md) L7 |
 
 > **TL;DR** — Clip và ảnh gắn với một hồ sơ khiếu nại chưa `CLOSED` — và clip / ảnh của phiên đóng gói hiệu lực + phiên mở hoàn của kiện thuộc hồ sơ hàng hoàn chưa kết thúc — không bị retention xóa; khi hồ sơ đóng, hạn xóa = max(lúc tạo clip, lúc đóng hồ sơ) + số ngày giữ clip. Cờ `clip.held` thôi là cơ chế chính: dữ liệu cũ được chuyển thành hồ sơ "Chuyển từ cờ giữ", API giữ chỉ còn cho Admin.
@@ -52,3 +52,18 @@ Chọn **A**, mở rộng sau review G2 (R-1, DEC-245). J-02 bỏ qua clip / ả
 - Q13 (hạn khiếu nại thật): nếu sàn cho khiếu nại > 90 ngày sau giao → xem lại mặc định `retention_clip_days` và sàn tối thiểu 60 ngày (DEC-210 item 02).
 - Dung lượng: nếu clip được hồ sơ giữ > 10 % ổ video → thêm cảnh báo hồ sơ mở quá lâu.
 - Phase 3: gỡ API-42 khi 3 tháng không có lần dùng (audit `HOLD_CLIP`).
+
+## Bổ sung 2026-10-06 — bỏ bằng chứng khỏi hồ sơ (item 03, L15)
+
+> Trạng thái phần bổ sung: **Proposed** (chốt cùng G2 item 03). Bổ sung luật, không đảo quyết định gốc → sửa tại chỗ thay vì ADR mới (DEC-458 [02 item 03](../../items/03-expansion-tiktok/02-tech-spec.md)).
+
+| Mục | Nội dung |
+|---|---|
+| Vấn đề | [06-business-qa item 02](../../items/02-returns-reconciliation/06-business-qa.md) L15: bỏ một bằng chứng (thêm tay / `LEGACY_HOLD`) không cần lý do; clip đã quá `end_at + số ngày giữ` mất bảo vệ và bị J-02 xóa ngay 02:00 đêm đó |
+| Luật mới (BR-38) | Bỏ bằng chứng **không xóa dòng** `claim_evidence`: ghi `removed_at`, `removed_by`, `removed_reason` (5–500 ký tự, bắt buộc với mọi loại bằng chứng). Dòng đã bỏ vẫn bảo vệ clip / ảnh tới **max(`clip.end_at`, `removed_at`) + số ngày giữ** — cùng luật với đóng hồ sơ (a). Trong SQL bảo vệ: (a) = `removed_at IS NULL AND (claim chưa CLOSED OR closed_at ≥ cutoff)` **hoặc** `removed_at ≥ cutoff` |
+| Thêm lại | Thêm lại bằng chứng đã bỏ → xóa `removed_*` (một dòng mỗi (hồ sơ, phiên / ảnh) như cũ) |
+| Phiên mở hoàn trước (BR-39, L11) | Phiên RETURN `CANCELLED` / `ABANDONED` có clip của cùng kiện / hồ sơ hàng hoàn được thêm tự động làm bằng chứng → bảo vệ theo (a) như mọi bằng chứng |
+| Sao lưu cloud (BR-33, [ADR-010](ADR-010-shared-cloud-object-store.md)) | Tập "bằng chứng cần giữ" = đúng tập được bảo vệ ở đây (a–d) — job sao lưu dùng cùng SQL `media/protection.py` |
+| Downgrade 0006 (item 03) | Dòng đã bỏ còn trong hạn giữ → đặt `held = true` (người dùng hệ thống, như DEC-338) rồi chép sang `phase3_archive` và xóa khỏi bảng chính — code Phase 2 không biết `removed_at` sẽ coi chúng là bằng chứng đang dùng |
+| Còn mở | API-42 (giữ clip, deprecated) vẫn giữ ở Phase 3 — gỡ theo điều kiện cũ (3 tháng không có audit `HOLD_CLIP`), DEC-459 |
+

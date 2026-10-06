@@ -1,10 +1,10 @@
 # System map
 
 > Bản đồ hệ thống đang chạy — nền cho reuse-first. Mỗi dòng có nguồn (file/lệnh).
-> Ai làm thay đổi hệ thống thì cập nhật file này. Last update: 2026-10-06 · Dev (item 02 xác minh G3: `schema_guard`, `returns_retry`, khóa `return_code`)
+> Ai làm thay đổi hệ thống thì cập nhật file này. Last update: 2026-10-06 · Architect (item 03 bước 3: sửa phần lệch code — Phase 2 đã merge `main`; thêm mục Phase 3 dự kiến) · trước đó 2026-10-06 · Dev (item 02 xác minh G3)
 
-**Hiện trạng (2026-10-05):** item 01 xong M0–M5 (trừ T-4 camera thật, T-3 tài khoản Shopee partner) trên nhánh `feat/01-packing-mvp` của `ai-cam-be`, `ai-cam-fe` (đã push, chưa merge `main`). BE: auth, station/camera, phiên quét, realtime, vision đọc khay Cam 2 (chạy trên camera giả), duyệt, cắt clip, tra cứu, giữ clip, xuất MP4, báo cáo ngày, cài đặt, health, nhập đơn CSV / xlsx, adapter Shopee (chỉ chạy trên HTTP giả + adapter mock) + đồng bộ J-04/05/06/12. FE: station S0–S6, dashboard D1, D2, D3, D4 (+ xuất), D5, D6 (+ vùng đọc mã), D7–D10, D11, D12, D13. Triển khai: compose production + Caddy HTTPS nội bộ + sao lưu hằng ngày, đã chạy staging local (chưa lên server kho). Chưa có: Shopee thật (T-3), token bucket rate limit (ADR-007), CI đẩy image (build tại chỗ), CSP / HSTS (DEC-137 02a).
-**Item 02 (Phase 2 — hàng hoàn, đối soát, khiếu nại) đang ở bước spec (2026-10-05) — chưa đổi code.** Thay đổi dự kiến: module mới `returns`, `reconciliation`, `claims`; phiên `RETURN` trong `sessions`; bảng `snapshot`; migration 0003 / 0004; API-82, API-100..138 ([02 item 02](../items/02-returns-reconciliation/02-tech-spec.md) §3, §6). Bảng dưới vẫn là hệ thống đang chạy — cập nhật khi implement.
+**Hiện trạng (2026-10-06):** Phase 1 (item 01) và Phase 2 (item 02) đã merge `main` ở cả 3 repo (PR #2, `ai-cam-be` `f7010d3`); nhánh làm việc `feat/03-expansion-tiktok`. Mô tả Phase 1 gốc: item 01 xong M0–M5 (trừ T-4 camera thật, T-3 tài khoản Shopee partner) trên nhánh `feat/01-packing-mvp` của `ai-cam-be`, `ai-cam-fe` (đã push, chưa merge `main`). BE: auth, station/camera, phiên quét, realtime, vision đọc khay Cam 2 (chạy trên camera giả), duyệt, cắt clip, tra cứu, giữ clip, xuất MP4, báo cáo ngày, cài đặt, health, nhập đơn CSV / xlsx, adapter Shopee (chỉ chạy trên HTTP giả + adapter mock) + đồng bộ J-04/05/06/12. FE: station S0–S6, dashboard D1, D2, D3, D4 (+ xuất), D5, D6 (+ vùng đọc mã), D7–D10, D11, D12, D13. Triển khai: compose production + Caddy HTTPS nội bộ + sao lưu hằng ngày, đã chạy staging local (chưa lên server kho). Chưa có: Shopee thật (T-3), token bucket rate limit (ADR-007), CI đẩy image (build tại chỗ), CSP / HSTS (DEC-137 02a).
+**Item 02 (Phase 2) đã chạy trong code** (G5 staging local, DEC-368): module `returns`, `reconciliation`, `claims`; phiên `RETURN`; bảng `snapshot`; migration 0003–0005; API-82, API-100..138 — chi tiết ở mục "Phase 2" cuối bảng Module. **Item 03 (Phase 3) đang ở bước spec — chưa đổi code**: xem mục "Phase 3 (dự kiến)" ([02 item 03](../items/03-expansion-tiktok/02-tech-spec.md)).
 Kiến trúc: [architecture.md](architecture.md).
 
 ## Module / component
@@ -41,7 +41,7 @@ Kiến trúc: [architecture.md](architecture.md).
 ## Data
 | Thực thể | Nơi lưu | Field chính | Nguồn định nghĩa |
 |---|---|---|---|
-| 19 bảng: user, refresh_token, station, camera, shop, order, order_item, package, status_history, session, session_event, scan_dedup, approval_request, video_segment, clip, export, csv_import, setting, audit_log | PostgreSQL | Theo 02a §3 (+ `session.mismatch`, DEC-39) | `ai-cam-be/alembic/versions/0001_initial.py`, `src/aicam/modules/*/models.py` |
+| 28 bảng — Phase 1 (19): user, refresh_token, station, camera, shop, order, order_item, package, status_history, session, session_event, scan_dedup, approval_request, video_segment, clip, export, csv_import, setting, audit_log; Phase 2 (9, migration 0003): return_case, return_case_package, inspection_line, snapshot, recon_alert, claim, claim_evidence, claim_note, evidence_pack. Head Alembic hiện tại `0005` (`core/schema_guard.py:24`) | PostgreSQL | Theo 02a §3 item 01 / item 02 (+ `session.mismatch`, DEC-39). Ràng buộc đáng chú ý cho item 03: `order.platform_order_sn` unique toàn cục (`orders/models.py:62`), `shop.platform` CHECK chỉ `SHOPEE` (`orders/models.py:11`), `return_case.platform_return_sn` unique toàn cục (`returns/models.py:40`) | `ai-cam-be/alembic/versions/0001_initial.py` … `0005_return_lookup_indexes.py`, `src/aicam/modules/*/models.py` |
 | Migration 0002 | PostgreSQL | `clip.deleted_at`, `clip.timeline` (jsonb: giây trong clip → giờ thực từng đoạn, cho overlay giờ bản xuất) | `ai-cam-be/alembic/versions/0002_clip_timeline.py` (DEC-102 02a) |
 | Video thô | Volume `video` → `/data/video/raw/cam-<camera_id>/YYYY/MM/DD/HH-MM-SS-ffffff.mp4` (UTC) | segment 60 giây; J-02 xóa theo `retention_raw_days` (30) | `ai-cam-be/docker/mediamtx.yml` |
 | Clip gốc | `/data/video/clips/YYYY/MM/DD/<session_id>-<CAM1\|CAM2>.mp4`, chỉ đọc | stream copy, SHA-256 trong `clip.sha256`; J-02 xóa theo `retention_clip_days` (90) trừ clip giữ | `modules/media/service.py` (`clip_rel_path`) |
@@ -131,7 +131,7 @@ Kiến trúc: [architecture.md](architecture.md).
 | `SHOPEE_TIMEOUT_S`, `SHOPEE_MAX_ATTEMPTS`, `SHOPEE_BACKOFF_S` | `10`, `5`, `0.5` | Mỗi request Shopee; thử lại giãn cách mũ hoặc theo `Retry-After` |
 | `SHOPEE_LOOKUP_LOOKBACK_MIN`, `SHOPEE_INITIAL_SYNC_DAYS` | `60`, `3` | Tra mã khi quét / J-05 dò đơn cập nhật 60 phút (DEC-123 02a); lần đồng bộ đầu lùi 3 ngày |
 
-## Phase 2 (item 02, đang làm — nhánh `feat/02-returns-reconciliation`)
+## Phase 2 (item 02 — đã merge `main`, PR #2)
 | Hạng mục | Nội dung | Nguồn |
 |---|---|---|
 | Migration 0003 | 9 bảng: `return_case`, `return_case_package`, `inspection_line`, `snapshot`, `recon_alert`, `claim`, `claim_evidence`, `claim_note`, `evidence_pack`; cột mới `station`, `package` (`status_changed_at`, `is_placeholder`), `session`, `setting`, `shop`; 3 sequence (HH-, KN-, `placeholder_code_seq`); retention sàn 60 ngày | `ai-cam-be/alembic/versions/0003_*.py` |
@@ -151,6 +151,16 @@ Kiến trúc: [architecture.md](architecture.md).
 | Kiểm schema lúc khởi động (G3) | `core/schema_guard.py`: `SCHEMA_HEAD = "0005"` đóng gói trong image; api (lifespan), worker / beat (`worker_init` / `beat_init`), vision so `alembic_version` — lệch → log `schema_version_mismatch` + thoát mã 78 (EX_CONFIG) ở staging / production, dev / test chỉ log; J-02 kiểm lại ngay trước khi xóa (`skipped_schema_mismatch`). Env `SCHEMA_CHECK_STRICT` | `ai-cam-be/src/aicam/core/schema_guard.py` (02a DEC-336) |
 | Hàng đợi / khóa (G3) | Redis hash `returns_retry:{shop}` (`return_sn` → `{order_sn, attempts, reason}`; J-13 thử lại yêu cầu lỗi qua `get_return_detail`, tối đa 8 lượt rồi log `returns_retry_dropped`); advisory `return_code:{code}` (`pg_advisory_xact_lock`, API-105 đầu transaction — hai lần mở cùng mã lạ không tạo hai hồ sơ); J-13 nhiều shop lặp theo id, lock `sync_returns:{shop}` luôn nhả | `modules/platforms/sync.py`, `modules/sessions/service.py` (02a DEC-342, 344, 361) |
 | Config / migration (G3) | `SHOPEE_RETURNS_ENABLED` (`false`), `SHOPEE_RETURNS_INITIAL_DAYS` (`15`), `SCHEMA_CHECK_STRICT`, `AICAM_MIGRATE_ALLOW_ACTIVE_CONNECTIONS`, `AICAM_DOWNGRADE_ALLOW_UNCUT_RETURN_CLIPS`; `APP_ENV` chỉ `dev` / `test` / `staging` / `production`. Migration 0005: index `upper(...) text_pattern_ops` + `ix_package_unverified_created_at` (một phần, BR-20). Nâng cấp phải dừng service (`docs/ops.md` §7.1) | `core/settings.py`, `alembic/versions/0005_*.py` |
+
+## Phase 3 (dự kiến — item 03 bước spec, chưa đổi code)
+| Hạng mục | Nội dung dự kiến | Nguồn |
+|---|---|---|
+| Đa sàn / đa shop (ADR-011) | `platforms/registry.py` adapter theo `shop.platform`; `platforms/tiktok/*` + `platforms/mock/tiktok.py`; nhóm trạng thái `order.platform_status_group`, `return_case.platform_status_group`; unique (shop, mã đơn); `package_order` (kiện gộp); job một task / shop (queue `sync` `-c 4`); tra song song khi quét | [02 item 03](../items/03-expansion-tiktok/02-tech-spec.md) §3–§5, [02a](../items/03-expansion-tiktok/02a-be-spec.md) |
+| Module mới | `cloud` (S3 + mã hóa `AICAMENC1` + giới hạn tốc độ), `backup` (J-20..23, API-180..185, CLI khôi phục), `shares` (API-160..164, J-24/25, W1), `notify` (API-170..176, J-26..28) | ADR-010 |
+| API mới | API-150..156, 160..164, 170..176, 180..186 (26, gồm CLI); mở rộng 25 API cũ | 02 §6 |
+| Migration | 0006 (thêm), 0007 (unique theo shop); `SCHEMA_HEAD = "0007"`; downgrade `phase3_archive` | 02a §3 |
+| Hạ tầng | `worker-backup` (`-Q backup -c 1`, `postgresql-client-16` trong image); MinIO + `minio-init` trong `compose.dev.yml`; WS kênh `ws:admin` | 02a §2, §9 |
+| FE | Route `/admin/settings/platforms` (đường cũ `/shopee` chuyển hướng), `/admin/reports`, `/admin/shares`, `/admin/settings/notifications`, `/admin/settings/backup`; `ShareLinkDialog`, `PlatformChip` | 02b-admin |
 
 ## Tích hợp ngoài
 | Hệ thống | Mục đích | Cách gọi | Config |
