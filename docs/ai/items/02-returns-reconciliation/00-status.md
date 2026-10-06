@@ -63,6 +63,7 @@ Số item: 02 (`docs/ai/items/` chỉ có 01; remote 3 repo có `main`, `feat/01
 ## Lịch sử
 | Ngày | Role | Việc |
 |---|---|---|
+| 2026-10-06 | BE, FE, Dev | M10 xong (T-120 rollback archive, T-116 seed, T-118 contract + locust + migration 0005, T-162 E2E): E2E BE thật toàn bộ 56 + 1 skip. Tài liệu nghiệp vụ lát 6–10 (`docs/nghiep-vu/02-returns-reconciliation/`). Review G3 Phase 2 (nhiều reviewer): không CRITICAL cần user; đang sửa (BE + FE) |
 | 2026-10-06 | BE, FE | M9 xong: BE T-105/113/114/115 + T-121 ảnh từ khung vision (TC-04.40 0,02 s; 1018 pytest; QA live 123/123 với SHOPEE_ENABLED=true + adapter mock), FE T-153/156/160/161 (543 vitest, E2E mock 20, hết phụ thuộc mock trừ Shopee thật); E2E BE thật 45 + 1 skip (TC-05.03 chạy ở lượt cờ tắt) |
 | 2026-10-06 | BE, FE | M8 xong: BE T-110/111/119/112 (947 pytest; test bằng chứng bắt buộc đạt; QA live 114 + 2 skip, TC-04.40 ảnh 3,2 s > 3 s → thêm T-121 vào M9), FE T-154/155/157/158/159 (514 vitest, E2E mock 14); E2E BE thật 45/45 |
 | 2026-10-06 | BE, FE | M7 xong: BE T-104/107/108/117/109 (825 pytest, QA live 111 + 2 skip), FE T-132..137 (468 vitest, E2E mock 11); E2E BE thật 44/44 (UC-02). E2E helper `scan` → `hidScan` (mã bị cụt khi máy thiếu RAM). Còn mock: API-105 (T-119), `claim_code` (T-110) |
