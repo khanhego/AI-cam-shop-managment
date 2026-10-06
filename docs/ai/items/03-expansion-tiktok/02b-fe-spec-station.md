@@ -4,9 +4,9 @@
 |---|---|
 | Tác giả | khanhtt (FE, agent soạn, tự quyết theo ủy quyền user) |
 | Reviewer | khanhtt (tech lead, review ở bước 5) |
-| Trạng thái | **In review** · v0.2 (sửa theo review G2 lượt 1 — DEC-512) |
-| Tổng quan & contract | [02-tech-spec.md](02-tech-spec.md) v0.2 §6 (API-10, 11, 12, 101, 104) · Màn: [01-srs.md §10.4](01-srs.md) v0.3 (S1, S2, S4, R2, R1 / R3 mở rộng; R5 dùng lại) · nền [item 02 02b-station](../02-returns-reconciliation/02b-fe-spec-station.md) · [Design system](../../../design-system/README.md) |
-| Last update | 2026-10-07 · FE (v0.2: G2-2, G2-3) |
+| Trạng thái | **In review** · v0.3 (soát theo review G2 lượt 2 — DEC-526: không đổi phạm vi station; v0.2 theo lượt 1 — DEC-512) |
+| Tổng quan & contract | [02-tech-spec.md](02-tech-spec.md) v0.3 §6 (API-10, 11, 12, 101, 104) · Màn: [01-srs.md §10.4](01-srs.md) v0.4 (S1, S2, S4, R2, R1 / R3 mở rộng; R5 dùng lại) · nền [item 02 02b-station](../02-returns-reconciliation/02b-fe-spec-station.md) · [Design system](../../../design-system/README.md) |
+| Last update | 2026-10-07 · FE (v0.3: soát G2R2-1..9 — không chạm station, xem dưới; v0.2: G2-2, G2-3) |
 
 > **TL;DR** — Không màn mới. Mở rộng 4 panel station: S1 dòng "Người đóng gói" + R5 đổi tiêu đề theo chế độ; S2 / R2 chip sàn · shop (`PlatformChip` dùng chung với dashboard) + cảnh báo "Kiện gộp N đơn" + banner vàng khi đơn đang có yêu cầu hủy (cờ `ORDER_CANCEL_REQUESTED`); S4 mã mới `ORDER_CANCEL_REQUESTED`; R2 luật hủy 60 giây theo **giờ server** (`self_cancel_until`), sau đó chỉ "Gọi quản lý"; bàn hoàn mã đơn trùng nhiều shop → alert `RETURN_MULTIPLE_ORDERS` → R3 có chip shop.
 > State giữ nguyên `stationStore` (Zustand) + WS `station.state`; không thêm request mới — chỉ đọc trường mới của API-10 / API-11 / API-12.
@@ -14,6 +14,8 @@
 > 6 task T-231..T-236 (≈ 6,5 ngày công).
 
 Không viết lại API — trỏ API-xx trong [02 §6](02-tech-spec.md#6-api-contract).
+
+**Soát review G2 lượt 2 (v0.3):** G2R2-1 (mã lý do khi Supervisor hủy phiên hoàn) chỉ đổi D13 (dashboard) — R2 sau khi bị hủy vẫn về R1 + "Quản lý đã hủy phiên." như v0.2; API-10 / 11 / 12 không thêm trường. G2R2-4 (trả lại kiện hủy oan): kiện được trả về Mới / Đã đóng gói quét như kiện thường, S4 `ORDER_CANCELLED` chỉ khi đơn nhóm "Đã hủy" (server quyết — không đổi FE). G2R2-2, 3, 5, 6 (sao lưu, `MISSING`): station không hiển thị clip / sao lưu. G2R2-9 §5.1 #15 (mã chiều về trùng): server trả `RETURN_MULTIPLE_ORDERS` như mã đơn trùng → T-236 đã xử lý, thêm 1 case mock (mã chiều về `RTTST-DUP-1` có ở 2 hồ sơ mở) vào T-236, không đổi ước lượng. Không thêm task.
 
 ---
 
@@ -168,7 +170,7 @@ N/A — station không có analytics; log lỗi qua console như Phase 2.
 | T-233 | S2 `PlatformChip` + `MergedOrdersBanner` + `CancelRequestedBanner` (cờ `ORDER_CANCEL_REQUESTED`) + đơn từng dòng; R2 chip; S4 `ORDER_CANCEL_REQUESTED` | S2, R2, S4 / FR-03.03, 05.17, 05.22, BR-21 | API-10, 11; T-231, **T-252** (`PlatformChip` của 02b-admin) | 1,5 |
 | T-234 | R2 luật hủy 60 giây (`cancelRule`, khu nút, `aria-live`, 409 → Toast) | R2 / FR-04.14 | API-10, 12; T-231 | 1 |
 | T-235 | Test component / integration + E2E mock; E2E BE thật khi BE T-212, T-213 xong | — | BE T-212, T-213 | 1 |
-| T-236 | Bàn hoàn mã trùng nhiều shop: nhánh `RETURN_MULTIPLE_ORDERS` trong `stationStore` (R4 → R3 với `data.code`), `ReturnLookupDialog` chip sàn · shop, kiểu API-104 mới, copy, mock `2410DUP00001`, test component + E2E mock | R1, R3 / BR-29, EX-R20 | API-11, 104; T-231, T-233 (`PlatformChip`); BE T-271 cho E2E thật | 1 |
+| T-236 | Bàn hoàn mã trùng nhiều shop: nhánh `RETURN_MULTIPLE_ORDERS` trong `stationStore` (R4 → R3 với `data.code`), `ReturnLookupDialog` chip sàn · shop, kiểu API-104 mới, copy, mock `2410DUP00001` + mã chiều về trùng `RTTST-DUP-1` (v0.3 — 02a §5.1 #15), test component + E2E mock | R1, R3 / BR-29, EX-R20 | API-11, 104; T-231, T-233 (`PlatformChip`); BE T-271 cho E2E thật | 1 |
 
 Tổng ≈ 6,5 ngày công.
 
