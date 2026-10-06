@@ -4,11 +4,12 @@
 |---|---|
 | Tác giả (Architect) | khanhtt |
 | Reviewer | BE lead · FE lead (khanhtt, solo — review subagent ở bước 5) |
-| Trạng thái | **Approved (G2 2026-10-05, có điều kiện C1–C6 — đã thỏa, DEC-274)** · **v0.4** (v0.2: lượt 1 §6.3; v0.3: lượt 2 §6.4; v0.4: lượt 3 §6.5 — DEC-275) |
-| SRS | [01-srs.md](01-srs.md) v0.2 · FR phủ: FR-01.01, 01.07, FR-02.06, 02.09–02.12, FR-03.13–03.15, FR-04.01–04.13, FR-05.05, 05.07, 05.11, 05.12, FR-06.01–06.03, 06.05, 06.06, FR-07.01, 07.02, FR-08.01–08.06, FR-09.01, FR-10.02, 10.03 |
+| Trạng thái | **Approved (G2 2026-10-05, có điều kiện C1–C6 — đã thỏa, DEC-274)** · **v0.5** (v0.2: lượt 1 §6.3; v0.3: lượt 2 §6.4; v0.4: lượt 3 §6.5 — DEC-275; v0.5: xác minh G3 §6.6 — DEC-359, 360) |
+| SRS | [01-srs.md](01-srs.md) v0.6 · FR phủ: FR-01.01, 01.07, FR-02.06, 02.09–02.12, FR-03.13–03.15, FR-04.01–04.13, FR-05.05, 05.07, 05.11, 05.12, FR-06.01–06.03, 06.05, 06.06, FR-07.01, 07.02, FR-08.01–08.06, FR-09.01, FR-10.02, 10.03 |
 | Spec con | BE: [02a-be-spec.md](02a-be-spec.md) · FE: [02b-fe-spec-station.md](02b-fe-spec-station.md), [02b-fe-spec-admin.md](02b-fe-spec-admin.md) |
 | Nền | Contract Phase 1: [item 01 02 v0.7](../01-packing-mvp/02-tech-spec.md) (quy ước §6 giữ nguyên) · [architecture.md](../../system/architecture.md) · ADR-001..008, [ADR-009](../../system/decisions/ADR-009-claim-based-evidence-retention.md) (mới) |
-| Last update | 2026-10-05 · Architect (v0.3) |
+| Last update | 2026-10-06 · Architect (v0.5 — đưa thay đổi contract của vòng G3 vào §5.2, §6, §8, §10; tổng hợp ở §6.6) |
+| Lịch sử | v0.1 2026-10-05 bản đầu · v0.2 review G2 lượt 1 · v0.3 lượt 2 · v0.4 lượt 3 (C1–C6) · **v0.5 2026-10-06 sau G3** (mã lỗi mới, giới hạn độ dài, BR đối soát, cấu hình nâng cấp — §6.6) |
 
 > **TL;DR** — Mở rộng hệ thống Phase 1, không dựng mới: 3 module BE mới (`returns`, `reconciliation`, `claims`), phiên `RETURN` trong `sessions`, ảnh chụp trong `media`; 2 migration (0003 schema, 0004 chuyển cờ giữ → hồ sơ).
 > Quét ở bàn hoàn vẫn đi qua **API-11** (giữ DEC-7), station chọn hành vi theo `work_mode`. Thêm 25 API (API-82, API-100..106, 110..113, 120..123, 130..138) + mở rộng 18 API cũ, chỉ thêm trường / mã — client Phase 1 không vỡ, vẫn `/v1`.
@@ -164,7 +165,7 @@ erDiagram
 | `station.kind` / `work_mode` | `PACK` Đóng gói · `RETURN` Nhận hoàn · `BOTH` Cả hai (chỉ `kind`) |
 | `station_state` (thêm) | `INSPECTING` (R2). `READY` + `work_mode = RETURN` → R1 |
 | `session.type` | `PACK` Đóng gói · `RETURN` Mở hoàn |
-| `session.flags` (thêm) | `AUTO_CLOSED` Tự đóng (v0.2) · `ORDER_CANCELLED` Đơn bị hủy khi đang đóng · `NO_PACK_CLIP` Không có clip đóng gói · `UNANNOUNCED` Về trước khi sàn báo · `UNIDENTIFIED` Chưa xác định đơn · `INSPECTION_CORRECTED` Đã sửa kết luận |
+| `session.flags` (thêm) | `AUTO_CLOSED` Tự đóng (v0.2) · `ORDER_CANCELLED` Đơn bị hủy khi đang đóng · `NO_PACK_CLIP` Không có clip đóng gói · `UNANNOUNCED` Về trước khi sàn báo · `UNIDENTIFIED` Chưa xác định đơn · `INSPECTION_CORRECTED` Đã sửa kết luận · `AUTO_CLOSE_BLOCKED` Chưa tự hoàn tất được — kết luận đã lưu chưa đủ (v0.5, J-07, DEC-340 02a) |
 | `session.cancel_reason` (thêm, RETURN) | `WRONG_SCAN` Quét nhầm · `NOT_A_RETURN` Không phải hàng hoàn · `OTHER` Khác · `SUPERVISOR` Quản lý hủy |
 | `inspection.conclusion` / `line.condition` | `OK` Nguyên vẹn · `DAMAGED` Hư hỏng · `MISSING_ITEM` Thiếu hàng · `WRONG_ITEM` Sai hàng / bị tráo · `EMPTY_BOX` Hộp rỗng · `OTHER` Khác |
 | `return_case.kind` | `FAILED_DELIVERY` Giao thất bại · `BUYER_RETURN` Khách trả hàng · `REFUND_ONLY` Chỉ hoàn tiền · `UNANNOUNCED` Về trước khi sàn báo · `UNIDENTIFIED` Chưa xác định |
@@ -254,7 +255,7 @@ erDiagram
 | API-45 `info.json` | Thêm `session_type`, `session_status`, `flags`, `operator_name`, `cameras[] {camera_role, clock_offset_ms, clock_checked_at}` | FR-02.12 |
 | API-60 | `kind` trong GET / POST / PATCH; `409 STATION_BUSY` | FR-01.01 |
 | API-80 | 6 trường ngưỡng mới (tùy chọn khi PUT), `retention_clip_min_days` (chỉ đọc), `confirm_reduction`; mã `RETENTION_BELOW_MINIMUM`, `RETENTION_REDUCTION_UNCONFIRMED` | FR-02.10 |
-| API-81 | `sync[]` thêm `last_returns_success_at` (tùy chọn) | NFR-29 |
+| API-81 | `sync[]` thêm `last_returns_success_at` (tùy chọn) — **hoãn** (v0.5, F-15: cần cột mới; theo dõi J-13 qua log `aicam_returns_*`) | NFR-29 |
 | API-92 | `action` mới (§6.2 API-92) | FR-10.03 |
 | WS-01 | `alert.code` thêm `ORDER_CANCELLED_DURING_SESSION` | FR-03.15 |
 | WS-02 | Sự kiện mới `return.updated`, `recon.updated`, `claim.updated`, `evidence_pack.updated` | FR-06.03, 08.* |
@@ -327,17 +328,19 @@ Request không đổi `{code, client_scan_id}`. Luôn 200 cho kết quả nghi�
 |---|---|---|
 | `OPERATOR_REQUIRED` | Chưa có `operator_name` (BR-28) | `{}` |
 | `RETURN_NOT_FOUND` | Không tìm thấy mã, tra sàn ≤ 2 giây thất bại / hết giờ | `{ "code", "can_open_unidentified": true }` |
-| `RETURN_ALREADY_RECEIVED` | Kiện `RETURN_RECEIVED_*` | `{ "received_at", "station_name", "conclusion" }` |
+| `RETURN_ALREADY_RECEIVED` | Kiện `RETURN_RECEIVED_*`; v0.5 (SM-F8): quét lại mã lạ trùng `open_code` của hồ sơ `UNIDENTIFIED` (không `manual_link_only`) đã nhận | `{ "received_at", "station_name", "conclusion" }` |
 | `RETURN_MULTIPLE_PACKAGES` | Quét mã đơn sàn, đơn có > 1 kiện đủ điều kiện và chưa có hồ sơ hàng hoàn chỉ ra kiện nào | `{ "platform_order_sn" }` → FE mở R3 với `q` = mã đơn |
 | `NOT_SHIPPED` | Kiện `PACKING`, `PACKED`, `CANCELLED`, `CANCELLED_AFTER_PACK`, hoặc `NEW` mà đơn chưa giao (EX-R6) | `{ "warehouse_status" }` |
-| `RETURN_IN_PROGRESS_ELSEWHERE` | Kiện đang có phiên mở ở station khác | `{ "station_name" }` |
+| `RETURN_IN_PROGRESS_ELSEWHERE` | Kiện đang có phiên mở ở station khác. v0.5 (SM-F6): thêm nghĩa "đơn đang được hệ thống cập nhật" — J-04 / J-13 đang giữ khóa đơn, station không chờ (`pg_try_advisory_xact_lock`) | `{ "station_name" }` — `null` khi không biết station hoặc hệ thống đang cập nhật; FE hiện `message` server ("… đang được hệ thống cập nhật. Quét lại sau vài giây.") |
 | `INSPECTION_REQUIRED` | Quét đóng khi `conclusion = null` (BR-07) | `{}` |
 | `RETURN_CODE_DIFFERENT` | Đang kiểm, mã không thuộc hồ sơ (BR-23) | `{ "code", "expected_codes": ["SPXRT…", "SPX…789", "2410ABCDEF"] }` |
 | `INVALID_CODE` | Như Phase 1 — mã sai định dạng; mã đơn sàn chấp nhận thêm `^[A-Z0-9]{10,20}$` | |
 
 `closed_session` cho phiên RETURN: `{ "id", "type": "RETURN", "tracking_number", "flags", "conclusion": "EMPTY_BOX", "claim_code": "KN-000124", "package_status": "RETURN_RECEIVED_ISSUE", "return_case_status": "RECEIVED_ISSUE" }`.
 
-Lỗi HTTP: như Phase 1 (403, 409 `STATION_INACTIVE`, 422).
+v0.5 (G3): mã lạ trùng `open_code` của hồ sơ `UNIDENTIFIED` (không `manual_link_only`) còn mở → mở phiên trên hồ sơ đó, không tạo hồ sơ mới (SM-F8). Mã chiều về của hồ sơ đã `CANCELLED` → xử lý như hàng hoàn không báo trước (`UNANNOUNCED`, kiện của hồ sơ; không gắn hồ sơ đã hủy — SM-F1).
+
+Lỗi HTTP: như Phase 1 (403, 409 `STATION_INACTIVE`, 422). v0.5: `409 TRANSITION_NOT_ALLOWED` `details {from, to}` khi trạng thái kiện vừa bị đường khác đổi giữa lúc xử lý (trước là 500) — FE hiện `message`, tải lại API-10, người dùng quét lại.
 
 **PACK gặp kiện hoàn (v0.2, DEC-247):** kiện `RETURN_*` → `ALERT` `ALREADY_HANDED_OVER`, `alert.data.is_return = true`, `message` "SPX…789 là kiện hàng hoàn — nhận ở bàn nhận hoàn." `work_mode` đọc lại dưới advisory lock (đổi chế độ giữa lúc quét → xử lý theo chế độ mới).
 </details>
@@ -359,7 +362,7 @@ Lỗi HTTP: như Phase 1 (403, 409 `STATION_INACTIVE`, 422).
 |---|---|---|---|
 | 409 | MODE_NOT_ALLOWED | API-100 khi `station.kind` ≠ `BOTH` | ẩn nút; nếu gặp → tải lại API-10 |
 | 409 | SESSION_ACTIVE | Station có phiên đang hoạt động / yêu cầu duyệt chờ | "Đóng phiên trước khi đổi." |
-| 422 | VALIDATION_ERROR | Tên rỗng / > 40 | lỗi dưới ô |
+| 422 | VALIDATION_ERROR | Tên < 2 hoặc > 40 ký tự sau strip — kiểm ở service, `details.fields.name` tiếng Việt (v0.5, C-05) | lỗi dưới ô |
 
 Audit: `STATION_WORK_MODE`, `STATION_OPERATOR` (data: cũ → mới).
 </details>
@@ -424,6 +427,9 @@ Audit: `STATION_WORK_MODE`, `STATION_OPERATOR` (data: cũ → mới).
 | 409 | WRONG_WORK_MODE | Station không ở chế độ RETURN | tải lại API-10 |
 | 422 | VALIDATION_ERROR | `q` < 4 ký tự; thiếu cả `package_id` và `unidentified_code` | "Nhập ít nhất 4 ký tự." |
 | 404 | NOT_FOUND | `package_id` không tồn tại | đóng R3, toast |
+| 409 | TRANSITION_NOT_ALLOWED | v0.5: trạng thái kiện vừa đổi; `details {from, to}` | toast `message`, tải lại API-10 |
+
+v0.5 (SM-F8): API-105 lấy khóa advisory `return_code:{code}` đầu transaction — hai lần mở cùng mã lạ không tạo hai hồ sơ. `outcome = ALERT` dùng chung bảng mã API-11 (gồm nghĩa mới của `RETURN_IN_PROGRESS_ELSEWHERE`, `RETURN_ALREADY_RECEIVED`).
 </details>
 
 <details><summary><b>API-12 / API-13 / API-21 mở rộng cho phiên RETURN</b></summary>
@@ -476,7 +482,7 @@ API-112 trong một transaction (v0.2, DEC-248, 260): phiên chuyển từ kiệ
 <details><summary><b>API-113</b> — PUT /sessions/{id}/inspection (sửa kết luận)</summary>
 
 ```json
-{ "conclusion": "OK", "note": "…", "lines": [ … ], "reason": "Người kiểm chọn nhầm" }   // reason 5–500
+{ "conclusion": "OK", "note": "…", "lines": [ … ], "reason": "Người kiểm chọn nhầm" }   // reason 5–500 (gộp khoảng trắng); note ≤ 500 hiệu lực (v0.5 — xem bảng lỗi)
 // 200 → session như API-31 sessions[]
 ```
 Kiện `RETURN_RECEIVED_OK ⇄ _ISSUE` (nguồn MANUAL); hồ sơ hàng hoàn tính lại (BR-24); OK → ISSUE: tạo hồ sơ khiếu nại tự động (BR-08) nếu chưa có cùng loại; ISSUE → OK: hồ sơ `AUTO_RETURN` đang `NEW` → `CLOSED` lý do "Kết luận đã sửa thành Nguyên vẹn" (hồ sơ đã gửi giữ nguyên, ghi chú hệ thống). Cờ `INSPECTION_CORRECTED`. `inspection.corrections[]` lưu lịch sử mọi lần sửa `{at, by, reason, before: {conclusion, note, lines}}` (v0.2, DEC-261; thay `corrected`). Audit `INSPECTION_CORRECT` (data: trước / sau).
@@ -485,7 +491,8 @@ Kiện `RETURN_RECEIVED_OK ⇄ _ISSUE` (nguồn MANUAL); hồ sơ hàng hoàn t�
 |---|---|---|---|
 | 409 | CORRECTION_WINDOW_EXPIRED | `ended_at` quá 7 ngày | ẩn nút; message |
 | 409 | NOT_RETURN_SESSION | Phiên không phải RETURN `COMPLETED` | — |
-| 422 | VALIDATION_ERROR / CONCLUSION_INCONSISTENT | như API-102; thiếu `reason` | lỗi theo field |
+| 422 | VALIDATION_ERROR / CONCLUSION_INCONSISTENT | như API-102; `reason` ngoài 5–500; `note` > 500 (service có kiểm ≤ 2000 nhưng BR-22 `inspection.validate` chặn > 500 trước — `correction.py:97`, `inspection.py:159`); kiểm ở service, `details.fields` tiếng Việt (v0.5, C-05) | lỗi theo field |
+| 409 | TRANSITION_NOT_ALLOWED | v0.5: trạng thái kiện vừa đổi; `details {from, to}` | tải lại, toast `message` |
 </details>
 
 <details><summary><b>API-120 / API-121 / API-122 / API-123</b> — đối soát</summary>
@@ -516,10 +523,13 @@ Kiện `RETURN_RECEIVED_OK ⇄ _ISSUE` (nguồn MANUAL); hồ sơ hàng hoàn t�
 | HTTP | Mã lỗi | Khi nào | FE xử lý |
 |---|---|---|---|
 | 409 | ALREADY_RESOLVED | Cảnh báo không còn `OPEN`; `details`: `status`, `closed_at`, `resolved_by` (null khi AUTO_RESOLVED) | "Cảnh báo này đã được {người} xử lý lúc {giờ}." / "…đã tự hết lúc {giờ}." |
-| 409 | TRANSITION_NOT_ALLOWED | `to_status` không thuộc tập chuyển tay (§5.3) từ trạng thái hiện tại; `details.allowed` | tải lại, hiện danh sách mới |
+| 409 | TRANSITION_NOT_ALLOWED | `to_status` không thuộc tập chuyển tay (§5.3) từ trạng thái hiện tại; `details {from, allowed}`. v0.5: cũng trả khi trạng thái vừa đổi giữa lúc ghi, `details {from, to}` | tải lại, hiện danh sách mới |
+| 409 | VERSION_CONFLICT | v0.5 (BB-19): kiện vừa được gắn hồ sơ hàng hoàn mới giữa bước đọc và bước khóa | tải lại, toast "Dữ liệu kiện vừa thay đổi, tải lại rồi thử lại." |
 | 409 | SESSION_ACTIVE | Kiện đang có phiên mở | "Kiện đang có phiên mở ở station." |
 | 409 | RECON_IN_PROGRESS | API-123 khi job đang chạy | "Đối soát đang chạy." |
-| 422 | VALIDATION_ERROR | thiếu `note` / `reason` (5–500) | lỗi dưới ô |
+| 422 | VALIDATION_ERROR | API-121 `note` ngoài 1–500; API-122 `reason` ngoài 5–500 — kiểm ở service, `details.fields` tiếng Việt (v0.5, C-05) | lỗi dưới ô |
+
+v0.5 (SM-F3, R12): API-122 chuyển kiện từ `RETURN_*` → `DELIVERED` thì gỡ kiện khỏi hồ sơ hàng hoàn mở (như giao lại); hồ sơ không còn kiện trong luồng hoàn → `CANCELLED`. Mọi hồ sơ của kiện tính lại (BR-24) sau mỗi lần điều chỉnh.
 </details>
 
 <details><summary><b>API-130..135</b> — hồ sơ khiếu nại</summary>
@@ -577,11 +587,11 @@ Kiện `RETURN_RECEIVED_OK ⇄ _ISSUE` (nguồn MANUAL); hồ sơ hàng hoàn t�
 
 | HTTP | Mã lỗi | Khi nào | FE xử lý |
 |---|---|---|---|
-| 409 | CLAIM_EXISTS | API-131: kiện đã có hồ sơ cùng `type` chưa `CLOSED` (BR-27); `details`: `claim_id`, `code` | "Kiện này đã có hồ sơ … đang mở: KN-…" + "Mở hồ sơ" |
+| 409 | CLAIM_EXISTS | API-131: kiện đã có hồ sơ cùng `type` chưa `CLOSED` (BR-27); `details {claim_id, code}` ở cả nhánh unique (v0.5, C-04). Ngoại lệ hiếm: hồ sơ trùng vừa đóng khi đọc lại → không có `details` | "Kiện này đã có hồ sơ … đang mở: KN-…" + "Mở hồ sơ"; thiếu `details` → chỉ `message` |
 | 409 | VERSION_CONFLICT | `version` cũ; `details.current` = bản mới | tải lại, toast "Hồ sơ vừa được … cập nhật." |
 | 409 | INVALID_TRANSITION | Trạng thái đích không thuộc `allowed_transitions`; `details.allowed` | tải lại |
 | 409 | CLAIM_CLOSED | Sửa / thêm bằng chứng hồ sơ đã `CLOSED` (ghi chú vẫn thêm được) | khóa form |
-| 422 | VALIDATION_ERROR | thiếu `recovered_amount` / `reason` / `platform_claim_ref`; phiên / ảnh không thuộc kiện; `owner_user_id` không phải ADMIN/SUPERVISOR/CSKH đang hoạt động | lỗi theo field |
+| 422 | VALIDATION_ERROR | thiếu `recovered_amount` / `reason` / `platform_claim_ref`; API-133 `platform_claim_ref` > 64, `reason` ngoài 5–500 (kiểm ở service, `details.fields` tiếng Việt — v0.5, C-05); phiên / ảnh không thuộc kiện; `owner_user_id` không phải ADMIN/SUPERVISOR/CSKH đang hoạt động | lỗi theo field |
 | 404 | NOT_FOUND | Kiện / hồ sơ không có | EmptyState |
 </details>
 
@@ -620,7 +630,7 @@ KN-000124/
 | 404 | NOT_FOUND | API-137 không phải người tạo / ADMIN, hoặc quá 24 giờ | cho tạo lại |
 | — | `status = FAILED` | Encode / ghi zip lỗi | "Không tạo được gói bằng chứng…" + Thử lại |
 
-Clip đã xóa / chưa cắt → zip vẫn tạo, ghi vào `missing` (không lỗi).
+Clip đã xóa / chưa cắt → zip vẫn tạo, ghi vào `missing` (không lỗi). v0.5 (B-2): `missing[].reason` thêm `SNAPSHOT_CHECKSUM_MISMATCH` — SHA-256 ảnh chép vào zip khác DB; mục có thêm `snapshot_id`, `sha256_db`, `sha256_file`; FE hiện như mục thiếu khác (chữ chung + mã).
 </details>
 
 <details><summary><b>API-30 / API-31 / API-32 mở rộng</b></summary>
@@ -656,6 +666,7 @@ Clip đã xóa / chưa cắt → zip vẫn tạo, ghi vào `missing` (không l�
 "label_on_tray": 2, "cam2_unverified": 5   // phiên PACK COMPLETED kết thúc trong ngày có cờ
 // stations[] thêm: "work_mode", "operator_name"; state có thể INSPECTING
 // attention thêm kind: RETURN_MISSING {count} · RECON_HIGH {count} · CLAIM_DUE_SOON {count} · RETURN_UNIDENTIFIED {count}
+// v0.5: RETURN_SESSION_ABANDONED đếm cả phiên RETURN còn mở có cờ AUTO_CLOSE_BLOCKED (J-07 không tự hoàn tất được) — kind không đổi
 ```
 </details>
 
@@ -682,6 +693,7 @@ Clip đã xóa / chưa cắt → zip vẫn tạo, ghi vào `missing` (không l�
 | 422 | RETENTION_BELOW_MINIMUM | `retention_clip_days` < `retention_clip_min_days`; `details.min` | "Số ngày giữ clip không được thấp hơn {min}." |
 | 409 | RETENTION_REDUCTION_UNCONFIRMED | Giảm mà chưa `confirm_reduction`; `details.impact` = như API-82 | mở Dialog xác nhận với số liệu |
 | 422 | VALIDATION_ERROR | ràng buộc khác | lỗi theo field |
+| 503 | RETENTION_IMPACT_TIMEOUT | v0.5 (B-4): API-82, và API-80 PUT khi giảm retention phải tính impact — truy vấn đếm quá `statement_timeout` 5 giây (chỉ khi dữ liệu rất lớn) | toast `message` ("Không tính kịp … Thử lại sau ít phút."), giữ form |
 
 Audit: `SETTINGS_UPDATE` như cũ + `RETENTION_REDUCED` (data: cũ, mới, impact) khi giảm.
 </details>
@@ -703,7 +715,7 @@ Audit: `SETTINGS_UPDATE` như cũ + `RETENTION_REDUCED` (data: cũ, mới, impac
 // overlay bản xuất phiên RETURN thêm dòng "Người kiểm: Lan"
 ```
 
-API-92 `action` thêm: `STATION_WORK_MODE`, `STATION_OPERATOR`, `INSPECTION_CORRECT`, `RETURN_LINK_ORDER`, `RECON_RESOLVE`, `WAREHOUSE_STATUS_ADJUST`, `CLAIM_CREATE`, `CLAIM_UPDATE`, `CLAIM_EVIDENCE_UPDATE`, `EXPORT_CLAIM_PACK`, `DOWNLOAD_CLAIM_PACK`, `VIEW_SNAPSHOT`, `RETENTION_REDUCED`, `CLIP_PROTECTION_MIGRATED`.
+API-92 `action` thêm: `STATION_WORK_MODE`, `STATION_OPERATOR`, `INSPECTION_CORRECT`, `RETURN_LINK_ORDER`, `RECON_RESOLVE`, `WAREHOUSE_STATUS_ADJUST`, `CLAIM_CREATE`, `CLAIM_UPDATE`, `CLAIM_EVIDENCE_UPDATE`, `EXPORT_CLAIM_PACK`, `DOWNLOAD_CLAIM_PACK`, `VIEW_SNAPSHOT`, `RETENTION_REDUCED`, `CLIP_PROTECTION_MIGRATED`. v0.5: `EVIDENCE_CLIP_DELETED_DURING_ROLLBACK` (entity CLAIM — migration 0004 nâng cấp lại thấy hồ sơ chưa đóng có clip bằng chứng bị xóa trong lúc chạy bản cũ, M-F5).
 </details>
 
 <details><summary><b>WS-01 / WS-02 mở rộng</b></summary>
@@ -713,6 +725,7 @@ API-92 `action` thêm: `STATION_WORK_MODE`, `STATION_OPERATOR`, `INSPECTION_CORR
 | WS-01 | `station.state` | như API-10 mở rộng | Thêm các lúc: đổi chế độ / người kiểm (API-100/101), lưu kết luận (API-102), chụp ảnh (API-103), cờ `ORDER_CANCELLED` được gắn |
 | WS-01 | `alert` | `{ "code": "ORDER_CANCELLED_DURING_SESSION", "session_id", "tracking_number" }` | J-04 / J-06 thấy đơn hủy khi kiện `PACKING` (BR-21) — FE phát âm lỗi 1 lần, S2 banner theo `flags` |
 | WS-01 | `alert` | `SESSION_ABANDONED` (đã có) cho cả phiên RETURN | J-07 |
+| WS-01 | `alert` | `{ "code": "SESSION_WARN", "session_id", "minutes", "reason"? }` — v0.5: `reason: "INSPECTION_INCOMPLETE"` (tùy chọn) | J-07 tới giờ bỏ dở nhưng kết luận đã lưu chưa đủ (vd. Khác thiếu ghi chú) → không tự hoàn tất, cờ `AUTO_CLOSE_BLOCKED`, gửi một lần. FE station: "Phiên hoàn chưa tự hoàn tất được: kết luận chưa đủ (vd. chọn Khác mà thiếu ghi chú). Sửa kết luận rồi quét lại mã để đóng." |
 | WS-01 | `alert` | `{ "code": "SESSION_AUTO_CLOSED", "session_id", "tracking_number", "closed_session": { /* như API-11 */ } }` (v0.3, DEC-272) | J-07 tự hoàn tất phiên RETURN đã có kết luận |
 | WS-02 | `return.updated` | `{ "return_case_id", "status" }` | Hồ sơ hàng hoàn tạo / đổi trạng thái → D14, D4, D2 |
 | WS-02 | `recon.updated` | `{ "summary": { "open": { "HIGH", "MEDIUM", "LOW" } } }` | Sau mỗi lần J-14 có thay đổi, sau API-121 / 122 → D15, badge, D2 |
@@ -778,6 +791,25 @@ Ghi đè §5–§6.3 nếu lệch.
 | 8 | `flag_order_cancelled` | Phiên đã đóng trước khi task chạy (kiện `PACKED`) → áp `PACKED → CANCELLED_AFTER_PACK` (như J-06 hủy sau khi đóng) | R3-8 |
 | 9 | Mã kiện tạm | `TAM-` + 6 số từ sequence `placeholder_code_seq`, unique theo `upper(tracking_number)`; khớp `SCAN_CODE_REGEX` (`^[A-Z0-9-]{8,40}$`, `TAM-000123` = 10 ký tự). API-32 `returns_received` không đếm kiện tạm; thêm `returns_unidentified` | R3-9 |
 | 10 | Đổi `kind` sau khi đã nhận | Hồ sơ đã có phiên `COMPLETED` giữ chế độ mỗi kiện một phiên khi `kind` nâng thành `BUYER_RETURN` (`is_single_session` tính một lần lúc mở phiên đầu, lưu `return_case.single_session`) | R3-10 |
+
+### 6.6 Thay đổi contract v0.5 (xác minh G3 — DEC-359, 360)
+
+Ghi đè §5–§6.5 nếu lệch. Nguồn: 02a DEC-336..345, DEC-361..363; 02b DEC-364, 365. Mọi thay đổi chỉ thêm mã / trường / nghĩa — client cũ hiện `message` server cho mã lạ.
+
+| # | Chỗ | Thay đổi | FE xử lý | Finding |
+|---|---|---|---|---|
+| 1 | API-82, API-80 PUT (khi giảm retention) | `503 RETENTION_IMPACT_TIMEOUT`: truy vấn đếm quá 5 giây | toast `message`, giữ form, cho thử lại | B-4 |
+| 2 | Mọi API đổi trạng thái kiện (API-11, 12, 105, 112, 113, 122, …) | `409 TRANSITION_NOT_ALLOWED` `details {from, to}` khi trạng thái vừa bị đường khác đổi (trước: 500). Handler chung `main.py` | toast `message`, tải lại (station: API-10; admin: chi tiết) | SM-F4 |
+| 3 | API-122 | `409 VERSION_CONFLICT` khi kiện vừa được gắn hồ sơ mới (BB-19); `RETURN_*` → `DELIVERED` gỡ kiện khỏi hồ sơ + `recompute`, hồ sơ hết kiện → `CANCELLED` | tải lại, toast `message` | SM-F3, R12 |
+| 4 | API-11 / API-105 RETURN | `RETURN_IN_PROGRESS_ELSEWHERE` thêm nghĩa "đơn đang được hệ thống cập nhật" (`station_name = null`); mã lạ trùng `open_code` hồ sơ `UNIDENTIFIED` mở → mở trên hồ sơ đó, đã nhận → `RETURN_ALREADY_RECEIVED`; API-105 khóa `return_code:{code}`; mã chiều về của hồ sơ `CANCELLED` → như hàng không báo trước | R4 hiện `message` server; `station_name = null` → không hiện tên station | SM-F1, F6, F8 |
+| 5 | API-137 / zip | `missing[].reason` thêm `SNAPSHOT_CHECKSUM_MISMATCH` (+ `snapshot_id`, `sha256_db`, `sha256_file`) | hiện như mục thiếu khác | B-2 |
+| 6 | API-32 D2, WS-01 | `RETURN_SESSION_ABANDONED` đếm cả phiên cờ `AUTO_CLOSE_BLOCKED` (cờ mới §5.2). `SESSION_WARN` thêm `reason: "INSPECTION_INCOMPLETE"` (tùy chọn) | station: notice "Phiên hoàn chưa tự hoàn tất được: kết luận chưa đủ (vd. chọn Khác mà thiếu ghi chú). Sửa kết luận rồi quét lại mã để đóng." | DEC-340, V2-4 |
+| 7 | API-92 | action `EVIDENCE_CLIP_DELETED_DURING_ROLLBACK` (migration 0004 nâng cấp lại) | lọc / hiện như action khác | M-F5 |
+| 8 | Giới hạn độ dài | Kiểm ở service (bỏ `min/max_length` Pydantic), `422 VALIDATION_ERROR` + `details.fields` tiếng Việt: API-101 `name` 2–40; API-113 `reason` 5–500, `note` ≤ 500 hiệu lực (xem API-113); API-121 `note` 1–500; API-122 `reason` 5–500; API-133 `platform_claim_ref` ≤ 64, `reason` 5–500 | lỗi dưới ô theo `fields` | C-05 |
+| 9 | API-131 | `CLAIM_EXISTS` kèm `details {claim_id, code}` cả ở nhánh unique | "Mở hồ sơ" theo `claim_id` | C-04 |
+| 10 | BR đối soát (01 v0.6, DEC-360) | BR-12 đồng hồ chỉ chạy khi sàn chấp nhận, theo `return_case.expected_since`; BR-19 bỏ hồ sơ chỉ hoàn tiền + hồ sơ trước `recon_start_at`; J-13 bỏ yêu cầu `DONE` có trước nâng cấp; `context_key` BR-10 = `SHIPPED`, BR-11 = `CANCELLED`; BR-14 xét cả kiện không có đơn, loại đơn đã giao / hủy; BR-20 loại `CANCELLED` / đã nhận hoàn | không đổi (số đếm D15 / D2 ít hơn) | C1–C4, R8 |
+| 11 | Cấu hình / nâng cấp | §8, §10: `SHOPEE_RETURNS_ENABLED`, `SHOPEE_RETURNS_INITIAL_DAYS`, `SCHEMA_CHECK_STRICT`, `AICAM_MIGRATE_ALLOW_ACTIVE_CONNECTIONS`, `AICAM_DOWNGRADE_ALLOW_UNCUT_RETURN_CLIPS`; `APP_ENV` 4 giá trị; nâng cấp phải dừng service; lệch schema → thoát mã 78; index `ix_package_unverified_created_at` (0005) | — | DEC-336..338, F-8, F-10..12, R7 |
+| 12 | API-81 | `last_returns_success_at` hoãn | không hiện | F-15 |
 
 ## 7. Luồng chính (end-to-end)
 
@@ -849,7 +881,9 @@ sequenceDiagram
 | Đồng thời | Thứ tự khóa (v0.3, DEC-266 thay DEC-256): advisory `order:{sn}` (khi cần — Phase 1 `_lookup_platform` → `upsert_platform_order` → `lock_orders` đã lấy trước `lock_station`, `sessions/service.py:253, :419`) → advisory lock station → `return_case` (`FOR UPDATE`) → `package` theo id tăng dần (`FOR UPDATE`, kiểm lại trạng thái) → `clip`. J-04 BR-21 không khóa kiện đang `PACKING` trong transaction đồng bộ: gắn cờ ở transaction riêng (task `sessions.flag_order_cancelled`) lấy lock station trước. Mọi đường đổi trạng thái kiện (API-11, 12, 105, 112, 113, 122, J-04, 06, 07, 13, 14) khóa kiện; J-14 dùng `SKIP LOCKED`. Một hồ sơ hàng hoàn mở / đơn: partial unique `return_case(order_id)`. Phiên RETURN dùng cùng advisory lock station + partial unique `session(package_id)` đang hoạt động (BR-02 mở rộng). CLAIM khóa lạc quan `version`. Hồ sơ hàng hoàn: khóa dòng khi tính lại trạng thái (BR-24). Cảnh báo: `SELECT … FOR UPDATE` khi resolve |
 | NFR | NFR-01: tra mã ở bàn hoàn ≤ 5 query có index (mã chiều về, mã gốc, mã đơn); tra sàn ngoài lock như Phase 1. NFR-32: lấy khung từ relay MediaMTX (đã mở) timeout 3 giây. NFR-33: J-14 truy vấn theo tập (set-based) mỗi quy tắc. NFR-09: mọi thứ trong LAN |
 | Observability | Log thêm `return_case_id`, `claim_id`; metric `aicam_return_scan_duration_seconds`, `aicam_snapshot_seconds`, `aicam_recon_alerts_open{severity}`, `aicam_recon_run_seconds`, `aicam_evidence_pack_seconds`, `aicam_returns_sync_errors_total` (02a §10) |
-| Feature flag | Không cần flag toàn cục: station mặc định `PACK` → hành vi Phase 1 giữ nguyên tới khi Admin đặt loại. `RECON_ENABLED` (mặc định `true`) để tắt J-14 khi sự cố. J-13 theo `SHOPEE_ENABLED` như J-04 |
+| Feature flag | Không cần flag toàn cục: station mặc định `PACK` → hành vi Phase 1 giữ nguyên tới khi Admin đặt loại. `RECON_ENABLED` (mặc định `true`) để tắt J-14 khi sự cố. J-13 theo `SHOPEE_ENABLED` như J-04; v0.5: thêm `SHOPEE_RETURNS_ENABLED` (mặc định `false` — J-13 với adapter Shopee thật bỏ lượt tới khi T-3; mock luôn chạy) |
+| Cấu hình (v0.5) | `SHOPEE_RETURNS_INITIAL_DAYS` (15 — lượt J-13 đầu lùi N ngày; ops xóa `last_return_cursor` để lùi lại). `SCHEMA_CHECK_STRICT` (rỗng = thoát ở staging / production, chỉ log ở dev / test). `AICAM_MIGRATE_ALLOW_ACTIVE_CONNECTIONS` (không đặt — 0004 từ chối khi còn kết nối khác vào DB). `AICAM_DOWNGRADE_ALLOW_UNCUT_RETURN_CLIPS` (không đặt — downgrade 0003 từ chối khi clip phiên RETURN còn `PENDING` / `FAILED`). `APP_ENV` chỉ nhận `dev`, `test`, `staging`, `production` (giá trị khác → lỗi khởi động; `core/settings.py`) |
+| Hàng đợi / khóa (v0.5) | Redis `returns_retry:{shop}` (hash `return_sn` → lần thử, J-13 đọc lại `get_return_detail`, tối đa 8 lượt). Advisory `return_code:{code}` (API-105, đầu transaction). J-13 nhiều shop: lặp theo id shop, mỗi shop lỗi độc lập, lock `sync_returns:{shop}` luôn nhả (DEC-361 02a) |
 | Adapter sàn | `PlatformAdapter` thêm `list_returns(creds, since) -> AsyncIterator[PlatformReturn]`, `get_return(creds, return_sn) -> PlatformReturn \| None`; `ShippingStatus.warehouse_hint` thêm `RETURN_EXPECTED`. Mapping trạng thái Shopee returns + lý do trong adapter (02a §7) — **chưa test với Shopee thật (T-3)** |
 | Thời gian | Không đổi — giờ `Z`; ngày theo giờ Việt Nam (`TZ_DISPLAY`) |
 
@@ -872,14 +906,17 @@ sequenceDiagram
 
 ## 10. Rollout & rollback
 
-1. **Migration 0003** (schema, chỉ thêm: bảng mới, cột nullable / có default, mở rộng CHECK) — chạy được khi code Phase 1 còn chạy.
-2. **Migration 0004** (dữ liệu: clip đang giữ → hồ sơ `LEGACY_HOLD`) — chạy cùng release BE mới (code cũ vẫn đọc được, chỉ thấy `held = false`).
+0. **v0.5 (DEC-336): nâng cấp bắt buộc dừng service** — `stop api vision worker worker-sync worker-export beat` → `alembic current` (0002) → `upgrade head` → `current` (0005) → `VACUUM ANALYZE package` → `up -d`. Lý do: 0004 bỏ cờ `held`, J-02 cũ còn chạy sẽ xóa clip vừa thành bằng chứng. 0003 khóa bảng `package` ~34 giây / 1 triệu kiện (02a DEC-334) → làm ngoài giờ ([docs/ops.md](../../../../ai-cam-be/docs/ops.md) §7.1).
+1. **Migration 0003** (schema, chỉ thêm: bảng mới, cột nullable / có default, mở rộng CHECK; `lock_timeout` 5 giây).
+2. **Migration 0004** (dữ liệu: clip đang giữ → hồ sơ `LEGACY_HOLD`) — có clip `held` cần chuyển mà còn kết nối client khác vào DB → từ chối (`AICAM_MIGRATE_ALLOW_ACTIVE_CONNECTIONS=1` khi ops chắc chắn).
+2b. **Migration 0005** — index tra cứu `upper(...) text_pattern_ops` (API-104) + index một phần `ix_package_unverified_created_at` (`package(created_at) WHERE verified IS false AND is_placeholder IS false`, BR-20).
+2c. **Kiểm schema lúc khởi động** (`core/schema_guard.py`): api, worker, beat, vision so `alembic_version` với `SCHEMA_HEAD` của image; lệch → log `schema_version_mismatch` + thoát mã 78 ở staging / production (`SCHEMA_CHECK_STRICT` ép bật / tắt).
 3. BE: api, worker, beat (J-13, J-14, J-15 vào lịch; J-16, J-17 chạy theo sự kiện), vision không đổi.
 4. FE: build mới (station + dashboard cùng app).
 5. Admin đặt 1 station `RETURN` (hoặc `BOTH`), chạy thử 1 ngày; xem D15 vài chu kỳ trước khi dùng số đếm.
-6. Shopee returns bật cùng `SHOPEE_ENABLED` khi có partner (T-3); trước đó D14 chỉ có hồ sơ `UNANNOUNCED` / `UNIDENTIFIED` và đối soát phần kiện đi.
+6. Shopee returns bật bằng `SHOPEE_RETURNS_ENABLED=true` (cùng `SHOPEE_ENABLED`) khi có partner (T-3); trước đó D14 chỉ có hồ sơ `UNANNOUNCED` / `UNIDENTIFIED` và đối soát phần kiện đi.
 
-**Rollback (v0.2, DEC-252):** (a) Lỗi FE → về image FE trước (BE tương thích). (b) Lỗi BE → **ưu tiên sửa tiến (forward-fix)**. Phải lùi: dừng `api`, `worker`, `beat` → chạy `alembic downgrade 0002` **bằng image mới** → mới đổi sang image cũ. Image cũ không tự chạy được trên DB 0003 / 0004: bước `migrate` của nó gặp revision lạ và dừng nên `api` không lên (chặn J-02 cũ xóa clip đang giữ). Downgrade 0004 đặt `held = true` cho **mọi** clip đang được bảo vệ (hồ sơ khiếu nại chưa đóng + hồ sơ hàng hoàn chưa kết thúc) để J-02 cũ giữ chúng, rồi xóa hồ sơ `LEGACY_HOLD`. Downgrade 0003 **không xóa dữ liệu Phase 2**: chuyển bảng mới + phiên RETURN + clip / ảnh của chúng sang schema `phase2_archive`, kiện `RETURN_*` về trạng thái cuối không phải hoàn trong `status_history`; file video / ảnh giữ nguyên trên đĩa; nâng cấp lại (0003) tự khôi phục từ `phase2_archive`. (c) `pg_dump` chỉ là phương án cuối (mất dữ liệu phát sinh sau lúc chụp — kể cả phiên đóng gói).
+**Rollback (v0.2, DEC-252):** (a) Lỗi FE → về image FE trước (BE tương thích). (b) Lỗi BE → **ưu tiên sửa tiến (forward-fix)**. Phải lùi: dừng `api`, `worker`, `beat` → chạy `alembic downgrade 0002` **bằng image mới** → mới đổi sang image cũ. Image cũ không tự chạy được trên DB 0003 / 0004: bước `migrate` của nó gặp revision lạ và dừng nên `api` không lên (chặn J-02 cũ xóa clip đang giữ). Downgrade 0004 đặt `held = true` cho **mọi** clip đang được bảo vệ (hồ sơ khiếu nại chưa đóng + hồ sơ hàng hoàn chưa kết thúc) để J-02 cũ giữ chúng, rồi xóa hồ sơ `LEGACY_HOLD`. Downgrade 0003 **không xóa dữ liệu Phase 2**: chuyển bảng mới + phiên RETURN + clip / ảnh của chúng sang schema `phase2_archive`, kiện `RETURN_*` về trạng thái cuối không phải hoàn trong `status_history`; file video / ảnh giữ nguyên trên đĩa; nâng cấp lại (0003) tự khôi phục từ `phase2_archive`. (c) `pg_dump` chỉ là phương án cuối (mất dữ liệu phát sinh sau lúc chụp — kể cả phiên đóng gói). (d) v0.5: downgrade 0003 từ chối khi còn phiên RETURN mở hoặc clip phiên RETURN `PENDING` / `FAILED` (`AICAM_DOWNGRADE_ALLOW_UNCUT_RETURN_CLIPS=1` để chấp nhận mất); nâng cấp lại ghi audit `EVIDENCE_CLIP_DELETED_DURING_ROLLBACK` cho hồ sơ chưa đóng mất clip trong lúc chạy bản cũ (02a DEC-331, 336, 338).
 
 ## 11. Rủi ro & câu hỏi mở
 
@@ -966,6 +1003,8 @@ sequenceDiagram
 | DEC-273 | R2-9, R2-10, R2-11 | Thêm chuyển trạng thái khi gộp; sửa chữ cũ 02a; đánh số lại DEC của 02b (DEC-281, 282) | Nhất quán tài liệu | khanhtt (tự quyết) | 2026-10-05 |
 | DEC-274 | Chốt G2 sau 3 lượt review (lượt 3: Đạt có điều kiện, không CRITICAL) | **G2 ✅ có điều kiện**: C1–C6 = sửa R3-1..R3-6 (đã sửa ở v0.4, §6.5) | Điều phối duyệt theo ủy quyền user; điều kiện đã thỏa trong cùng lượt | khanhtt (điều phối, tự quyết theo ủy quyền user) | 2026-10-05 |
 | DEC-275 | Findings lượt 3 R3-1..R3-10 | §6.5: `force_new` chỉ khi đã nhận + `manual_link_only`; gộp chỉ khi phiên đã kết thúc; kiện tách về trạng thái trước; `resolve_code` + `order:{sn}` trước station; archive `IF NOT EXISTS` / drop cuối / `held = false`; (b) chỉ `RECEIVED_*`; `signal_keys` theo đợt; `flag_order_cancelled` áp cả `PACKED`; mã `TAM-` từ sequence; `single_session` lưu lúc mở | Đóng điều kiện G2 | khanhtt (tự quyết) | 2026-10-05 |
+| DEC-359 | Xác minh G3: code đã đổi contract (mã lỗi mới, giới hạn độ dài, nghĩa alert, cấu hình nâng cấp) nhưng 02 vẫn v0.4 | 02 → v0.5: đưa vào §5.2, §6.2 (bảng lỗi + cột FE xử lý), §8, §10; tổng hợp §6.6; API-81 `last_returns_success_at` hoãn (F-15). API-113 `note` ghi giới hạn hiệu lực ≤ 500 theo code | Contract là nguồn cho FE / QA; chỉ thêm mã / trường nên giữ `/v1`. Loại: để lệch tới release (QA viết case theo bản cũ) | khanhtt (architect, tự quyết theo ủy quyền user) | 2026-10-06 |
+| DEC-360 | BR đối soát đổi ở G3 (C1–C4, R8) | §6.6 #10 | 01 DEC-360 (SRS v0.6) | khanhtt (tự quyết theo ủy quyền user) | 2026-10-06 |
 
 ## Chốt G2 (áp cho bộ 02 + 02a + 02b)
 - [x] Mọi FR/BR/NFR trong phạm vi có chỗ trong spec (bảng FR coverage)
