@@ -21,8 +21,8 @@ Số item: 02 (`docs/ai/items/` chỉ có 01; remote 3 repo có `main`, `feat/01
 | Spec 02 / 02a / 02b | ✅ ✅ ✅ (Approved v0.4; 02 v0.5 sau G3) | 2026-10-05 | khanhtt (tự quyết) | 02b: station, admin; sửa theo review G2 lượt 1–3. 2026-10-06: 02 v0.5 (§6.6, DEC-359), 01 v0.6 (DEC-360) theo thay đổi G3 |
 | G2 Thiết kế | ✅ có điều kiện | 2026-10-05 | khanhtt (điều phối, tự quyết theo ủy quyền user — DEC-274) | 3 lượt review subagent; lượt 3 Đạt có điều kiện, không CRITICAL; điều kiện C1–C6 (R3-1..R3-6) + minor R3-7..R3-10 đã sửa ở 02 §6.5, 02a / 02b v0.4, 01 v0.5 (DEC-275) |
 | Plan | ✅ | 2026-10-05 | khanhtt (tự quyết, DEC-276) | 03-plan.md: 39 task (20 BE, 19 FE), ≈ 60 ngày, M6–M10, xong dự kiến 2026-12-29; ticket chưa tạo |
-| G3 Build | ✅ | 2026-10-06 | khanhtt (tự quyết theo ủy quyền user, DEC-366) | Review G3 nhiều reviewer → sửa (DEC-336..358) → xác minh (reviewer subagent): Đạt có điều kiện, V2-1..V2-5 đã sửa (BE `06d2ea0`, FE `e6d04c2`). QA live 123/123, E2E thật 55 + M9. BE pytest 1086 passed ×2; FE tsc / eslint / prettier 0, vitest 563 |
-| G4 Kiểm thử | ⬜ | | | |
+| G3 Build | ✅ | 2026-10-06 | khanhtt (tự quyết theo ủy quyền user, DEC-366) | Review G3 nhiều reviewer → sửa (DEC-336..358) → xác minh (reviewer subagent): Đạt có điều kiện, V2-1..V2-5 đã sửa (BE `06d2ea0`, FE `e6d04c2`). QA live 123/123, E2E thật 55 + M9. BE pytest 1086 passed ×2; FE tsc / eslint / prettier 0, vitest 562 |
+| G4 Kiểm thử | ✅ | 2026-10-06 | khanhtt (tự quyết theo ủy quyền user, DEC-367 trong `04`) | Đạt có điều kiện: ✅ 176 · ❌ 0 · ⛔ 12 · ⬜ 0, P1 90/90 ([04a](04a-test-report.md)); ⛔ = điều kiện go-live (T-3, T-4, server kho, điện thoại, WAN) |
 | G5 Release | ⬜ | | | |
 
 ## Solo pipeline
@@ -42,13 +42,13 @@ Số item: 02 (`docs/ai/items/` chỉ có 01; remote 3 repo có `main`, `feat/01
 | 8c | Tài liệu nghiệp vụ (mỗi lát) | ✅ | 2026-10-06 | `docs/nghiep-vu/02-returns-reconciliation/` lát 6–10 |
 | 9 | Commit / PR | ✅ | 2026-10-06 | Commit + push từng task trên `feat/02-returns-reconciliation` (3 repo); sửa G3 BE `06d2ea0`, FE `e6d04c2` |
 | 10 | Review code | ✅ | 2026-10-06 | **G3 ✅** (DEC-366): review nhiều reviewer + xác minh — Đạt có điều kiện, V2-1..V2-5 đã sửa |
-| 11 | Chạy test | ▶ | | G4: chạy 04-test-cases trên build đã qua G3 |
-| 12 | Release | ⬜ | | |
+| 11 | Chạy test | ✅ | 2026-10-06 | G4 ✅ DEC-367 |
+| 12 | Release | ▶ | | G5 staging local (không deploy thật) |
 
 ## NOW
 | Owner tiếp | Việc tiếp | Skill |
 |---|---|---|
-| QA | Bước 11: chạy 04-test-cases (tự động + thủ công), lập 04a-test-report, chốt G4 | `ai-qa-run-tests` (G4) |
+| Ops | Bước 12: release staging local, smoke, thử khôi phục, 05-release; rồi PR + merge main 3 repo; tự Q&A nghiệp vụ Phase 2 | `ai-ops-release` (G5) |
 
 ## Phản hồi giữa các vai
 | Từ | Tới | Nội dung | Trạng thái |
@@ -63,7 +63,8 @@ Số item: 02 (`docs/ai/items/` chỉ có 01; remote 3 repo có `main`, `feat/01
 ## Lịch sử
 | Ngày | Role | Việc |
 |---|---|---|
-| 2026-10-06 | Lead review, Flow | Xác minh G3 (reviewer subagent): Đạt có điều kiện → V2-1 (major J-13 nhiều shop) + V2-2..V2-5 đã sửa (BE 06d2ea0, FE e6d04c2); contract 02 v0.5, SRS v0.6. BE pytest 1086 passed ×2; FE tsc/eslint/prettier 0, vitest 563. **G3 ✅** (DEC-366, tự quyết theo ủy quyền user); DEC-359..365 |
+| 2026-10-06 | Lead review, Flow | Xác minh G3 (reviewer subagent): Đạt có điều kiện → V2-1 (major J-13 nhiều shop) + V2-2..V2-5 đã sửa (BE 06d2ea0, FE e6d04c2); contract 02 v0.5, SRS v0.6. BE pytest 1086 passed ×2; FE tsc/eslint/prettier 0, vitest 562. **G3 ✅** (DEC-366, tự quyết theo ủy quyền user); DEC-359..365 |
+| 2026-10-06 | QA, Flow | G4: QA live 123/123 + E2E BE thật 56 + 1 skip trên build `06d2ea0`/`e6d04c2`; 04 KQ đủ 188 case, viết thêm 8 test (BE `66ac3d1`, FE `3acaad0`; BE pytest 1100 passed, FE vitest 564); 04a. **G4 ✅ đạt có điều kiện** (DEC-367) |
 | 2026-10-06 | BE, FE, Dev | M10 xong (T-120 rollback archive, T-116 seed, T-118 contract + locust + migration 0005, T-162 E2E): E2E BE thật toàn bộ 56 + 1 skip. Tài liệu nghiệp vụ lát 6–10 (`docs/nghiep-vu/02-returns-reconciliation/`). Review G3 Phase 2 (nhiều reviewer): không CRITICAL cần user; đang sửa (BE + FE) |
 | 2026-10-06 | BE, FE | M9 xong: BE T-105/113/114/115 + T-121 ảnh từ khung vision (TC-04.40 0,02 s; 1018 pytest; QA live 123/123 với SHOPEE_ENABLED=true + adapter mock), FE T-153/156/160/161 (543 vitest, E2E mock 20, hết phụ thuộc mock trừ Shopee thật); E2E BE thật 45 + 1 skip (TC-05.03 chạy ở lượt cờ tắt) |
 | 2026-10-06 | BE, FE | M8 xong: BE T-110/111/119/112 (947 pytest; test bằng chứng bắt buộc đạt; QA live 114 + 2 skip, TC-04.40 ảnh 3,2 s > 3 s → thêm T-121 vào M9), FE T-154/155/157/158/159 (514 vitest, E2E mock 14); E2E BE thật 45/45 |
@@ -91,4 +92,4 @@ Số item: 02 (`docs/ai/items/` chỉ có 01; remote 3 repo có `main`, `feat/01
 | DEC-232 | CP3 (02) | Tự duyệt, sang 4a | Checklist §3 tự soát đạt: mọi field có tên / kiểu, mọi lỗi có mã, FR coverage đủ | khanhtt (tự quyết theo ủy quyền user) | 2026-10-05 |
 | DEC-233 | CP4a (02a) | Tự duyệt, sang 4b | Mọi API-xx / BR / job BE có dòng; migration có downgrade; task ≤ 2 ngày, truy về FR / API | khanhtt (tự quyết theo ủy quyền user) | 2026-10-05 |
 | DEC-234 | CP4b (02b ×2) | Tự duyệt, sang bước 5 | Mọi màn §10 và FR cột FE có dòng; mọi API-xx dùng có xử lý lỗi; task truy về màn / FR | khanhtt (tự quyết theo ủy quyền user) | 2026-10-05 |
-| DEC-366 | Chốt G3 Build sau review G3 (nhiều reviewer) + vòng xác minh (Đạt có điều kiện) | **G3 ✅**: điều kiện V2-1..V2-5 đã sửa và kiểm (BE `06d2ea0`, FE `e6d04c2`); tài liệu đồng bộ (02 v0.5, 01 v0.6, DEC-359..365); sang G4 | Không còn CRITICAL / major mở; bằng chứng: BE pytest 1086 passed ×2, FE tsc / eslint / prettier 0, vitest 563, QA live 123/123, E2E thật 55 + M9. Còn "chưa test — thiếu tài nguyên": Shopee thật (T-3), camera thật (T-4), chạy 1 giờ trên server kho. Loại: thêm một vòng review (không có finding mở) | khanhtt (điều phối, tự quyết theo ủy quyền user) | 2026-10-06 |
+| DEC-366 | Chốt G3 Build sau review G3 (nhiều reviewer) + vòng xác minh (Đạt có điều kiện) | **G3 ✅**: điều kiện V2-1..V2-5 đã sửa và kiểm (BE `06d2ea0`, FE `e6d04c2`); tài liệu đồng bộ (02 v0.5, 01 v0.6, DEC-359..365); sang G4 | Không còn CRITICAL / major mở; bằng chứng: BE pytest 1086 passed ×2, FE tsc / eslint / prettier 0, vitest 562, QA live 123/123, E2E thật 55 + M9. Còn "chưa test — thiếu tài nguyên": Shopee thật (T-3), camera thật (T-4), chạy 1 giờ trên server kho. Loại: thêm một vòng review (không có finding mở) | khanhtt (điều phối, tự quyết theo ủy quyền user) | 2026-10-06 |
