@@ -42,7 +42,7 @@ Owner tất cả: khanhtt (profile §7). Ticket: chưa tạo (tracker `none` cho
 
 | T | Tên | Comp | Phủ (FR / API / màn) | Nguồn | Phụ thuộc | Ước lượng | Milestone | Ticket | Trạng thái |
 |---|---|---|---|---|---|---|---|---|---|
-| T-201 | Migration 0006 (bảng, cột, CHECK, backfill nhóm / shop / `submitted_at`, index báo cáo) + model + `alembic check`; đo 1 triệu đơn | be | §3; FR-05.21, 08.09, 09.04 | 02a | — | 2 | M11 | | ⬜ |
+| T-201 | Migration 0006 (bảng, cột, CHECK, backfill nhóm / shop / `submitted_at`, index báo cáo) + model + `alembic check`; đo 1 triệu đơn | be | §3; FR-05.21, 08.09, 09.04 | 02a | — | 2 | M11 | | ✅ `09993b3` |
 | T-202 | Migration 0007 (unique theo shop) + downgrade 0006 / 0007 → `phase3_archive` + nâng cấp lại + `SCHEMA_HEAD` 0007 + test migration | be | §3; BR-29 | 02a | T-201 | 2 | M11 | | ⬜ |
 | T-203 | Nhóm trạng thái (`base.py`) + `registry` + cờ sàn; Shopee mapping trả nhóm; lõi đọc nhóm; `test_no_platform_status_in_core` | be | FR-05.07, 05.21, NFR-28; BR-30 | 02a | T-201 | 2 | M11 | | ⬜ |
 | T-213 | L11: BR-37 (API-12 409, `self_cancel_until`), API-20 `return_summary`, API-21 `note`; BR-39 `auto_evidence` + `primary` / `prior_return` + J-16 | be | FR-04.14, 08.07 | 02a | T-201 | 2 | M11 | | ⬜ |
