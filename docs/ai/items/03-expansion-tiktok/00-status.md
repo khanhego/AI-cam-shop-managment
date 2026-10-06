@@ -48,7 +48,7 @@ Số item: 03 (`docs/ai/items/` có 01, 02; remote 3 repo có `main`, `feat/01-�
 ## NOW
 | Owner tiếp | Việc tiếp | Skill |
 |---|---|---|
-| Dev BE | Bước 8 — M11: **T-201** Migration 0006 (bảng, cột, CHECK, backfill, index báo cáo) + model + `alembic check` — đầu đường găng; tiếp T-202 ∥ T-203 (03-plan §3). FE song song bằng MSW: T-231, T-251, T-252 | `ai-be-implement` (T-201) |
+| Dev BE | Bước 8 — M12: **T-204** đa shop (`upsert_platform_order(…, shop)`, BR-29) — đường găng; FE M11 còn T-231, T-251, T-252 (MSW) | `ai-be-implement` (T-204) · `ai-fe-implement` (T-231) |
 
 ## Phản hồi giữa các vai
 | Từ | Tới | Nội dung | Trạng thái |
