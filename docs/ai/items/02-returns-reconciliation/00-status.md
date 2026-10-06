@@ -23,7 +23,7 @@ Số item: 02 (`docs/ai/items/` chỉ có 01; remote 3 repo có `main`, `feat/01
 | Plan | ✅ | 2026-10-05 | khanhtt (tự quyết, DEC-276) | 03-plan.md: 39 task (20 BE, 19 FE), ≈ 60 ngày, M6–M10, xong dự kiến 2026-12-29; ticket chưa tạo |
 | G3 Build | ✅ | 2026-10-06 | khanhtt (tự quyết theo ủy quyền user, DEC-366) | Review G3 nhiều reviewer → sửa (DEC-336..358) → xác minh (reviewer subagent): Đạt có điều kiện, V2-1..V2-5 đã sửa (BE `06d2ea0`, FE `e6d04c2`). QA live 123/123, E2E thật 55 + M9. BE pytest 1086 passed ×2; FE tsc / eslint / prettier 0, vitest 562 |
 | G4 Kiểm thử | ✅ | 2026-10-06 | khanhtt (tự quyết theo ủy quyền user, DEC-367 trong `04`) | Đạt có điều kiện: ✅ 176 · ❌ 0 · ⛔ 12 · ⬜ 0, P1 90/90 ([04a](04a-test-report.md)); ⛔ = điều kiện go-live (T-3, T-4, server kho, điện thoại, WAN) |
-| G5 Release | ⬜ | | | |
+| G5 Release | ✅ | 2026-10-06 | khanhtt (tự quyết theo ủy quyền user, DEC-368) | Staging local có điều kiện ([05-release](05-release.md)): nâng cấp từ Phase 1 có dữ liệu ✅, smoke 32/32, backup/restore 29/29, rollback + nâng cấp lại ✅; BUG-G5-P2-2/3 đã sửa (BE `3bfe6ae`). Chưa deploy kho (§7) |
 
 ## Solo pipeline
 | # | Bước | Trạng thái | Ngày | Ghi chú |
@@ -43,12 +43,12 @@ Số item: 02 (`docs/ai/items/` chỉ có 01; remote 3 repo có `main`, `feat/01
 | 9 | Commit / PR | ✅ | 2026-10-06 | Commit + push từng task trên `feat/02-returns-reconciliation` (3 repo); sửa G3 BE `06d2ea0`, FE `e6d04c2` |
 | 10 | Review code | ✅ | 2026-10-06 | **G3 ✅** (DEC-366): review nhiều reviewer + xác minh — Đạt có điều kiện, V2-1..V2-5 đã sửa |
 | 11 | Chạy test | ✅ | 2026-10-06 | G4 ✅ DEC-367 |
-| 12 | Release | ▶ | | G5 staging local (không deploy thật) |
+| 12 | Release | ✅ | 2026-10-06 | G5 ✅ DEC-368 — pipeline item 02 xong |
 
 ## NOW
 | Owner tiếp | Việc tiếp | Skill |
 |---|---|---|
-| Ops | Bước 12: release staging local, smoke, thử khôi phục, 05-release; rồi PR + merge main 3 repo; tự Q&A nghiệp vụ Phase 2 | `ai-ops-release` (G5) |
+| Flow | Item 02 xong (G5 ✅). PR + merge main 3 repo; Phase 3 (item 03, TikTok Shop) từ bước 1; Phase 3 mở đầu bằng L11, L13, L15 ([06-business-qa](06-business-qa.md)) | `ai-solo-build-feature` |
 
 ## Phản hồi giữa các vai
 | Từ | Tới | Nội dung | Trạng thái |
@@ -65,6 +65,7 @@ Số item: 02 (`docs/ai/items/` chỉ có 01; remote 3 repo có `main`, `feat/01
 |---|---|---|
 | 2026-10-06 | Lead review, Flow | Xác minh G3 (reviewer subagent): Đạt có điều kiện → V2-1 (major J-13 nhiều shop) + V2-2..V2-5 đã sửa (BE 06d2ea0, FE e6d04c2); contract 02 v0.5, SRS v0.6. BE pytest 1086 passed ×2; FE tsc/eslint/prettier 0, vitest 562. **G3 ✅** (DEC-366, tự quyết theo ủy quyền user); DEC-359..365 |
 | 2026-10-06 | QA, Flow | G4: QA live 123/123 + E2E BE thật 56 + 1 skip trên build `06d2ea0`/`e6d04c2`; 04 KQ đủ 188 case, viết thêm 8 test (BE `66ac3d1`, FE `3acaad0`; BE pytest 1100 passed, FE vitest 564); 04a. **G4 ✅ đạt có điều kiện** (DEC-367) |
+| 2026-10-06 | Ops, BE, PO | G5 staging local (05-release, evidence/g5): nâng cấp Phase 1→2 có dữ liệu, smoke 32/32, backup/restore, rollback; BUG-G5-P2-2 (downgrade lọt khi J-01 còn trong hàng đợi) + BUG-G5-P2-3 (Caddy mất IP) đã sửa BE `3bfe6ae` (pytest 1101). **G5 ✅ có điều kiện** (DEC-368). Q&A nghiệp vụ Phase 2 (06-business-qa): 44 câu, **không CRITICAL**; Major L11–L15 (L11, L13, L15 đầu Phase 3; L14 chặn go-live cùng Q13 / T-3) |
 | 2026-10-06 | BE, FE, Dev | M10 xong (T-120 rollback archive, T-116 seed, T-118 contract + locust + migration 0005, T-162 E2E): E2E BE thật toàn bộ 56 + 1 skip. Tài liệu nghiệp vụ lát 6–10 (`docs/nghiep-vu/02-returns-reconciliation/`). Review G3 Phase 2 (nhiều reviewer): không CRITICAL cần user; đang sửa (BE + FE) |
 | 2026-10-06 | BE, FE | M9 xong: BE T-105/113/114/115 + T-121 ảnh từ khung vision (TC-04.40 0,02 s; 1018 pytest; QA live 123/123 với SHOPEE_ENABLED=true + adapter mock), FE T-153/156/160/161 (543 vitest, E2E mock 20, hết phụ thuộc mock trừ Shopee thật); E2E BE thật 45 + 1 skip (TC-05.03 chạy ở lượt cờ tắt) |
 | 2026-10-06 | BE, FE | M8 xong: BE T-110/111/119/112 (947 pytest; test bằng chứng bắt buộc đạt; QA live 114 + 2 skip, TC-04.40 ảnh 3,2 s > 3 s → thêm T-121 vào M9), FE T-154/155/157/158/159 (514 vitest, E2E mock 14); E2E BE thật 45/45 |
@@ -93,3 +94,4 @@ Số item: 02 (`docs/ai/items/` chỉ có 01; remote 3 repo có `main`, `feat/01
 | DEC-233 | CP4a (02a) | Tự duyệt, sang 4b | Mọi API-xx / BR / job BE có dòng; migration có downgrade; task ≤ 2 ngày, truy về FR / API | khanhtt (tự quyết theo ủy quyền user) | 2026-10-05 |
 | DEC-234 | CP4b (02b ×2) | Tự duyệt, sang bước 5 | Mọi màn §10 và FR cột FE có dòng; mọi API-xx dùng có xử lý lỗi; task truy về màn / FR | khanhtt (tự quyết theo ủy quyền user) | 2026-10-05 |
 | DEC-366 | Chốt G3 Build sau review G3 (nhiều reviewer) + vòng xác minh (Đạt có điều kiện) | **G3 ✅**: điều kiện V2-1..V2-5 đã sửa và kiểm (BE `06d2ea0`, FE `e6d04c2`); tài liệu đồng bộ (02 v0.5, 01 v0.6, DEC-359..365); sang G4 | Không còn CRITICAL / major mở; bằng chứng: BE pytest 1086 passed ×2, FE tsc / eslint / prettier 0, vitest 562, QA live 123/123, E2E thật 55 + M9. Còn "chưa test — thiếu tài nguyên": Shopee thật (T-3), camera thật (T-4), chạy 1 giờ trên server kho. Loại: thêm một vòng review (không có finding mở) | khanhtt (điều phối, tự quyết theo ủy quyền user) | 2026-10-06 |
+| DEC-368 | Chốt G5 item 02 (staging local) | **G5 ✅ có điều kiện**: BUG-G5-P2-2 sửa + test INT migration thật (R2b staging chưa chạy lại — làm trước lần rollback thật đầu tiên); BUG-G5-P2-3 sửa + kiểm staging; deploy kho chờ 05 §7 (T-3, T-4, server kho, Q13 + L14, điện thoại, WAN); API-46 cắt lại khi phiên không có dòng clip → backlog | Luật user: release = staging local, ghi chưa test; không còn bug mở | khanhtt (điều phối, tự quyết theo ủy quyền user) | 2026-10-06 |

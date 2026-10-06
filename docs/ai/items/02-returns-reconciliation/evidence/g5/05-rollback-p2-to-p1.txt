@@ -1,0 +1,238 @@
+# Bước 3: lùi Phase 2 → Phase 1 theo docs/ops.md §7.1 'Lùi về Phase 1', rồi nâng cấp lại — 2026-10-06T21:59:36+07:00
+## R0 chuẩn bị điều kiện từ chối: SPXSTG0000003 → HANDED_OVER, mở phiên RETURN và để mở
+SPXSTG0000003 → HANDED_OVER: 200
+mở phiên RETURN: SESSION_OPENED OPEN HH-000003
+## R1 sao lưu (bắt buộc)
+2026-10-06T21:59:36+07:00 backup_ok aicam-20261006-215936.dump
+exit=0
+## R2 thử điều kiện từ chối (a): còn phiên RETURN mở — 2026-10-06T22:14:50+07:00
+phiên RETURN mở: 1
+-- R3 dc2 stop api vision worker worker-sync worker-export beat
+6
+-- R4 dc2 run --rm migrate alembic downgrade 0002 (image MỚI)
+INFO  [alembic.runtime.migration] Running downgrade 0005 -> 0004, return_lookup_indexes — index `text_pattern_ops` cho API-104 tìm tiền tố (T-118, DEC-334)
+INFO  [alembic.runtime.migration] Running downgrade 0004 -> 0003, hold_to_claims — clip đang "giữ" → hồ sơ khiếu nại `LEGACY_HOLD` (02a §3 Migration 0004, ADR-009, T-111)
+INFO  [alembic.runtime.migration] Running downgrade 0003 -> 0002, returns_recon_claims — schema Phase 2 (02a §3, T-101)
+    raise RuntimeError(
+RuntimeError: Không downgrade 0003: còn 1 phiên nhận hàng hoàn đang mở — hoàn tất / hủy ở station (hoặc chờ J-07 tự đóng) rồi chạy lại; không có gì bị thay đổi. Xem docs/ops.md mục Rollback Phase 2.
+   exit=1
+   current: 0005 (head)
+## R2b điều kiện từ chối (b): clip phiên RETURN PENDING — chỉ bật api (worker tắt) để đóng phiên, clip nằm PENDING
+3
+API-102 kết luận OK: 200
+đóng phiên RETURN: SESSION_COMPLETED RETURN_RECEIVED_OK
+
+1
+-- dc2 run --rm migrate alembic downgrade 0002
+INFO  [alembic.runtime.migration] Running downgrade 0005 -> 0004, return_lookup_indexes — index `text_pattern_ops` cho API-104 tìm tiền tố (T-118, DEC-334)
+INFO  [alembic.runtime.migration] Running downgrade 0004 -> 0003, hold_to_claims — clip đang "giữ" → hồ sơ khiếu nại `LEGACY_HOLD` (02a §3 Migration 0004, ADR-009, T-111)
+INFO  [alembic.runtime.migration] Running downgrade 0003 -> 0002, returns_recon_claims — schema Phase 2 (02a §3, T-101)
+   exit=0
+   current: 0002
+   (log INFO chi tiết của lần downgrade thành công bị lọc mất do lệnh grep của Ops — số liệu lấy từ phase2_archive.meta bên dưới)
+## ✗ BUG-G5-P2-2: điều kiện từ chối (b) KHÔNG bắt được. Phiên RETURN SPXSTG0000003 vừa đóng (15:15:01Z) khi worker đã dừng → J-01 (media.build_session_clips) mới nằm trong hàng đợi Redis 'video' (ETA 15:15:09Z), CHƯA có dòng clip nào → guard 0003 chỉ đếm clip PENDING/FAILED = 0 → downgrade chạy luôn (exit 0).
+                  id                  |  type  |  status   |           ended_at           
+--------------------------------------+--------+-----------+------------------------------
+ 01a111ba-2dfa-768e-9106-f826988469d3 | RETURN | COMPLETED | 2026-10-06 15:15:01.84771+00
+(1 row)
+
+ so_dong_clip_cua_phien 
+------------------------
+                      0
+(1 row)
+
+    open_code    |         clips         
+-----------------+-----------------------
+ SPXSTG0000002   | CAM1=READY,CAM2=READY
+ SPXSTG0000003   | (không có dòng clip)
+ SPXVN0000000000 | CAM1=READY,CAM2=READY
+(3 rows)
+
+-- hàng đợi Redis 'video': llen=1; task đầu: media.build_session_clips ['01a111ba-2dfa-768e-9106-f826988469d3'] eta 2026-10-06T15:15:09.907867+00:00
+## R5 kết quả downgrade (phase2_archive.meta)
+counts = {"claim": 2, "snapshot": 2, "shop_cols": 0, "claim_note": 5, "recon_alert": 0, "return_case": 3, "return_clip": 4, "package_cols": 6, "session_cols": 0, "setting_cols": 1, "station_cols": 1, "evidence_pack": 1, "return_export": 0, "claim_evidence": 5, "return_session": 3, "inspection_line": 2, "placeholder_package": 1, "return_case_package": 3, "return_session_event": 6, "return_status_history": 6, "return_approval_request": 0}
+downgraded_at = "2026-10-06T15:15:03.524233+00:00"
+sequences = {"claim_code_seq": 3, "placeholder_code_seq": 1, "return_case_code_seq": 3}
+-- bảng trong phase2_archive: 29
+-- clip held sau downgrade (0004 downgrade đặt Giữ cho clip đang được bảo vệ): 6/6
+-- held_by: Hệ thống (bảo vệ bằng chứng Phase 2)
+-- kiện về trạng thái trước hoàn:
+SPXSTG0000001 PACKED
+SPXSTG0000002 HANDED_OVER
+SPXSTG0000003 HANDED_OVER
+SPXSTG0000004 NEW
+SPXSTG0000005 NEW
+## R6 về code Phase 1: dc1 up -d (image aicam-be:staging-p1, FE dist Phase 1) — 2026-10-06T22:16:26+07:00
+22
+SERVICE         IMAGE                   STATUS
+api             aicam-be:staging-p1     Up 31 seconds (healthy)
+backup          postgres:16-alpine      Up 32 seconds
+beat            aicam-be:staging-p1     Up 25 seconds
+caddy           caddy:2-alpine          Up 25 seconds (health: starting)
+mediamtx        bluenviron/mediamtx:1   Up 32 seconds
+migrate         aicam-be:staging-p1     Exited (0) 31 seconds ago
+postgres        postgres:16-alpine      Up 37 minutes (healthy)
+redis           redis:7-alpine          Up 37 minutes (healthy)
+vision          aicam-be:staging-p1     Up 25 seconds
+volume-init     alpine:3                Exited (0) 33 seconds ago
+worker          aicam-be:staging-p1     Up 25 seconds
+worker-export   aicam-be:staging-p1     Up 25 seconds
+worker-sync     aicam-be:staging-p1     Up 25 seconds
+-- logs migrate (Phase 1 upgrade head trên 0002 = không làm gì):
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+-- healthz: {"status":"ok","version":"0.1.0"} HTTP 200
+-- FE Phase 1 được phục vụ: assets/index-D5_8OfBe.js (Phase 1 = index-D5_8OfBe.js)
+-- worker Phase 1 nhận J-01 mồ côi của phiên RETURN đã lưu trữ:
+  . media.build_session_clips
+[2026-10-06 15:16:47,671: INFO/MainProcess] Task media.build_session_clips[224b7b73-40ff-4974-b004-67a385a0170f] received
+[2026-10-06 15:16:47,737: WARNING/ForkPoolWorker-1] 2026-10-06 15:16:47 [warning  ] build_clips_skipped            session_id=01a111ba-2dfa-768e-9106-f826988469d3
+[2026-10-06 15:16:47,740: INFO/ForkPoolWorker-1] Task media.build_session_clips[224b7b73-40ff-4974-b004-67a385a0170f] succeeded in 0.06844359000388067s: {'ready': 0, 'failed': 0}
+-- smoke Phase 1 trên 0002 sau khi lùi:
+   login admin (Phase 1): 200
+   SPXSTG0000001: PACKED phiên=[('COMPLETED', 2)] clip=[('CAM1', 'READY', True), ('CAM2', 'READY', True)]
+   SPXSTG0000002: HANDED_OVER phiên=[('COMPLETED', 2)] clip=[('CAM1', 'READY', True), ('CAM2', 'READY', True)]
+   SPXSTG0000003: HANDED_OVER phiên=[('COMPLETED', 2)] clip=[('CAM1', 'READY', True), ('CAM2', 'READY', True)]
+   phát clip: 206
+   login station (Phase 1): 200 state: READY
+## R7 nâng cấp lại lên Phase 2 (như phần Nâng cấp ops §7.1) — 2026-10-06T22:17:35+07:00
+-- sao lưu
+2026-10-06T22:17:35+07:00 backup_ok aicam-20261006-221735.dump
+-- dc1 stop api vision worker worker-sync worker-export beat: 6
+-- current: 0002
+-- dc2 run --rm migrate alembic upgrade head
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade 0002 -> 0003, returns_recon_claims — schema Phase 2 (02a §3, T-101)
+INFO  [alembic.runtime.migration] 0003: khôi phục từ phase2_archive {"placeholder_package": 1, "return_status_history": 6, "return_case": 3, "return_case_package": 3, "return_session": 3, "return_session_event": 6, "return_clip": 4, "return_approval_request": 0, "return_export": 0, "inspection_line": 2, "snapshot": 2, "claim": 2, "claim_evidence": 5, "claim_note": 5, "evidence_pack": 1, "recon_alert": 0}
+INFO  [alembic.runtime.migration] Running upgrade 0003 -> 0004, hold_to_claims — clip đang "giữ" → hồ sơ khiếu nại `LEGACY_HOLD` (02a §3 Migration 0004, ADR-009, T-111)
+INFO  [alembic.runtime.migration] 0004: khôi phục 1 hồ sơ LEGACY_HOLD, trả 8 cờ giữ do downgrade đặt
+INFO  [alembic.runtime.migration] 0004: 0 clip giữ → 0 hồ sơ LEGACY_HOLD (0 phiên)
+INFO  [alembic.runtime.migration] 0004: held_before=0 protected_after=2 chênh=2
+INFO  [alembic.runtime.migration] Running upgrade 0004 -> 0005, return_lookup_indexes — index `text_pattern_ops` cho API-104 tìm tiền tố (T-118, DEC-334)
+   exit=0
+-- current: 0005 (head)
+VACUUM
+-- dc2 up -d: 21
+SERVICE         IMAGE                   STATUS
+api             aicam-be:staging-p2     Up 31 seconds (healthy)
+backup          postgres:16-alpine      Up 32 seconds
+beat            aicam-be:staging-p2     Up 25 seconds
+caddy           caddy:2-alpine          Created
+mediamtx        bluenviron/mediamtx:1   Up 32 seconds
+migrate         aicam-be:staging-p2     Exited (0) 31 seconds ago
+postgres        postgres:16-alpine      Up 38 minutes (healthy)
+redis           redis:7-alpine          Up 38 minutes (healthy)
+vision          aicam-be:staging-p2     Up 25 seconds
+volume-init     alpine:3                Exited (0) 33 seconds ago
+worker          aicam-be:staging-p2     Up 25 seconds
+worker-export   aicam-be:staging-p2     Up 25 seconds
+worker-sync     aicam-be:staging-p2     Up 25 seconds
+-- healthz:  HTTP 000
+-- phase2_archive còn không: 0
+-- dữ liệu Phase 2 khôi phục:
+   code    |     kind     |     status     
+-----------+--------------+----------------
+ HH-000001 | UNANNOUNCED  | RECEIVED_ISSUE
+ HH-000002 | UNIDENTIFIED | CANCELLED
+ HH-000003 | UNANNOUNCED  | RECEIVED_OK
+(3 rows)
+
+   code    |    type     |   source    |  status   
+-----------+-------------+-------------+-----------
+ KN-000001 | OTHER       | LEGACY_HOLD | NEW
+ KN-000002 | EMPTY_BOX   | AUTO_RETURN | SUBMITTED
+ KN-000003 | BUYER_CLAIM | MANUAL      | NEW
+(3 rows)
+
+ tracking_number |   warehouse_status    
+-----------------+-----------------------
+ SPXSTG0000001   | PACKED
+ SPXSTG0000002   | RETURN_RECEIVED_ISSUE
+ SPXSTG0000003   | RETURN_RECEIVED_OK
+ SPXSTG0000004   | NEW
+ SPXSTG0000005   | NEW
+ TAM-000001      | NEW
+(6 rows)
+
+ tracking_number |  type  |  status   |              clips              
+-----------------+--------+-----------+---------------------------------
+ SPXSTG0000002   | RETURN | COMPLETED | CAM1=READY held,CAM2=READY held
+ SPXSTG0000003   | RETURN | COMPLETED | (không có clip)
+ TAM-000001      | RETURN | CANCELLED | CAM1=READY held,CAM2=READY held
+(3 rows)
+
+ tracking_number | camera_role | held | held_by  
+-----------------+-------------+------+----------
+ SPXSTG0000001   | CAM1        | f    | Chủ shop
+ SPXSTG0000001   | CAM2        | f    | Chủ shop
+ SPXSTG0000002   | CAM1        | f    | 
+ SPXSTG0000002   | CAM2        | f    | 
+ SPXSTG0000003   | CAM1        | f    | 
+ SPXSTG0000003   | CAM2        | f    | 
+(6 rows)
+
+ last_value 
+------------
+          3
+(1 row)
+
+          action          | count 
+--------------------------+-------
+ CLIP_PROTECTION_MIGRATED |     1
+(1 row)
+
+   (bảng clips ở trên: chữ ' held' do câu SQL của Ops ghi cứng — bỏ qua; cờ held thật xem bảng PACK ngay dưới và R8)
+## ✗ BUG-G5-P2-3 (compose): sau 'dc2 up -d' caddy đứng 'Created', healthz HTTP 000
+ network:aicam Error response from daemon: error while removing network: network aicam-staging_aicam has active endpoints (name:"aicam-staging-backup-1" id:"b501f14ca0d6", name:"aicam-staging-worker-export-1" id:"96055513938f", name:"aicam-staging-beat-1" id:"4b91e003127c", name:"aicam-staging-vision-1" id:"5d1465583590", name:"aicam-staging-worker-1" id:"a50737264a5f", name:"aicam-staging-worker-sync-1" id:"20c76b7ce34f") 
+ Network aicam-staging_aicam Error error during connect: Post "http://%2FUsers%2Fadmin%2F.colima%2Fdefault%2Fdocker.sock/v1.54/networks/create": Error response from daemon: error while removing network: network aicam-staging_aicam has active endpoints (name:"aicam-staging-backup-1" id:"b501f14ca0d6", name:"aicam-staging-worker-export-1" id:"96055513938f", name:"aicam-staging-beat-1" id:"4b91e003127c", name:"aicam-staging-vision-1" id:"5d1465583590", name:"aicam-staging-worker-1" id:"a50737264a5f", name:"aicam-staging-worker-sync-1" id:"20c76b7ce34f")
+Error response from daemon: error while removing network: network aicam-staging_aicam has active endpoints (name:"aicam-staging-backup-1" id:"b501f14ca0d6", name:"aicam-staging-worker-export-1" id:"96055513938f", name:"aicam-staging-beat-1" id:"4b91e003127c", name:"aicam-staging-vision-1" id:"5d1465583590", name:"aicam-staging-worker-1" id:"a50737264a5f", name:"aicam-staging-worker-sync-1" id:"20c76b7ce34f")
+-- IP trong mạng aicam-staging_aicam:
+
+   aicam-staging-worker-sync-1 172.30.20.11/24
+   aicam-staging-vision-1 172.30.20.2/24
+   aicam-staging-backup-1 172.30.20.4/24
+   aicam-staging-worker-export-1 172.30.20.7/24
+   aicam-staging-beat-1 172.30.20.8/24
+   aicam-staging-worker-1 172.30.20.9/24
+   → vision (tạo lại trước caddy) được cấp động 172.30.20.10 = CADDY_IP; caddy tạo lại sau không lấy được IP tĩnh. Phase 1 G5 không gặp vì caddy được tạo trước. Ở kho: mọi lần nâng cấp / lùi đổi image đều tạo lại hàng loạt → có thể mất HTTPS cả hệ thống.
+   Sửa (compose, không phải code sản phẩm): docker/compose.yml thêm 'ip_range: ${AICAM_IP_RANGE:-172.30.10.128/25}' (IP động chỉ ở nửa trên dải, CADDY_IP .10 nằm ngoài); .env.production.example thêm AICAM_IP_RANGE; ops.md §10 thêm dòng sự cố. Staging: thêm AICAM_IP_RANGE=172.30.20.128/25 vào .env tạm.
+-- áp dụng: dc2 down (KHÔNG -v, giữ volume) → dc2 up -d (tạo lại mạng)
+14
+22
+SERVICE         IMAGE                   STATUS
+api             aicam-be:staging-p2     Up 31 seconds (healthy)
+backup          postgres:16-alpine      Up 32 seconds
+beat            aicam-be:staging-p2     Up 25 seconds
+caddy           caddy:2-alpine          Up 25 seconds (health: starting)
+mediamtx        bluenviron/mediamtx:1   Up 42 seconds
+migrate         aicam-be:staging-p2     Exited (0) 31 seconds ago
+postgres        postgres:16-alpine      Up 43 seconds (healthy)
+redis           redis:7-alpine          Up 43 seconds (healthy)
+vision          aicam-be:staging-p2     Up 25 seconds
+volume-init     alpine:3                Exited (0) 43 seconds ago
+worker          aicam-be:staging-p2     Up 25 seconds
+worker-export   aicam-be:staging-p2     Up 25 seconds
+worker-sync     aicam-be:staging-p2     Up 25 seconds
+-- ipam: [{"Subnet":"172.30.20.0/24","IPRange":"172.30.20.128/25","Gateway":"172.30.20.128"}]
+-- healthz: {"status":"ok","version":"0.1.0"} HTTP 200
+-- kiểm lại kịch bản gây lỗi: tạo lại vision trước rồi caddy (--force-recreate)
+1
+1
+   aicam-staging-caddy-1 172.30.20.10/24
+   aicam-staging-vision-1 172.30.20.137/24
+-- healthz: {"status":"ok","version":"0.1.0"} HTTP 200
+-- api FORWARDED_ALLOW_IPS: FORWARDED_ALLOW_IPS=172.30.20.10
+## R8 kiểm Phase 2 sau nâng cấp lại (qua Caddy)
+   API-130 hồ sơ khiếu nại (mọi trạng thái, tab mặc định): 3 [('KN-000003', 'MANUAL', 'NEW'), ('KN-000002', 'AUTO_RETURN', 'SUBMITTED'), ('KN-000001', 'LEGACY_HOLD', 'NEW')]
+   status=SUBMITTED: [('KN-000002', 'SUBMITTED')]
+   API-110 tab ALL: 3 [('HH-000003', 'UNANNOUNCED', 'RECEIVED_OK'), ('HH-000002', 'UNIDENTIFIED', 'CANCELLED'), ('HH-000001', 'UNANNOUNCED', 'RECEIVED_ISSUE')]
+   SPXSTG0000001: PACKED phiên=[('PACK', 'COMPLETED', [('CAM1', 'READY'), ('CAM2', 'READY')], ['KN-000001'])]
+   SPXSTG0000002: RETURN_RECEIVED_ISSUE phiên=[('RETURN', 'COMPLETED', [('CAM1', 'READY'), ('CAM2', 'READY')], ['KN-000002']), ('PACK', 'COMPLETED', [('CAM1', 'READY'), ('CAM2', 'READY')], ['KN-000002'])]
+   SPXSTG0000003: RETURN_RECEIVED_OK phiên=[('RETURN', 'COMPLETED', [], []), ('PACK', 'COMPLETED', [('CAM1', 'READY'), ('CAM2', 'READY')], ['KN-000003'])]
+   KN-000002 bằng chứng: [('SESSION', 'PACK'), ('SESSION', 'RETURN'), ('SNAPSHOT', None), ('SNAPSHOT', None)] missing: []
+   KN-000001 (LEGACY_HOLD) bằng chứng: [('SESSION', 'PACK')]
+   Số dòng: log 0003 'khôi phục từ phase2_archive {…}' = phase2_archive.meta.counts lúc downgrade (từng khóa khớp); claim 2 + LEGACY_HOLD 1 ('0004: khôi phục 1 hồ sơ LEGACY_HOLD, trả 8 cờ giữ do downgrade đặt'); sequence KN- = 3, mã mới không trùng
+   Hậu quả BUG-G5-P2-2: phiên RETURN SPXSTG0000003 (HH-000003, kết luận OK) KHÔNG có clip nào sau khi lên lại — J-01 đã bị worker Phase 1 tiêu thụ ('build_clips_skipped'), nâng cấp lại không xếp lại J-01. Video thô của phiên còn trên đĩa nhưng không có dòng clip / không có nút Thử lại (API-46 cần dòng clip).
+   API-46 Thử lại trên phiên không có dòng clip: 409 {"error":{"code":"CLIP_NOT_FAILED","message":"Clip không ở trạng thái lỗi.","details":{}}}
+   sau 40 giây: [('RETURN', []), ('PACK', [('CAM1', 'READY', 18.07), ('CAM2', 'READY', 18.06)])]

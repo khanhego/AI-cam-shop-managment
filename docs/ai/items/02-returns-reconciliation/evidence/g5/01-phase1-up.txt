@@ -1,0 +1,178 @@
+# G5 Phase 2 — staging local, bước 1: dựng Phase 1 — 2026-10-06T21:39:58+07:00
+Phase 1: BE 0b9050b (main, merge PR #1 = 4079956) · FE fc2fa62 (main) — git worktree tạm ở /Users/admin/KhanhCode/.aicam-g5-tmp/p1 (Docker Desktop không mount được /private/tmp)
+Phase 2: BE 66ac3d1 · FE 3acaad0 (feat/02-returns-reconciliation)
+dc1 = docker compose -p aicam-staging --env-file <scratchpad>/p1.env -f <worktree P1>/ai-cam-be/docker/compose.yml (AICAM_IMAGE=aicam-be:staging-p1)
+dc2 = docker compose -p aicam-staging --env-file <scratchpad>/p2.env -f ai-cam-be/docker/compose.yml (AICAM_IMAGE=aicam-be:staging-p2)
+Lần thử đầu: worktree trong scratchpad /private/tmp → caddy/mediamtx mount lỗi 'not a directory' (Docker Desktop không chia sẻ /private/tmp) → down -v, chuyển worktree + BACKUP_DIR sang /Users/admin/KhanhCode/.aicam-g5-tmp
+## df -h / (trước)
+/dev/disk3s1s1   460Gi    11Gi    36Gi    25%    453k  377M    0%   /
+## docker system df (trước)
+TYPE            TOTAL     ACTIVE    SIZE      RECLAIMABLE
+Images          21        10        8.201GB   3.271GB (39%)
+Containers      18        10        6.615MB   262.1kB (3%)
+Local Volumes   10        7         6.649GB   267B (0%)
+Build Cache     0         0         0B        0B
+## dc1 up -d --build
+time="2026-10-06T21:39:59+07:00" level=warning msg="buildx Docker CLI plugin not found: falling back to the classic builder. BuildKit-only build features (multi-arch, secrets, ssh, additional contexts, ...) will not be available"
+ Image aicam-be:staging-p1 Building 
+ Image aicam-be:staging-p1 Building 
+Sending build context to Docker daemon    221kB
+Successfully built 786b848004fc
+Successfully tagged aicam-be:staging-p1
+ Image aicam-be:staging-p1 Built 
+ Image aicam-be:staging-p1 Built 
+ Network aicam-staging_aicam Creating 
+ Volume aicam-staging_redisdata Creating 
+ Volume aicam-staging_video Creating 
+ Volume aicam-staging_caddy_data Creating 
+ Volume aicam-staging_caddy_data Creating 
+ Network aicam-staging_aicam Creating 
+ Volume aicam-staging_caddy_config Creating 
+ Volume aicam-staging_redisdata Creating 
+ Volume aicam-staging_video Creating 
+ Volume aicam-staging_caddy_config Creating 
+ Volume aicam-staging_pgdata Creating 
+ Volume aicam-staging_pgdata Creating 
+ Volume aicam-staging_imports Creating 
+ Volume aicam-staging_imports Creating 
+ Volume aicam-staging_caddy_config Created 
+ Volume aicam-staging_caddy_config Created 
+ Volume aicam-staging_video Created 
+ Volume aicam-staging_video Created 
+ Volume aicam-staging_caddy_data Created 
+ Volume aicam-staging_caddy_data Created 
+ Volume aicam-staging_pgdata Created 
+ Volume aicam-staging_pgdata Created 
+ Volume aicam-staging_imports Created 
+ Volume aicam-staging_imports Created 
+ Volume aicam-staging_redisdata Created 
+ Volume aicam-staging_redisdata Created 
+ Network aicam-staging_aicam Created 
+ Network aicam-staging_aicam Created 
+ Container aicam-staging-volume-init-1 Creating 
+ Container aicam-staging-redis-1 Creating 
+ Container aicam-staging-postgres-1 Creating 
+ Container aicam-staging-volume-init-1 Created 
+ Container aicam-staging-mediamtx-1 Creating 
+ Container aicam-staging-redis-1 Created 
+ Container aicam-staging-postgres-1 Created 
+ Container aicam-staging-backup-1 Creating 
+ Container aicam-staging-migrate-1 Creating 
+ Container aicam-staging-mediamtx-1 Created 
+ Container aicam-staging-migrate-1 Created 
+ Container aicam-staging-api-1 Creating 
+ Container aicam-staging-backup-1 Created 
+ Container aicam-staging-api-1 Created 
+ Container aicam-staging-worker-sync-1 Creating 
+ Container aicam-staging-vision-1 Creating 
+ Container aicam-staging-beat-1 Creating 
+ Container aicam-staging-caddy-1 Creating 
+ Container aicam-staging-worker-1 Creating 
+ Container aicam-staging-worker-export-1 Creating 
+ Container aicam-staging-beat-1 Created 
+ Container aicam-staging-vision-1 Created 
+ Container aicam-staging-worker-1 Created 
+ Container aicam-staging-worker-sync-1 Created 
+ Container aicam-staging-worker-export-1 Created 
+ Container aicam-staging-caddy-1 Created 
+ Container aicam-staging-postgres-1 Starting 
+ Container aicam-staging-redis-1 Starting 
+ Container aicam-staging-volume-init-1 Starting 
+ Container aicam-staging-postgres-1 Started 
+ Container aicam-staging-postgres-1 Waiting 
+ Container aicam-staging-postgres-1 Waiting 
+ Container aicam-staging-redis-1 Started 
+ Container aicam-staging-volume-init-1 Started 
+ Container aicam-staging-volume-init-1 Waiting 
+ Container aicam-staging-volume-init-1 Exited 
+ Container aicam-staging-mediamtx-1 Starting 
+ Container aicam-staging-mediamtx-1 Started 
+ Container aicam-staging-postgres-1 Healthy 
+ Container aicam-staging-postgres-1 Healthy 
+ Container aicam-staging-migrate-1 Starting 
+ Container aicam-staging-backup-1 Starting 
+ Container aicam-staging-migrate-1 Started 
+ Container aicam-staging-migrate-1 Waiting 
+ Container aicam-staging-redis-1 Waiting 
+ Container aicam-staging-backup-1 Started 
+ Container aicam-staging-redis-1 Healthy 
+ Container aicam-staging-migrate-1 Exited 
+ Container aicam-staging-api-1 Starting 
+ Container aicam-staging-api-1 Started 
+ Container aicam-staging-api-1 Waiting 
+ Container aicam-staging-api-1 Waiting 
+ Container aicam-staging-api-1 Waiting 
+ Container aicam-staging-api-1 Waiting 
+ Container aicam-staging-api-1 Waiting 
+ Container aicam-staging-api-1 Waiting 
+ Container aicam-staging-api-1 Healthy 
+ Container aicam-staging-vision-1 Starting 
+ Container aicam-staging-api-1 Healthy 
+ Container aicam-staging-worker-export-1 Starting 
+ Container aicam-staging-api-1 Healthy 
+ Container aicam-staging-caddy-1 Starting 
+ Container aicam-staging-api-1 Healthy 
+ Container aicam-staging-worker-1 Starting 
+ Container aicam-staging-api-1 Healthy 
+ Container aicam-staging-worker-sync-1 Starting 
+ Container aicam-staging-api-1 Healthy 
+ Container aicam-staging-beat-1 Starting 
+ Container aicam-staging-vision-1 Started 
+ Container aicam-staging-worker-export-1 Started 
+ Container aicam-staging-caddy-1 Started 
+ Container aicam-staging-worker-1 Started 
+ Container aicam-staging-worker-sync-1 Started 
+ Container aicam-staging-beat-1 Started 
+$G/dc1 up -d --build  0.17s user 0.10s system 1% cpu 18.904 total
+exit=0
+## ps
+SERVICE         STATUS
+api             Up 6 seconds (healthy)
+backup          Up 7 seconds
+beat            Up Less than a second
+caddy           Up Less than a second (health: starting)
+mediamtx        Up 17 seconds
+migrate         Exited (0) 6 seconds ago
+postgres        Up 18 seconds (healthy)
+redis           Up 17 seconds (healthy)
+vision          Up Less than a second
+volume-init     Exited (0) 17 seconds ago
+worker          Up Less than a second
+worker-export   Up Less than a second
+worker-sync     Up Less than a second
+## logs migrate
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 0001, initial
+INFO  [alembic.runtime.migration] Running upgrade 0001 -> 0002, clip: deleted_at, timeline (T-14, DEC-102)
+## alembic current
+0002 (head)
+## healthz
+{"status":"ok","version":"0.1.0"} HTTP 200
+## Dữ liệu Phase 1 mẫu (code Phase 1, qua Caddy) — 2026-10-06T21:41:07+07:00
+create-admin (mật khẩu qua stdin): exit 0 'Đã tạo Admin admin.'
+login admin 200
+tạo user sup (SUPERVISOR): 201
+tạo user cskh (CSKH): 201
+tạo user station01 (STATION): 201
+tạo station: 201
+gắn CAM1: 200
+gắn CAM2: 200
+  ROI Cam 2 góc trống (như qa-reset --mute-cam2): 200
+camera: [('CAM1', 'ONLINE'), ('CAM2', 'ONLINE')]
+nhập CSV preview: 201 {}
+nhập CSV commit: 200 {"id":"01a111a9-4c88-71a6-8c78-aa6b1095f5b6","status":"COMMITTED","counts":{"new":5,"updated":0,"skipped":0,"error":0}}
+phiên PACK SPXSTG0000001: SESSION_OPENED → SESSION_COMPLETED None
+phiên PACK SPXSTG0000002: SESSION_OPENED → SESSION_COMPLETED None
+phiên PACK SPXSTG0000003: SESSION_OPENED → SESSION_COMPLETED None
+Traceback (most recent call last):
+  File "/private/tmp/claude-501/-Users-admin-KhanhCode-AI-cam-shop-managment/e0a20f5e-6330-432a-9f3d-17819a1b4492/scratchpad/g5p2/p1seed.py", line 84, in <module>
+    d = c.get(f"/packages/{pk[code]['id']}", headers=A).json()
+                           ~~^^^^^^
+KeyError: 'SPXSTG0000001'
+(script lần 1 dừng ở bước tra kiện: Phase 1 API-30 không tìm theo tiền tố 'SPXSTG' — lỗi của script smoke, không phải sản phẩm; tra lại từng mã)
+clip: [('SPXSTG0000001', 'CAM1', 'READY'), ('SPXSTG0000001', 'CAM2', 'READY'), ('SPXSTG0000002', 'CAM1', 'READY'), ('SPXSTG0000002', 'CAM2', 'READY'), ('SPXSTG0000003', 'CAM1', 'READY'), ('SPXSTG0000003', 'CAM2', 'READY')]
+kiện: [('SPXSTG0000001', 'PACKED'), ('SPXSTG0000002', 'PACKED'), ('SPXSTG0000003', 'PACKED'), ('SPXSTG0000004', 'NEW'), ('SPXSTG0000005', 'NEW')]
+giữ clip SPXSTG0000001 CAM1: 200 True
+giữ clip SPXSTG0000001 CAM2: 200 True
+xuất clip SPXSTG0000002: 202 {"id":"01a111aa-449a-71a1-8b97-09f573c806a0","status":"QUEUED","progress":0}

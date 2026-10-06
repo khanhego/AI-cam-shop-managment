@@ -808,7 +808,7 @@ Ghi đè §5–§6.5 nếu lệch. Nguồn: 02a DEC-336..345, DEC-361..363; 02b 
 | 8 | Giới hạn độ dài | Kiểm ở service (bỏ `min/max_length` Pydantic), `422 VALIDATION_ERROR` + `details.fields` tiếng Việt: API-101 `name` 2–40; API-113 `reason` 5–500, `note` ≤ 500 hiệu lực (xem API-113); API-121 `note` 1–500; API-122 `reason` 5–500; API-133 `platform_claim_ref` ≤ 64, `reason` 5–500 | lỗi dưới ô theo `fields` | C-05 |
 | 9 | API-131 | `CLAIM_EXISTS` kèm `details {claim_id, code}` cả ở nhánh unique | "Mở hồ sơ" theo `claim_id` | C-04 |
 | 10 | BR đối soát (01 v0.6, DEC-360) | BR-12 đồng hồ chỉ chạy khi sàn chấp nhận, theo `return_case.expected_since`; BR-19 bỏ hồ sơ chỉ hoàn tiền + hồ sơ trước `recon_start_at`; J-13 bỏ yêu cầu `DONE` có trước nâng cấp; `context_key` BR-10 = `SHIPPED`, BR-11 = `CANCELLED`; BR-14 xét cả kiện không có đơn, loại đơn đã giao / hủy; BR-20 loại `CANCELLED` / đã nhận hoàn | không đổi (số đếm D15 / D2 ít hơn) | C1–C4, R8 |
-| 11 | Cấu hình / nâng cấp | §8, §10: `SHOPEE_RETURNS_ENABLED`, `SHOPEE_RETURNS_INITIAL_DAYS`, `SCHEMA_CHECK_STRICT`, `AICAM_MIGRATE_ALLOW_ACTIVE_CONNECTIONS`, `AICAM_DOWNGRADE_ALLOW_UNCUT_RETURN_CLIPS`; `APP_ENV` 4 giá trị; nâng cấp phải dừng service; lệch schema → thoát mã 78; index `ix_package_unverified_created_at` (0005) | — | DEC-336..338, F-8, F-10..12, R7 |
+| 11 | Cấu hình / nâng cấp | §8, §10: `SHOPEE_RETURNS_ENABLED`, `SHOPEE_RETURNS_INITIAL_DAYS`, `SCHEMA_CHECK_STRICT`, `AICAM_MIGRATE_ALLOW_ACTIVE_CONNECTIONS`, `AICAM_DOWNGRADE_ALLOW_UNCUT_RETURN_CLIPS`; `APP_ENV` 4 giá trị; nâng cấp phải dừng service; lệch schema → thoát mã 78 (api: 3); index `ix_package_unverified_created_at` (0005) | — | DEC-336..338, F-8, F-10..12, R7 |
 | 12 | API-81 | `last_returns_success_at` hoãn | không hiện | F-15 |
 
 ## 7. Luồng chính (end-to-end)
@@ -910,7 +910,7 @@ sequenceDiagram
 1. **Migration 0003** (schema, chỉ thêm: bảng mới, cột nullable / có default, mở rộng CHECK; `lock_timeout` 5 giây).
 2. **Migration 0004** (dữ liệu: clip đang giữ → hồ sơ `LEGACY_HOLD`) — có clip `held` cần chuyển mà còn kết nối client khác vào DB → từ chối (`AICAM_MIGRATE_ALLOW_ACTIVE_CONNECTIONS=1` khi ops chắc chắn).
 2b. **Migration 0005** — index tra cứu `upper(...) text_pattern_ops` (API-104) + index một phần `ix_package_unverified_created_at` (`package(created_at) WHERE verified IS false AND is_placeholder IS false`, BR-20).
-2c. **Kiểm schema lúc khởi động** (`core/schema_guard.py`): api, worker, beat, vision so `alembic_version` với `SCHEMA_HEAD` của image; lệch → log `schema_version_mismatch` + thoát mã 78 ở staging / production (`SCHEMA_CHECK_STRICT` ép bật / tắt).
+2c. **Kiểm schema lúc khởi động** (`core/schema_guard.py`): api, worker, beat, vision so `alembic_version` với `SCHEMA_HEAD` của image; lệch → log `schema_version_mismatch` + thoát mã 78 (worker / beat / vision; api thoát mã 3 vì lỗi lifespan của uvicorn — G5 OBS-1) ở staging / production (`SCHEMA_CHECK_STRICT` ép bật / tắt).
 3. BE: api, worker, beat (J-13, J-14, J-15 vào lịch; J-16, J-17 chạy theo sự kiện), vision không đổi.
 4. FE: build mới (station + dashboard cùng app).
 5. Admin đặt 1 station `RETURN` (hoặc `BOTH`), chạy thử 1 ngày; xem D15 vài chu kỳ trước khi dùng số đếm.

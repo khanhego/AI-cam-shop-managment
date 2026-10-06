@@ -1,0 +1,47 @@
+# Bước 4: sao lưu + thử khôi phục trên schema 0005 (Phase 2) — 2026-10-06T21:53:40+07:00
+## B1 dc2 exec backup /bin/sh /pg-backup.sh once
+2026-10-06T21:53:40+07:00 backup_ok aicam-20261006-215340.dump
+exit=0
+   -rw-------  1 admin  staff  102676 Oct  6 21:53 /Users/admin/KhanhCode/.aicam-g5-tmp/backups/aicam-20261006-215340.dump
+   -rw-------  1 admin  staff     400 Oct  6 21:42 /Users/admin/KhanhCode/.aicam-g5-tmp/backups/imports-20261006-214256.tgz
+   -rw-------  1 admin  staff     400 Oct  6 21:53 /Users/admin/KhanhCode/.aicam-g5-tmp/backups/imports-20261006-215340.tgz
+## B2 createdb aicam_restore_test + pg_restore --no-owner < aicam-20261006-215340.dump
+NOTICE:  database "aicam_restore_test" does not exist, skipping
+   exit=0 (0 giây)
+## B3 số dòng + md5 nội dung từng bảng (public) — DB gốc aicam (đọc ngay sau dump)
+alembic_version|1|43567539c91ee97e5aae767c99b5c3cb
+approval_request|0|d41d8cd98f00b204e9800998ecf8427e
+audit_log|42|43edce18245790fdcae6c38abf4e0e29
+camera|2|22f335c806ec721abf9f03eea933c27c
+claim|3|40cedfd648ec3d151e5c2c117844246b
+claim_evidence|6|2d786356f0b075f1bbf202cf94d74634
+claim_note|7|b1eb9ed62fb57b5132b2dde08a9e784c
+clip|10|f6f1290404718180d0cd672cad1e6c19
+csv_import|1|9db3c831ed40774d4923d21844468499
+evidence_pack|1|4b08008e5d659b0e5f3c712cf24c2a00
+export|1|f100fcd07e7cd143c077751b06504996
+inspection_line|1|f29482177055dc7af740427071e886c9
+order|5|de4dcb6f52e6543240bdb6dd4d94147c
+order_item|6|5d6693d057880536e6dab6e37774d8d9
+package|6|824fcd6202ed42030c4111f9f6561e51
+recon_alert|0|d41d8cd98f00b204e9800998ecf8427e
+refresh_token|38|a9268721220f4cb22536e28e0e85a214
+return_case|2|7aeac7a38cf050ff2b1ee2e488feab59
+return_case_package|2|c6742d18bc762ecc24d21fe532e7adba
+scan_dedup|10|d2c1b986c3fe559223178f7261be8d13
+session|5|107c3d0a63ccb1daa6ac3e46e9a09350
+session_event|10|4819064ce204561bbf359cd14eeed2c1
+setting|1|b7167252205f38b5c16cb5bcf1e958a5
+shop|0|d41d8cd98f00b204e9800998ecf8427e
+snapshot|2|323432ec11b6ea9df69194415aec142c
+station|1|529c2968633cfd0eac52445f32344db9
+status_history|16|79a0cbf018ed03ba3933f1386ce272b1
+user|4|7f2a02e42d1dd8d06cf82b83cad2028b
+video_segment|20|eedb932019ee61d567bf66913b41cdcb
+## B4 so sánh gốc vs khôi phục
+KHỚP: 29/29 bảng cùng số dòng và md5 nội dung
+   alembic_version khôi phục: 0005
+   schema phase2_archive trong bản khôi phục: 0 (0 = đúng, đang ở 0005)
+   sequence mã HH-/KN-/TAM- giữ đúng: claim_code_seq=3, placeholder_code_seq=1, return_case_code_seq=2
+   gốc: return_case_code_seq=2, claim_code_seq=3, placeholder_code_seq=1
+## B5 xóa DB tạm aicam_restore_test: exit=0

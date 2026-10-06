@@ -1,0 +1,105 @@
+# Bước 2: smoke Phase 2 trên staging (qua Caddy https://localhost:8443) — 2026-10-06T21:48:41+07:00
+Build: BE 66ac3d1 (image aicam-be:staging-p2), FE 3acaad0 dist. PLATFORM_ADAPTER=shopee, SHOPEE_ENABLED=false (production chặn adapter mock — như Phase 1). Camera: fake-cam1/2 của stack dev qua rtsp://host.docker.internal:58554 (chỉ đọc).
+Script p2smoke.py (httpx, verify=False vì CA nội bộ Caddy). Tài khoản do Phase 1 tạo.
+[✓] P1 healthz qua Caddy — 200 {"status":"ok","version":"0.1.0"}
+[✓] P1b HTTP → HTTPS — 308 → https://localhost/admin/returns
+[✓] P2 đăng nhập ADMIN (tài khoản tạo ở Phase 1) — 200 /me role=ADMIN
+[✓] P2 đăng nhập SUPERVISOR (tài khoản tạo ở Phase 1) — 200 /me role=SUPERVISOR
+[✓] P2 đăng nhập CSKH (tài khoản tạo ở Phase 1) — 200 /me role=CSKH
+[✓] P2 đăng nhập STATION (tài khoản tạo ở Phase 1) — 200 /me role=STATION
+[✓] P3 kiện Phase 1 + clip đọc được, clip từng 'Giữ' được bảo vệ theo hồ sơ LEGACY_HOLD — PACKED, clip [('CAM1', 'READY', False), ('CAM2', 'READY', False)], protected_by_claims=['KN-000001']
+[✓] P3b phát clip Phase 1 (play-url → media 206) — play-url 200, media 206 video/mp4
+[✓] P3c hồ sơ LEGACY_HOLD hiện ở danh sách khiếu nại (CSKH) — [('KN-000001', 'LEGACY_HOLD', 'NEW', 'OTHER')]
+[✓] P4 API-80 GET: sàn retention_clip_min_days=60, ngưỡng Phase 2 có — clip_days=90 min=60 return_missing_days=7
+[✓] P4b API-80 PUT: dưới sàn bị chặn, giảm phải xác nhận; API-82 ADMIN 200 / SUPERVISOR 403 — 45→422 RETENTION_BELOW_MINIMUM; 70→409 RETENTION_REDUCTION_UNCONFIRMED; impact 200 {"clips":0,"clip_bytes":0,"raw_hours":0,"raw_bytes":0,"protected_clips":0,"next_run_at":"2026-10-06T19:00:00Z"}; sup 403; confirm 200; về 90 200
+[✓] P5 station → BOTH (ADMIN) — 200 kind=BOTH
+[✓] P5b chỉnh trạng thái kho SPXSTG0000002 → HANDED_OVER (SUPERVISOR) — 200
+[✓] P5c station chế độ RETURN + người kiểm — 200/200
+[✓] P6 API-11 RETURN: quét mã vận đơn kiện Phase 1 → mở phiên hoàn, hồ sơ HH-, có tham chiếu clip đóng gói — SESSION_OPENED 55 ms, type=RETURN, case=HH-000001 UNANNOUNCED, pack_reference clips=['CAM1', 'CAM2'], flags=['UNANNOUNCED']
+[✓] P6b API-103 chụp ảnh Cam 1 (khung từ fake-cam) + API-106 tải ảnh — [(201, 0.02), (201, 0.02)], ảnh 200 JPEG=True
+[✓] P6c API-102 lưu kết luận 'Hộp rỗng' — 200
+[✓] P6d đóng phiên hoàn bằng quét lại → RETURN_RECEIVED_ISSUE + hồ sơ khiếu nại tự tạo (AC-06) — SESSION_COMPLETED pkg=RETURN_RECEIVED_ISSUE case=RECEIVED_ISSUE claim=KN-000002
+[✓] P7 API-104 tìm theo mã đơn: kiện PACKED → can_open=false NOT_SHIPPED; platform_checked=false (Shopee tắt) — 200 [('SPXSTG0000003', False, 'NOT_SHIPPED')] platform_checked=False
+[✓] P7b API-11 RETURN mã lạ → RETURN_NOT_FOUND (không tra sàn khi SHOPEE_ENABLED=false) — ALERT RETURN_NOT_FOUND data={'code': 'SPXVN0000000000', 'can_open_unidentified': True}
+[✓] P7c API-105 mở phiên chưa xác định (EX-R12) → hồ sơ UNIDENTIFIED — 200 SESSION_OPENED case=HH-000002 UNIDENTIFIED
+[✓] P7d API-12 hủy phiên hoàn quét nhầm → hồ sơ vừa tạo CANCELLED — 200
+   station state: READY work_mode: None
+[✓] P8 API-110 / 111 danh sách + chi tiết hồ sơ hàng hoàn; CSKH xem được, STATION 403 — tab RECEIVED total=1 case=('HH-000001', 'UNANNOUNCED', 'RECEIVED_ISSUE'); chi tiết phiên=[('', 'EMPTY_BOX', 'Lan G5')]; CSKH 200; STATION 403
+[✓] P9 hồ sơ tự tạo có bằng chứng PACK (Phase 1) + RETURN + ảnh — KN-000002 EMPTY_BOX AUTO_RETURN NEW evidence=[('SESSION', 'PACK'), ('SESSION', 'RETURN'), ('SNAPSHOT', 'MANUAL'), ('SNAPSHOT', 'MANUAL')] missing=['RETURN_CLIP_PENDING']
+[✓] P9b API-135 ghi chú + API-133 chuyển SUBMITTED — note 201, patch 200 → SUBMITTED
+[✓] P9c API-131 tạo hồ sơ thủ công (kiện Phase 1) 201; trùng → 409 CLAIM_EXISTS; STATION 403 — 201 KN-000003 bằng chứng=[('SESSION', 'PACK')]; trùng 409 CLAIM_EXISTS; STATION 403
+[✓] P9d API-134 đặt bằng chứng — 200 n=1
+   clip phiên RETURN: [('CAM1', 'READY', 16.12), ('CAM2', 'READY', 16.12)]
+[✓] P10 API-136 → 137 READY → 138 tải zip qua Caddy, SHA-256 khớp; thiếu chữ ký bị chặn; người khác 404 — 202→READY sau 3 giây, 47963487 byte, sha khớp=True, missing=[]; không chữ ký 422; SUPERVISOR 404
+   zip: ['KN-000002/01-dong-goi-20261006-2141/goc-CAM1.mp4', 'KN-000002/01-dong-goi-20261006-2141/goc-CAM2.mp4', 'KN-000002/01-dong-goi-20261006-2141/info.json', 'KN-000002/01-dong-goi-20261006-2141/video-ghep-co-chu.mp4', 'KN-000002/02-mo-hoan-20261006-2147/anh-01.jpg', 'KN-000002/02-mo-hoan-20261006-2147/anh-02.jpg', 'KN-000002/02-mo-hoan-20261006-2147/goc-CAM1.mp4', 'KN-000002/02-mo-hoan-20261006-2147/goc-CAM2.mp4', 'KN-000002/02-mo-hoan-20261006-2147/info.json', 'KN-000002/02-mo-hoan-20261006-2147/ket-luan.json', 'KN-000002/02-mo-hoan-20261006-2147/video-ghep-co-chu.mp4', 'KN-000002/README.txt', 'KN-000002/ho-so.json']
+[✓] P11 API-123 chạy đối soát: SUPERVISOR 202, CSKH 403 — 202 {"queued":true}; CSKH 403
+[✓] P11b API-120 danh sách cảnh báo (SUPERVISOR); quyền CSKH — 200 total=0 items=[]; CSKH 200
+[✗] P12 API-30: lọc RETURN_RECEIVED_ISSUE, tìm theo mã HH-, lọc session_type=RETURN; item có return_case — issue=['SPXSTG0000002'], q HH-=1, RETURN=2, return_case={'id': '01a111af-5ea6-773d-91de-e54914e33a7e', 'code': 'HH-000001', 'kind': 'UNANNOUNCED', 'status': 'RECEIVED_ISSUE'}
+[✓] P12b API-31 báo cáo ngày (D2) có số Phase 2 — 200 keys=['attention', 'counts', 'date', 'stations'] counts={"packed": 3, "had_mismatch": 0, "abandoned": 0, "cancelled": 0, "packed_not_handed_over": 2, "cancelled_after_pack": 0, "returns_received": 1, "returns_received_issue": 1, "returns_unidentified": 0, "returns_expected": 0, "returns_missing": 0, "recon_open": {"HIGH": 0, "MEDIUM": 0, "LOW": 0}, "clai
+TỔNG: 31/32 ✓
+   (P12 ✗ là kỳ vọng sai của script: session_type=RETURN trả 2 kiện = SPXSTG0000002 + kiện tạm TAM-000001 của phiên API-105 vừa hủy ở P7d — đúng thiết kế 'kiện tạm TAM-' (02 §5). Kiểm DB:)
+ tracking_number |   warehouse_status    | is_placeholder |  type  |  status   
+-----------------+-----------------------+----------------+--------+-----------
+ SPXSTG0000002   | RETURN_RECEIVED_ISSUE | f              | RETURN | COMPLETED
+ TAM-000001      | NEW                   | t              | RETURN | CANCELLED
+(2 rows)
+
+   code    |     kind     |     status     
+-----------+--------------+----------------
+ HH-000001 | UNANNOUNCED  | RECEIVED_ISSUE
+ HH-000002 | UNIDENTIFIED | CANCELLED
+(2 rows)
+
+   → P12 tính ✓ sau khi đối chiếu. Tổng smoke API: 32/32 ✓
+
+## P13 celery beat: lịch J-13 / J-14 trong image (app.conf.beat_schedule)
+   j13-sync-returns platforms.sync_returns 900.0
+   j14-recon-rules reconciliation.run_rules 1800.0
+   j15-claim-deadlines claims.check_deadlines 3600.0
+-- worker-sync đăng ký task J-13, worker đăng ký J-14:
+  . platforms.sync_returns
+  . reconciliation.run_rules
+## P14 J-13 bỏ lượt — gọi task trong container api (cùng code + env với worker-sync)
+-- env staging (SHOPEE_ENABLED=false):
+{'skipped': 'not_configured'}
+-- SHOPEE_ENABLED=true + partner id/key/redirect giả, SHOPEE_RETURNS_ENABLED=false (mặc định), chưa có shop CONNECTED:
+{'skipped': 'returns_disabled'}
+-- J-14 gọi trực tiếp:
+{'missing': 0, 'cases_changed': 0, 'hits': 0, 'created': 0, 'updated': 0, 'auto_resolved': 0, 'suppressed': 0}
+
+## P15 FE build Phase 2 qua Caddy (curl)
+   /admin/returns: 200 text/html; charset=utf-8 cache=no-cache
+   /admin/claims: 200 text/html; charset=utf-8 cache=no-cache
+   /admin/claims/x: 200 text/html; charset=utf-8 cache=no-cache
+   /admin/recon: 200 text/html; charset=utf-8 cache=no-cache
+   /station: 200 text/html; charset=utf-8 cache=no-cache
+   /assets/index-phMxIoGg.js: HTTP/2 200  cache-control: public, max-age=31536000, immutable 
+   /assets/AdminLoginPage-D-wn3Aje.js.map: 404
+   CSP hash script theme trong dist/index.html (FE 3acaad0) = hash trong docker/Caddyfile: sha256-wMAAS9iOALRtpDOTov76eUExYsm6fx4bcqr2Ai49TZU= ✓
+   header: content-security-policy: default-src 'self'; script-src 'sel;referrer-policy: no-referrer;x-content-type-options: nosniff;x-frame-options: DENY;
+## P16 FE Phase 2 trên Chromium (Playwright, ignoreHTTPSErrors) — bắt console error + securitypolicyviolation
+đăng nhập admin qua FE: /admin theme=light
+/admin: url=/admin chữ "" -; lỗi console mới=0; CSP=0
+/admin/returns: url=/admin/returns chữ "Không có kiện hoàn nào đang về" có; lỗi console mới=0; CSP=0
+  tab Đã nhận: thấy SPXSTG0000002 · Hộp rỗng · KN-000002
+/admin/claims: url=/admin/claims chữ "KN-000001" có; lỗi console mới=0; CSP=0
+/admin/recon: url=/admin/recon chữ "" -; lỗi console mới=0; CSP=0
+/admin/packages?warehouse_status=RETURN_RECEIVED_ISSUE: url=/admin/packages chữ "SPXSTG0000002" có; lỗi console mới=0; CSP=0
+/admin/settings/storage: url=/admin/settings/storage chữ "" -; lỗi console mới=0; CSP=0
+chi tiết KN-000002: url=/admin/claims/01a111af-768f-7623-b30a-162ae232d4e7 ảnh tải được=[[1280,720],[1280,720]] lỗi console tổng=0
+station đăng nhập: url=/station lỗi console=0 CSP=0; chữ chế độ hoàn: 4 chỗ
+TỔNG: lỗi console=0, lỗi CSP=0
+
+## P13b beat thật sự gửi J-13 (15 phút) và J-14 (30 phút) sau khi lên (beat khởi động 14:44:20 UTC); log beat + worker-sync + worker:
+   [2026-10-06 14:59:20,214: INFO/MainProcess] Scheduler: Sending due task j13-sync-returns (platforms.sync_returns)
+   [2026-10-06 15:14:20,215: INFO/MainProcess] Scheduler: Sending due task j14-recon-rules (reconciliation.run_rules)
+   [2026-10-06 15:14:20,218: INFO/MainProcess] Scheduler: Sending due task j13-sync-returns (platforms.sync_returns)
+   [2026-10-06 14:59:20,217: INFO/MainProcess] Task platforms.sync_returns[ee42931a-b6ce-4a55-a0ed-b12dd59b1cfb] received
+   [2026-10-06 14:59:20,228: INFO/ForkPoolWorker-2] Task platforms.sync_returns[ee42931a-b6ce-4a55-a0ed-b12dd59b1cfb] succeeded in 0.00935785099864006s: {'skipped': 'not_configured'}
+   [2026-10-06 15:14:20,230: INFO/MainProcess] Task platforms.sync_returns[3d15d5d7-3257-4a3b-8b86-3fd5577d772c] received
+   [2026-10-06 15:14:20,233: INFO/ForkPoolWorker-1] Task platforms.sync_returns[3d15d5d7-3257-4a3b-8b86-3fd5577d772c] succeeded in 0.0019487950048642233s: {'skipped': 'not_configured'}
+   [2026-10-06 14:48:09,925: INFO/MainProcess] Task reconciliation.run_rules[798fb9bc-01c9-432c-b006-1e101aab339b] received
+   [2026-10-06 14:48:09,975: INFO/ForkPoolWorker-1] Task reconciliation.run_rules[798fb9bc-01c9-432c-b006-1e101aab339b] succeeded in 0.05001366800570395s: {'missing': 0, 'cases_changed': 0, 'hits': 0, 'created': 0, 'updated': 0, 'auto_resolved': 0, 'suppressed': 0}
+   [2026-10-06 15:14:20,217: INFO/MainProcess] Task reconciliation.run_rules[c97eac39-fac2-4537-a43b-b8949478b636] received
+   [2026-10-06 15:14:20,291: INFO/ForkPoolWorker-1] Task reconciliation.run_rules[c97eac39-fac2-4537-a43b-b8949478b636] succeeded in 0.07371239000349306s: {'missing': 0, 'cases_changed': 0, 'hits': 0, 'created': 0, 'updated': 0, 'auto_resolved': 0, 'suppressed': 0}
+   → J-13 bỏ lượt {'skipped': 'not_configured'} (SHOPEE_ENABLED=false). Nhánh 'returns_disabled' (SHOPEE_ENABLED=true, SHOPEE_RETURNS_ENABLED=false) xem P14. J-14 chạy, 0 cảnh báo: dữ liệu staging tạo sau recon_start_at chưa đủ ngưỡng ngày/giờ của 7 quy tắc — nội dung cảnh báo đã kiểm ở G4 (QA live M9)
