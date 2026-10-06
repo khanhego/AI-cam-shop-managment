@@ -1,15 +1,16 @@
 # System map
 
 > Bản đồ hệ thống đang chạy — nền cho reuse-first. Mỗi dòng có nguồn (file/lệnh).
-> Ai làm thay đổi hệ thống thì cập nhật file này. Last update: 2026-10-05 · Dev (M5 Hoàn thiện xong: T-19)
+> Ai làm thay đổi hệ thống thì cập nhật file này. Last update: 2026-10-06 · Dev (item 02 xác minh G3: `schema_guard`, `returns_retry`, khóa `return_code`)
 
 **Hiện trạng (2026-10-05):** item 01 xong M0–M5 (trừ T-4 camera thật, T-3 tài khoản Shopee partner) trên nhánh `feat/01-packing-mvp` của `ai-cam-be`, `ai-cam-fe` (đã push, chưa merge `main`). BE: auth, station/camera, phiên quét, realtime, vision đọc khay Cam 2 (chạy trên camera giả), duyệt, cắt clip, tra cứu, giữ clip, xuất MP4, báo cáo ngày, cài đặt, health, nhập đơn CSV / xlsx, adapter Shopee (chỉ chạy trên HTTP giả + adapter mock) + đồng bộ J-04/05/06/12. FE: station S0–S6, dashboard D1, D2, D3, D4 (+ xuất), D5, D6 (+ vùng đọc mã), D7–D10, D11, D12, D13. Triển khai: compose production + Caddy HTTPS nội bộ + sao lưu hằng ngày, đã chạy staging local (chưa lên server kho). Chưa có: Shopee thật (T-3), token bucket rate limit (ADR-007), CI đẩy image (build tại chỗ), CSP / HSTS (DEC-137 02a).
+**Item 02 (Phase 2 — hàng hoàn, đối soát, khiếu nại) đang ở bước spec (2026-10-05) — chưa đổi code.** Thay đổi dự kiến: module mới `returns`, `reconciliation`, `claims`; phiên `RETURN` trong `sessions`; bảng `snapshot`; migration 0003 / 0004; API-82, API-100..138 ([02 item 02](../items/02-returns-reconciliation/02-tech-spec.md) §3, §6). Bảng dưới vẫn là hệ thống đang chạy — cập nhật khi implement.
 Kiến trúc: [architecture.md](architecture.md).
 
 ## Module / component
 | Module | Trách nhiệm | Path | Chủ |
 |---|---|---|---|
-| core | settings, ids (UUID v7), clock giả lập được, db (async, after_commit, rollback), redis, errors (format 02 §6), pagination, security (Argon2id, JWT, Fernet, HMAC), audit, deps (`require_roles`) | `ai-cam-be/src/aicam/core/` | BE |
+| core | settings, ids (UUID v7), clock giả lập được, db (async, after_commit, rollback), redis, errors (format 02 §6), pagination, security (Argon2id, JWT, Fernet, HMAC), audit, deps (`require_roles`); `schema_guard` (item 02: so `alembic_version` với `SCHEMA_HEAD` của image lúc khởi động — lệch → thoát mã 78 ở staging / production) | `ai-cam-be/src/aicam/core/` | BE |
 | users | Auth + tài khoản + audit log API (T-7) | `ai-cam-be/src/aicam/modules/users/` | BE |
 | stations | Station, camera, MediaMTX client, probe ffmpeg/ONVIF, HealthTracker (T-8) | `ai-cam-be/src/aicam/modules/stations/` | BE |
 | vision | Tiến trình `vision`: J-08 vòng theo dõi camera (`health_loop.py`) + đọc mã khay Cam 2 (T-12, ADR-005): `capture.py` (mỗi Cam 2 một thread đọc relay RTSP, giải mã 4 khung/giây, timeout mở 5 giây / đọc 3 giây), `reader.py` (OpenCV + zxing-cpp đọc Code128 / QR trong ROI, chỉ nhận mã khớp `SCAN_CODE_REGEX`), `tray.py` (khử nhiễu tập mã, mất stream > 3 giây → `UNAVAILABLE`), `runner.py` (ghi Redis, phát `tray.changed`, nạp lại camera khi `vision.config` và mỗi 10 giây) | `ai-cam-be/src/aicam/modules/vision/`, `entrypoints/vision.py` | BE |
@@ -129,6 +130,27 @@ Kiến trúc: [architecture.md](architecture.md).
 | `SHOPEE_PARTNER_ID`, `SHOPEE_PARTNER_KEY`, `SHOPEE_REDIRECT_URL`, `SHOPEE_BASE_URL` | rỗng, rỗng, rỗng, `https://partner.shopeemobile.com` | Tài khoản partner (chờ T-3) |
 | `SHOPEE_TIMEOUT_S`, `SHOPEE_MAX_ATTEMPTS`, `SHOPEE_BACKOFF_S` | `10`, `5`, `0.5` | Mỗi request Shopee; thử lại giãn cách mũ hoặc theo `Retry-After` |
 | `SHOPEE_LOOKUP_LOOKBACK_MIN`, `SHOPEE_INITIAL_SYNC_DAYS` | `60`, `3` | Tra mã khi quét / J-05 dò đơn cập nhật 60 phút (DEC-123 02a); lần đồng bộ đầu lùi 3 ngày |
+
+## Phase 2 (item 02, đang làm — nhánh `feat/02-returns-reconciliation`)
+| Hạng mục | Nội dung | Nguồn |
+|---|---|---|
+| Migration 0003 | 9 bảng: `return_case`, `return_case_package`, `inspection_line`, `snapshot`, `recon_alert`, `claim`, `claim_evidence`, `claim_note`, `evidence_pack`; cột mới `station`, `package` (`status_changed_at`, `is_placeholder`), `session`, `setting`, `shop`; 3 sequence (HH-, KN-, `placeholder_code_seq`); retention sàn 60 ngày | `ai-cam-be/alembic/versions/0003_*.py` |
+| API mới (M6) | API-100 `PUT /station/work-mode`, API-101 `PUT /station/operator`, API-122 `POST /packages/{id}/warehouse-status`; API-60 thêm `kind` | `ai-cam-be/openapi.json` |
+| Adapter | Shopee returns (`list_returns`, `get_return`) — mock, chưa test thật (T-3) | `modules/platforms/` |
+| Config | `RETENTION_CLIP_MIN_DAYS`, `SHOPEE_RETURNS_PAGE_SIZE`, `SHOPEE_RETURNS_WINDOW_DAYS` | `core/settings.py` |
+| API mới (M7) | API-102 lưu kết luận, API-103 chụp ảnh, API-104 tìm thủ công, API-106 tải ảnh ký, API-110/111 `/returns`; API-10/11/12/15/20/21/40 mở rộng (nhánh RETURN, 8 mã alert, `closed_session`) | `ai-cam-be/openapi.json` |
+| Job / WS (M7) | J-07 xử lý phiên RETURN (tự hoàn tất / bỏ dở); task `sessions.flag_order_cancelled` (BR-21); J-17 `media.capture_pack_snapshot` (queue video); WS-01 `SESSION_AUTO_CLOSED`, `ORDER_CANCELLED_DURING_SESSION`, `SESSION_WARN`; WS-02 `return.updated`; thư mục `/data/video/snapshots` | `modules/sessions`, `modules/media` |
+| Config (M7) | `ORDER_SN_REGEX`, `RETURN_LOOKUP_PREFIX_MIN`, `SNAPSHOT_*` | `core/settings.py` |
+| FE station (M7) | `/station` chọn panel R1/R2/S1–S5 (`selectPanel`); `features/station/returns/*` (ReturnReadyPanel, InspectingPanel, InspectionTable, ConclusionPicker, PackReferenceCard, ReturnLookupDialog, OperatorDialog, ForceNewDialog), `ClosedNotice`, `RecentSessions`, `shared/media/SnapshotStrip`; `useScanListener({captureInInputs})` | `ai-cam-fe/src/features/station/` |
+| Migration 0004 + bảo vệ (M8) | Clip `held` → hồ sơ `LEGACY_HOLD`; `media/protection.py` `protected_sessions_sql` (BR-09 a/b/c + held); J-02 dùng max(setting, sàn 60) và dọn ảnh; archive `phase2_archive` khi downgrade | `ai-cam-be/alembic/versions/0004_*.py`, `modules/media/protection.py` |
+| Claims (M8) | Module `claims`: API-130..138, J-15 `claims.check_deadlines` (mỗi giờ), J-16 gói bằng chứng (queue export, zip `ho-so.json`, `ket-luan.json`, clip + SHA-256); API-105, API-112; API-42 chỉ ADMIN; API-31 `protection`; API-30 `is_placeholder`; env `EVIDENCE_PACK_TTL_HOURS`, `EVIDENCE_PACK_TIMEOUT_S` | `modules/claims/` |
+| FE dashboard (M8) | `/admin/claims` (D16), `/admin/claims/:id` (D17); `features/claims/*`, `features/returns/{ReturnCaseSection,InspectionView,LinkOrderDialog,CorrectInspectionDialog}`, `features/reconciliation/AdjustStatusForm`, `orders/ProtectedChip` (thay `HoldToggle`), `shared/download.downloadUrl` | `ai-cam-fe/src/features/` |
+| Đối soát + hoàn (M9) | Module `reconciliation` (router, rules, J-14 7 quy tắc, `SKIP LOCKED`); J-13 `sync_returns` (15 phút + sau kết nối shop); J-06/J-04 giao thất bại, boom COD, hủy sau lấy hàng, gộp kiện tạm; API-82, API-113, API-120/121/123; API-80 6 ngưỡng + sàn 60 + xác nhận hạ; Redis `recon:run`, `recon:queued`, `sync_returns:{shop}`; env `RECON_ENABLED`, `RECON_RUN_SOFT_LIMIT_S` | `modules/reconciliation/`, `modules/platforms/sync.py` |
+| Ảnh từ khung vision (M9, T-121) | Vision đọc Cam 1 + Cam 2, giữ JPEG mới nhất `frame:{camera_id}` (~1 hình/giây, TTL 5 s); API-103 / ảnh đóng gói dùng khung ≤ 2 s, fallback `grab_frame`; env `SNAPSHOT_FRAME_MAX_AGE_S`, `VISION_FRAME_INTERVAL_S`, `VISION_FRAMES_ENABLED` | `modules/vision/`, `modules/media/` |
+| FE dashboard (M9) | `/admin/returns` (D14), `/admin/recon` (D15); D2, D3, D6, D8, D13 mở rộng; drawer đủ 3 mục item 02; client `lib/api/{returns,recon,claims}.ts`, `shared/returns/*`, `NavBadge` | `ai-cam-fe/src/features/` |
+| Kiểm schema lúc khởi động (G3) | `core/schema_guard.py`: `SCHEMA_HEAD = "0005"` đóng gói trong image; api (lifespan), worker / beat (`worker_init` / `beat_init`), vision so `alembic_version` — lệch → log `schema_version_mismatch` + thoát mã 78 (EX_CONFIG) ở staging / production, dev / test chỉ log; J-02 kiểm lại ngay trước khi xóa (`skipped_schema_mismatch`). Env `SCHEMA_CHECK_STRICT` | `ai-cam-be/src/aicam/core/schema_guard.py` (02a DEC-336) |
+| Hàng đợi / khóa (G3) | Redis hash `returns_retry:{shop}` (`return_sn` → `{order_sn, attempts, reason}`; J-13 thử lại yêu cầu lỗi qua `get_return_detail`, tối đa 8 lượt rồi log `returns_retry_dropped`); advisory `return_code:{code}` (`pg_advisory_xact_lock`, API-105 đầu transaction — hai lần mở cùng mã lạ không tạo hai hồ sơ); J-13 nhiều shop lặp theo id, lock `sync_returns:{shop}` luôn nhả | `modules/platforms/sync.py`, `modules/sessions/service.py` (02a DEC-342, 344, 361) |
+| Config / migration (G3) | `SHOPEE_RETURNS_ENABLED` (`false`), `SHOPEE_RETURNS_INITIAL_DAYS` (`15`), `SCHEMA_CHECK_STRICT`, `AICAM_MIGRATE_ALLOW_ACTIVE_CONNECTIONS`, `AICAM_DOWNGRADE_ALLOW_UNCUT_RETURN_CLIPS`; `APP_ENV` chỉ `dev` / `test` / `staging` / `production`. Migration 0005: index `upper(...) text_pattern_ops` + `ix_package_unverified_created_at` (một phần, BR-20). Nâng cấp phải dừng service (`docs/ops.md` §7.1) | `core/settings.py`, `alembic/versions/0005_*.py` |
 
 ## Tích hợp ngoài
 | Hệ thống | Mục đích | Cách gọi | Config |

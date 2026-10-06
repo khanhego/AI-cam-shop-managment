@@ -1,0 +1,9 @@
+# 2026-10-06 21:09:25 · BE 06d2ea0 · cmd: cd ai-cam-be && uv run pytest -v -s tests/integration/test_shops_api.py tests/integration/test_station_scan_api.py tests/integration/test_media_clips.py -k "not_configured or tc_n02 or signature"
+# Mục đích: TC-R.02 (TC-05.03 phía API khi SHOPEE_ENABLED=false), TC-N.02 Phase 1 (tra sàn chậm, chế độ PACK), hết hạn / sai chữ ký URL clip (cơ chế ký dùng chung)
+PASSED
+TC-N.02: n=20 min=1.531s p95=1.561s max=1.597s
+PASSED
+tests/integration/test_media_clips.py::test_media_signature_range_and_view_audit PASSED
+
+====================== 3 passed, 48 deselected in 32.92s =======================
+EXIT=0

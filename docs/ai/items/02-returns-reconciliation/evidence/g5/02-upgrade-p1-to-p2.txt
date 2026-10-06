@@ -1,0 +1,192 @@
+# Bước 1 (tiếp): nâng cấp Phase 1 → Phase 2 theo docs/ops.md §7.1 — 2026-10-06T21:42:56+07:00
+## Số dòng + md5 từng bảng TRƯỚC nâng cấp (schema 0002, code Phase 1)
+alembic_version|1|a4310bbe1908ffaaf876d2c88cb0bfa7
+approval_request|0|d41d8cd98f00b204e9800998ecf8427e
+audit_log|14|009b9def78b93f37d7de7ffc062e7f91
+camera|2|0b1de061b8a15e4cca025d8b9cc88f14
+clip|6|05359bba54b1d8d8b6462be3f8c5b875
+csv_import|1|9db3c831ed40774d4923d21844468499
+export|1|f100fcd07e7cd143c077751b06504996
+order|5|de4dcb6f52e6543240bdb6dd4d94147c
+order_item|6|5d6693d057880536e6dab6e37774d8d9
+package|5|850445e57c0e20dd6bb53ab322a69600
+refresh_token|3|6a18c2fbece378826fe2faf2a2f940e2
+scan_dedup|6|aa64627a1d6fb2b46b62d93210565430
+session|3|3b775e1c3a07066e056157fcbf074075
+session_event|6|c7adab8c146e54d64745377249d5bdaa
+setting|1|19a0348658b338f4157271666f8c07cd
+shop|0|d41d8cd98f00b204e9800998ecf8427e
+station|1|d394ef40caa1d85c4ea55392007458f1
+status_history|11|e720cf3927c7ebacfcc73246289652de
+user|4|7f2a02e42d1dd8d06cf82b83cad2028b
+video_segment|2|bbac96edf773bbd48ddb96e2bf19011b
+## §7.1 bước 1: sao lưu (image Phase 1)
+2026-10-06T21:42:56+07:00 backup_ok aicam-20261006-214256.dump
+exit=0
+   total 112
+   -rw-------  1 admin  staff  52668 Oct  6 21:42 aicam-20261006-214256.dump
+   -rw-------  1 admin  staff    400 Oct  6 21:42 imports-20261006-214256.tgz
+## §7.1 bước 2: mã Phase 2 (BE 66ac3d1, FE 3acaad0 — FE đã pnpm build); build image Phase 2
+Successfully built 0c0c5bf60f9d
+Successfully tagged aicam-be:staging-p2
+./dc2 build migrate  0.12s user 0.06s system 57% cpu 0.313 total
+aicam-be:staging-p1 786b848004fc 3 minutes ago
+aicam-be:staging-p2 0c0c5bf60f9d About an hour ago
+   image P2: 5 0005 (số migration, SCHEMA_HEAD)
+## Kiểm schema_guard TRƯỚC migrate (DB 0002, image Phase 2) — dc2 run --rm --no-deps <svc>
+-- api
+   exit=3
+{"action": "exit", "hint": "Ch\u1ea1y migrate (`alembic upgrade head`) b\u1eb1ng \u0110\u00daNG image n\u00e0y tr\u01b0\u1edbc khi kh\u1edfi \u0111\u1ed9ng service; DB m\u1edbi h\u01a1n image \u2192 image c\u0169 \u0111ang ch\u1ea1y tr\u00ean DB \u0111\u00e3 n\u00e2ng c\u1ea5p: d\u1eebng service n\u00e0y, tri\u1ec3n khai image m\u1edbi (docs/ops.md \u00a77.1).", "component": "api", "db_revision": "0002", "image_head"
+-- worker
+   exit=78
+2026-10-06 14:43:17 [critical ] schema_version_mismatch        action=exit component=worker db_revision=0002 hint='Chạy migrate (`alembic upgrade head`) bằng ĐÚNG image này trước khi khởi động service; DB mới hơn image → image cũ đang chạy trên DB đã nâng cấp: dừng service này, triển khai image mới (docs/ops.md §7.1).' image_head=0005
+-- beat
+   exit=78
+[2026-10-06 14:43:19,427: WARNING/MainProcess] 2026-10-06 14:43:19 [critical ] schema_version_mismatch        action=exit component=beat db_revision=0002 hint='Chạy migrate (`alembic upgrade head`) bằng ĐÚNG image này trước khi khởi động service; DB mới hơn image → image cũ đang chạy trên DB đã nâng cấp: dừng service này, triển khai image mới (docs/ops.md §7.1).' image_head=0005
+-- vision
+   exit=78
+{"action": "exit", "hint": "Ch\u1ea1y migrate (`alembic upgrade head`) b\u1eb1ng \u0110\u00daNG image n\u00e0y tr\u01b0\u1edbc khi kh\u1edfi \u0111\u1ed9ng service; DB m\u1edbi h\u01a1n image \u2192 image c\u0169 \u0111ang ch\u1ea1y tr\u00ean DB \u0111\u00e3 n\u00e2ng c\u1ea5p: d\u1eebng service n\u00e0y, tri\u1ec3n khai image m\u1edbi (docs/ops.md \u00a77.1).", "component": "vision", "db_revision": "0002", "image_he
+   → api thoát mã 3 (uvicorn 'Application startup failed. Exiting.' bọc SchemaMismatch(78) trong lifespan); worker / beat / vision thoát mã 78. Không service nào chạy được trên schema cũ. Lệch tài liệu (ops §7.1 ghi 'mã 78' cho cả api) — xem 05-release §4.4 BUG-G5-P2-1
+## Thử ngược quy trình: migrate KHI CÒN service Phase 1 chạy (bỏ qua bước 3) — kỳ vọng 0004 từ chối, không đổi gì
+   api Up 3 minutes (healthy)
+   beat Up 3 minutes
+   vision Up 3 minutes
+   worker Up 3 minutes
+   worker-export Up 3 minutes
+   worker-sync Up 3 minutes
+ Container aicam-staging-migrate-run-89bc4ce5293e Created 
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade 0002 -> 0003, returns_recon_claims — schema Phase 2 (02a §3, T-101)
+INFO  [alembic.runtime.migration] Running upgrade 0003 -> 0004, hold_to_claims — clip đang "giữ" → hồ sơ khiếu nại `LEGACY_HOLD` (02a §3 Migration 0004, ADR-009, T-111)
+Traceback (most recent call last):
+RuntimeError: 0004: còn 3 kết nối khác vào DB (? (172.30.20.5), ? (172.30.20.7), ? (172.30.20.7)) trong khi có clip đang giữ cần chuyển thành hồ sơ LEGACY_HOLD — J-02 của bản cũ có thể xóa chúng. Dừng mọi service (`dc stop api vision worker worker-sync worker-export beat`, docs/ops.md §7.1) rồi chạy lại; không có gì bị thay đổi. Chắc chắn không còn tiến trình ứng dụng thì đặt AICAM_MIGRATE_ALLOW_A
+
+   exit=1
+-- alembic current sau lần từ chối
+0002
+-- bảng Phase 2 có bị tạo không: 0
+## Quy trình đúng ops §7.1 — 2026-10-06T21:43:53+07:00
+-- bước 3: dc stop api vision worker worker-sync worker-export beat (bằng dc1 = cấu hình Phase 1)
+6
+-- bước 4: dc2 run --rm migrate alembic current
+0002
+-- bước 5: dc2 run --rm migrate alembic upgrade head
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade 0002 -> 0003, returns_recon_claims — schema Phase 2 (02a §3, T-101)
+INFO  [alembic.runtime.migration] Running upgrade 0003 -> 0004, hold_to_claims — clip đang "giữ" → hồ sơ khiếu nại `LEGACY_HOLD` (02a §3 Migration 0004, ADR-009, T-111)
+INFO  [alembic.runtime.migration] 0004: 2 clip giữ → 1 hồ sơ LEGACY_HOLD (1 phiên)
+INFO  [alembic.runtime.migration] 0004: held_before=2 protected_after=2 chênh=0
+INFO  [alembic.runtime.migration] Running upgrade 0004 -> 0005, return_lookup_indexes — index `text_pattern_ops` cho API-104 tìm tiền tố (T-118, DEC-334)
+   exit=0 (1 giây)
+0005 (head)
+-- bước 6: VACUUM ANALYZE package
+VACUUM
+-- bước 7: dc2 up -d
+22
+-- bước 8: dc2 ps
+SERVICE         IMAGE                   STATUS
+api             aicam-be:staging-p2     Up 31 seconds (healthy)
+backup          postgres:16-alpine      Up 32 seconds
+beat            aicam-be:staging-p2     Up 25 seconds
+caddy           caddy:2-alpine          Up 25 seconds (health: starting)
+mediamtx        bluenviron/mediamtx:1   Up 32 seconds
+migrate         aicam-be:staging-p2     Exited (0) 31 seconds ago
+postgres        postgres:16-alpine      Up 4 minutes (healthy)
+redis           redis:7-alpine          Up 4 minutes (healthy)
+vision          aicam-be:staging-p2     Up 25 seconds
+volume-init     alpine:3                Exited (0) 33 seconds ago
+worker          aicam-be:staging-p2     Up 25 seconds
+worker-export   aicam-be:staging-p2     Up 25 seconds
+worker-sync     aicam-be:staging-p2     Up 25 seconds
+-- logs migrate (up -d chạy lại upgrade head = no-op)
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+-- schema_version_ok
+schema_version_ok              component=beat revision=0005
+schema_version_ok              component=worker revision=0005
+"schema_version_ok", "level": "info", "timestamp": "2026-10-06T14:44:20.088203Z"}
+"schema_version_ok", "level": "info", "timestamp": "2026-10-06T14:44:13.698132Z"}
+-- healthz
+{"status":"ok","version":"0.1.0"} HTTP 200
+## Số dòng SAU nâng cấp (0005) — so với trước: bảng Phase 1 (số dòng; md5 khác vì 0003 thêm cột → text dòng đổi)
+   alembic_version: 1 → 1 =
+   approval_request: 0 → 0 =
+   audit_log: 14 → 15 ≠
+   camera: 2 → 2 =
+   claim_evidence: — → 1 ≠
+   claim_note: — → 2 ≠
+   claim: — → 1 ≠
+   clip: 6 → 6 =
+   csv_import: 1 → 1 =
+   evidence_pack: — → 0 ≠
+   export: 1 → 1 =
+   inspection_line: — → 0 ≠
+   order_item: 6 → 6 =
+   order: 5 → 5 =
+   package: 5 → 5 =
+   recon_alert: — → 0 ≠
+   refresh_token: 3 → 3 =
+   return_case_package: — → 0 ≠
+   return_case: — → 0 ≠
+   scan_dedup: 6 → 6 =
+   session_event: 6 → 6 =
+   session: 3 → 3 =
+   setting: 1 → 1 =
+   shop: 0 → 0 =
+   snapshot: — → 0 ≠
+   station: 1 → 1 =
+   status_history: 11 → 11 =
+   user: 4 → 4 =
+   video_segment: 2 → 4 ≠
+-- md5 nội dung theo ĐÚNG cột Phase 1: khôi phục bản sao lưu trước nâng cấp (aicam-20261006-214256.dump) vào DB tạm aicam_p1ref, so từng bảng với aicam (0005) trên cùng danh sách cột
+NOTICE:  database "aicam_p1ref" does not exist, skipping
+   pg_restore exit=0
+   KHÁC audit_log: trước 14:009b9def78b93f37d7de7ffc062e7f91 · sau 15:99b0e64d91c70320cdf4d5d60be99f47
+   KHÁC camera: trước 2:0b1de061b8a15e4cca025d8b9cc88f14 · sau 2:1fd90c0ebabc417671b33b64bd5eec98
+   KHÁC clip: trước 6:05359bba54b1d8d8b6462be3f8c5b875 · sau 6:dfbe2ccc710d865d9efa7f3735c2668a
+   KHÁC video_segment: trước 2:bbac96edf773bbd48ddb96e2bf19011b · sau 4:e84dcdb015d87fa1b4747701778a3e9a
+   khớp 15 bảng, khác 4 bảng (cột Phase 1)
+-- 0004: clip held / hồ sơ LEGACY_HOLD
+ held | clips 
+------+-------
+    0 |     6
+(1 row)
+
+   code    | type  |   source    | status |         deadline_at          
+-----------+-------+-------------+--------+------------------------------
+ KN-000001 | OTHER | LEGACY_HOLD | NEW    | 2026-11-05 14:43:58.68289+00
+(1 row)
+
+  kind   |   open_code   | type 
+---------+---------------+------
+ SESSION | SPXSTG0000001 | PACK
+(1 row)
+
+  kind  |                        text                        
+--------+----------------------------------------------------
+ SYSTEM | Chuyển từ cờ giữ của Chủ shop lúc 21:42 06/10/2026
+ SYSTEM | Chuyển từ cờ giữ của Chủ shop lúc 21:42 06/10/2026
+(2 rows)
+
+ retention_clip_days |        recon_start_at        
+---------------------+------------------------------
+                  90 | 2026-10-06 14:43:58.68289+00
+(1 row)
+
+-- 4 bảng khác: cột nào khác (so từng cột Phase 1, sắp theo id)
+   clip.held khác
+   camera.last_seen_at khác
+   audit_log: dòng mới sau nâng cấp:
+CLIP_PROTECTION_MIGRATED|CLAIM|2026-10-06 14:43:58.68289+00
+   (14 dòng audit cũ khớp nguyên văn: 14)
+   video_segment: MediaMTX vẫn ghi đoạn mới (2 → 4) — không phải lệch dữ liệu
+   → Kết luận: dữ liệu Phase 1 còn nguyên; khác biệt = đúng thiết kế 0004 (held → false, giữ held_by/held_at cho downgrade) + trạng thái camera / đoạn video đang chạy
+## Image Phase 1 trên DB đã nâng cấp (TC-MG.06 trên stack thật): dc1 run --rm --no-deps migrate (alembic upgrade head của image cũ)
+FAILED: Can't locate revision identified by '0005'
+ERROR [alembic.util.messaging] Can't locate revision identified by '0005'
+   exit=255
+   → migrate của image cũ thoát ≠ 0 nên dc up của image cũ không khởi động api/worker (depends_on service_completed_successfully). Không thử 'dc start api' (ops cấm)
+-- healthz sau đó (stack Phase 2 không bị ảnh hưởng)
+{"status":"ok","version":"0.1.0"} HTTP 200

@@ -1,0 +1,48 @@
+# Dọn staging — 2026-10-06T22:23:00+07:00
+## dc2 down -v (chỉ project aicam-staging)
+ Volume aicam-staging_imports Removed 
+ Volume aicam-staging_video Removed 
+ Volume aicam-staging_caddy_config Removed 
+ Network aicam-staging_aicam Removed 
+ Volume aicam-staging_pgdata Removed 
+ Volume aicam-staging_redisdata Removed 
+ Volume aicam-staging_caddy_data Removed 
+## xóa image staging
+Untagged: aicam-be:staging-p1
+Deleted: sha256:786b848004fcd5f6a3fd44d94a8136e95ba0ee20f561b459a5267442442b206e
+Deleted: sha256:44ce7bdda3b36ddecf30d0a4afdda503dde09b9452fcd474c5d459d3d65aa020
+Deleted: sha256:cb552d0f094dc1bb6fce6a00b3a16bf5f60fc09f87799747e7bd2831dabb76ce
+## xóa worktree tạm + bản sao lưu staging
+   worktree BE xóa
+   worktree FE xóa
+   /Users/admin/KhanhCode/.aicam-g5-tmp xóa (gồm thư mục backups: 4 bản aicam-*.dump + 4 imports-*.tgz của staging)
+   worktree còn lại BE: 1, FE: 1
+## xóa .env tạm + mật khẩu tạm (scratchpad)
+   p1.env, p2.env, common.env, admin.pw, pw.json đã xóa (ls sau đó: không còn file .env nào)
+## stack dev: tắt lại mediamtx, fake-cam1, fake-cam2 (Ops bật làm nguồn RTSP; trước G5 chúng đang tắt)
+3
+## còn gì của aicam-staging
+   containers: 0
+   volumes: 0
+   networks: 0
+## volume dev còn nguyên
+local     aicam-dev_imports
+local     aicam-dev_pgdata
+local     aicam-dev_video
+aicam-dev-api-1 Up 2 hours (healthy)
+aicam-dev-postgres-1 Up 38 hours (healthy)
+aicam-dev-redis-1 Up 38 hours (healthy)
+   dev api healthz: {"status":"ok","version":"0.1.0"} HTTP 200
+## git status (repo BE / FE)
+ M docker/.env.production.example
+ M docker/compose.yml
+ M docs/ops.md
+## df -h / (sau)
+/dev/disk3s1s1   460Gi    11Gi    36Gi    25%    453k  375M    0%   /
+## docker system df (sau)
+TYPE            TOTAL     ACTIVE    SIZE      RECLAIMABLE
+Images          20        10        8.197GB   3.267GB (39%)
+Containers      18        7         6.615MB   282.6kB (4%)
+Local Volumes   11        7         6.638GB   267B (0%)
+Build Cache     0         0         0B        0B
+## + xóa 1 volume ẩn danh rỗng (uid 70 = postgres, tạo 21:40 bởi container backup staging lần dựng đầu, không container nào dùng): 74b74861…

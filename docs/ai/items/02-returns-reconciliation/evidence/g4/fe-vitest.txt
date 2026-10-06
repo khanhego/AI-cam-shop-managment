@@ -1,0 +1,14 @@
+# 2026-10-06 21:01:13 · FE e6d04c2 (branch feat/02-returns-reconciliation) · cmd: cd ai-cam-fe && pnpm test (vitest run)
+ RUN  v5.0.3 /Users/admin/KhanhCode/AI-cam-shop-managment/ai-cam-fe
+
+
+ Test Files  58 passed (58)
+      Tests  562 passed (562)
+   Start at  21:00:56
+   Duration  16.98s (tests 53%, environment 27%, setup 14%, transform 4%, import 2%)
+
+Environment  jsdom was created 58 times · 45.94s total, 27% of tracked time
+             create it once per worker with pool: 'vmThreads' (keeps per-file isolation) or isolate: false (shares it across files)
+             learn more: https://vitest.dev/guide/improving-performance#test-environments
+
+EXIT=0

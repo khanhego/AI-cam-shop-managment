@@ -1,0 +1,97 @@
+# 02-returns-reconciliation — Status
+
+| Trường | Giá trị |
+|---|---|
+| Tên | Hàng hoàn và đối soát (Phase 2 theo SRS hệ thống §13.2) + Phase 1 hardening (06-business-qa L2–L9) |
+| Loại | feature |
+| Lane | feature (chạy bằng `ai-solo-build-feature`) |
+| Quy mô | M |
+| Component bị chạm | ai-cam-be (be), ai-cam-fe (fe: station, admin) |
+| Nhánh | `feat/02-returns-reconciliation` ở cả 3 repo (gốc, `ai-cam-be`, `ai-cam-fe`) |
+| Last update | 2026-10-06 · Flow (G3 ✅ DEC-366 sau xác minh G3; contract 02 v0.5, SRS v0.6; sang bước 11 — G4) |
+
+Phạm vi: M04, M05 (returns), M06, M08 cơ bản — đạt AC-06, AC-07 ([SRS hệ thống §13.2](../../system/SRS.md)); kèm hardening L2–L9 + §4 "Lưu ý cho Phase 2" của [06-business-qa](../01-packing-mvp/06-business-qa.md). Q13 giữ mở — **chặn go-live**, không chặn spec.
+Số item: 02 (`docs/ai/items/` chỉ có 01; remote 3 repo có `main`, `feat/01-packing-mvp`, `feat/02-returns-reconciliation` — 2026-10-05).
+**Dải ID của item này** (tránh trùng item 01): DEC-201+, API-82 và API-100+, T-101+ (BE), T-131+ (FE station), T-151+ (FE admin), màn R1–R5 và D14–D17. FR / BR / AC / EX nối tiếp số đã có trong SRS hệ thống và item 01.
+
+## Tiến độ
+| Gate | Trạng thái | Ngày | Người duyệt | Ghi chú |
+|:---:|:---:|---|---|---|
+| G1 Yêu cầu | ✅ | 2026-10-05 | khanhtt (tự quyết theo ủy quyền user, DEC-217) | 01-srs.md v0.5 Approved (change request DEC-244, 264, 275 sau review G2 lượt 1–3): 43 FR, 8 UC, 20 AC, §10 9 màn mới + 9 mở rộng |
+| Spec 02 / 02a / 02b | ✅ ✅ ✅ (Approved v0.4; 02 v0.5 sau G3) | 2026-10-05 | khanhtt (tự quyết) | 02b: station, admin; sửa theo review G2 lượt 1–3. 2026-10-06: 02 v0.5 (§6.6, DEC-359), 01 v0.6 (DEC-360) theo thay đổi G3 |
+| G2 Thiết kế | ✅ có điều kiện | 2026-10-05 | khanhtt (điều phối, tự quyết theo ủy quyền user — DEC-274) | 3 lượt review subagent; lượt 3 Đạt có điều kiện, không CRITICAL; điều kiện C1–C6 (R3-1..R3-6) + minor R3-7..R3-10 đã sửa ở 02 §6.5, 02a / 02b v0.4, 01 v0.5 (DEC-275) |
+| Plan | ✅ | 2026-10-05 | khanhtt (tự quyết, DEC-276) | 03-plan.md: 39 task (20 BE, 19 FE), ≈ 60 ngày, M6–M10, xong dự kiến 2026-12-29; ticket chưa tạo |
+| G3 Build | ✅ | 2026-10-06 | khanhtt (tự quyết theo ủy quyền user, DEC-366) | Review G3 nhiều reviewer → sửa (DEC-336..358) → xác minh (reviewer subagent): Đạt có điều kiện, V2-1..V2-5 đã sửa (BE `06d2ea0`, FE `e6d04c2`). QA live 123/123, E2E thật 55 + M9. BE pytest 1086 passed ×2; FE tsc / eslint / prettier 0, vitest 562 |
+| G4 Kiểm thử | ✅ | 2026-10-06 | khanhtt (tự quyết theo ủy quyền user, DEC-367 trong `04`) | Đạt có điều kiện: ✅ 176 · ❌ 0 · ⛔ 12 · ⬜ 0, P1 90/90 ([04a](04a-test-report.md)); ⛔ = điều kiện go-live (T-3, T-4, server kho, điện thoại, WAN) |
+| G5 Release | ✅ | 2026-10-06 | khanhtt (tự quyết theo ủy quyền user, DEC-368) | Staging local có điều kiện ([05-release](05-release.md)): nâng cấp từ Phase 1 có dữ liệu ✅, smoke 32/32, backup/restore 29/29, rollback + nâng cấp lại ✅; BUG-G5-P2-2/3 đã sửa (BE `3bfe6ae`). Chưa deploy kho (§7) |
+
+## Solo pipeline
+| # | Bước | Trạng thái | Ngày | Ghi chú |
+|:-:|---|:---:|---|---|
+| 0 | Khởi tạo dự án | ⏭ | | Đã có `.ai/profile.md` (item 01) |
+| 1 | Mở item | ✅ | 2026-10-05 | CP1 tự duyệt theo ủy quyền user (DEC-201): lane feature, M, be + fe (station, admin), NN = 02 |
+| 2 | SRS | ✅ | 2026-10-05 | CP2 tự duyệt (DEC-217): 01-srs.md v0.1; Q6 tự quyết DEC-202; DEC-202..214 |
+| 2b | Màn hình | ✅ | 2026-10-05 | **G1 ✅** tự duyệt (DEC-217): §10 R1–R5, D14–D17 mới; S1/S2/S3, D2/D3/D4/D6/D8/D13 mở rộng; DEC-215, 216 |
+| 3 | Tech spec | ✅ | 2026-10-05 | CP3 tự duyệt (DEC-232): 02 In review — 25 API mới (API-82, 100..106, 110..113, 120..123, 130..138) + 18 mở rộng, WS mới 4 + 1 alert; ADR-009; DEC-218..224 |
+| 4a | BE spec | ✅ | 2026-10-05 | CP4a tự duyệt (DEC-233): 02a In review — 9 bảng mới, migration 0003 + 0004 có downgrade, J-13..J-17, T-101..T-116 (≈ 26,5 ngày); DEC-225..231 |
+| 4b | FE spec (station, admin) | ✅ | 2026-10-05 | CP4b tự duyệt (DEC-234): 02b-station T-131..T-137 (≈ 10 ngày), 02b-admin T-151..T-162 (≈ 17,5 ngày); DEC-235..243 |
+| 5 | Review bộ spec | ✅ | 2026-10-05 | Lượt 1 Chưa đạt (R-1..R-30) → sửa (DEC-244..263). Lượt 2 Chưa đạt (R2-1..R2-11) → sửa (DEC-264..273, đổi số 02b DEC-281, 282). Lượt 3 Đạt có điều kiện → **G2 ✅ có điều kiện** (DEC-274), C1–C6 đã sửa (DEC-275) |
+| 6 | Kế hoạch | ✅ | 2026-10-05 | Plan ✅ tự duyệt (DEC-276): 03-plan.md, 39 task, M6–M10, đường găng ≈ 22,5 ngày |
+| 7 | Test cases | ✅ | 2026-10-05 | CP7 tự duyệt (DEC-277): 04-test-cases.md Ready — 188 case, 90 P1, 7 dự kiến "chưa test — thiếu tài nguyên" |
+| 8 | Implement | ✅ | 2026-10-06 | M6–M10 xong (39 task); T-3 Shopee thật, T-4 camera thật chưa test |
+| 8c | Tài liệu nghiệp vụ (mỗi lát) | ✅ | 2026-10-06 | `docs/nghiep-vu/02-returns-reconciliation/` lát 6–10 |
+| 9 | Commit / PR | ✅ | 2026-10-06 | Commit + push từng task trên `feat/02-returns-reconciliation` (3 repo); sửa G3 BE `06d2ea0`, FE `e6d04c2` |
+| 10 | Review code | ✅ | 2026-10-06 | **G3 ✅** (DEC-366): review nhiều reviewer + xác minh — Đạt có điều kiện, V2-1..V2-5 đã sửa |
+| 11 | Chạy test | ✅ | 2026-10-06 | G4 ✅ DEC-367 |
+| 12 | Release | ✅ | 2026-10-06 | G5 ✅ DEC-368 — pipeline item 02 xong |
+
+## NOW
+| Owner tiếp | Việc tiếp | Skill |
+|---|---|---|
+| Flow | Item 02 xong (G5 ✅). PR + merge main 3 repo; Phase 3 (item 03, TikTok Shop) từ bước 1; Phase 3 mở đầu bằng L11, L13, L15 ([06-business-qa](06-business-qa.md)) | `ai-solo-build-feature` |
+
+## Phản hồi giữa các vai
+| Từ | Tới | Nội dung | Trạng thái |
+|---|---|---|---|
+| Lead review G2 lượt 1 (subagent) | PO, Architect, BE, FE | Chưa đạt: 6 blocker (R-1 CRITICAL clip đóng gói không được giữ khi hồ sơ hàng hoàn còn mở; R-2 Cam 2 đẩy phiên hoàn sang lệch mã; R-3 quét kiện hoàn ở bàn đóng gói → 500; R-4 hồ sơ hàng hoàn trùng; R-5 nhiều kiện; R-6 kiểm migration 0004 luôn lỗi), 11 major (R-7..R-17), 13 minor/nit (R-18..R-30) | Đã sửa hết: 01 v0.3 (DEC-244, 245, 247, 248, 249, 253, 254, 255, 258, 262), 02 v0.2 §6.3 + §8 + §10 (DEC-245, 246, 248, 249, 252, 256, 259, 262, 263), 02a v0.2 §3, §4, §5, §6, §7, §12 (DEC-250, 251, 254..257, 259..261), 02b-station / admin v0.2 (DEC-239, 281, 282 — đổi số từ DEC-244), ADR-009 Accepted. Đóng (lượt 2 xác minh 25/30 đúng, 5 một phần → xử lý ở dòng dưới) |
+| Lead review G2 lượt 3 (subagent) | PO, Architect, BE, FE | Đạt có điều kiện, không CRITICAL: R3-1 `force_new` quá rộng, R3-2 gộp khi phiên còn mở, R3-3 kiện tách khi trả một phần, R3-4 thứ tự khóa ở API-11 / J-06, R3-5 vòng đời `phase2_archive`, R3-6 nhánh (b) `attach_or_create`; minor R3-7..R3-10 | Đã sửa (điều kiện G2 C1–C6): 02 §6.5 v0.4, 02a v0.4, 02b ×2 v0.4, 01 v0.5, ADR-009 (DEC-274, 275). Đóng |
+| Lead review G2 lượt 2 (subagent) | PO, Architect, BE, FE | Chưa đạt (gần đạt): R2-3 CRITICAL (hồ sơ "về trước khi sàn báo" đơn nhiều kiện bị xử lý một phiên → kiện 2 mở không video), R2-1 deadlock thứ tự khóa, R2-2 hồ sơ ma / lặp, R2-4 kẽ hở giữ clip sau khi nhận, R2-5 kiện tạm bị upsert gắn đơn, R2-6 up → down → up vỡ, R2-7 trả một phần đơn nhiều kiện, R2-8 tự hoàn tất không báo station, R2-9 thiếu chuyển trạng thái khi gộp, R2-10 chữ cũ 02a, R2-11 DEC-244 dùng 3 lần | Đã sửa: 01 v0.4 (DEC-264, 265, 267, 268, 271), 02 v0.3 §5.3, §6.4, §8, WS (DEC-265..273), 02a v0.3 §3, §4.1, §5, §6, §7, §11, §12 (DEC-266, 267, 269, 270), 02b-station / admin v0.3 (DEC-281, 282), ADR-009 (+7 ngày sau khi nhận). Chờ lượt 3 |
+| BE (02a DEC-229) | Architect | Đơn nhiều kiện quét bằng mã đơn ở bàn hoàn không biết kiện nào → cần mã alert riêng | Đóng: thêm `RETURN_MULTIPLE_PACKAGES` vào 02 §6 API-11 (trước G2, không tăng phiên bản) |
+| Architect | PO / UX | R4 thiếu dòng cho `RETURN_MULTIPLE_PACKAGES` | Đóng: thêm dòng "ĐƠN CÓ NHIỀU KIỆN" vào 01 §10.4 R4 |
+| BE (02a §3) | Architect | Cần `package.created_at`, `status_changed_at` nội bộ cho BR-14, BR-20 (không lộ API) | Đóng: chỉ đổi 02a (DEC-225), 02 không đổi |
+
+## Lịch sử
+| Ngày | Role | Việc |
+|---|---|---|
+| 2026-10-06 | Lead review, Flow | Xác minh G3 (reviewer subagent): Đạt có điều kiện → V2-1 (major J-13 nhiều shop) + V2-2..V2-5 đã sửa (BE 06d2ea0, FE e6d04c2); contract 02 v0.5, SRS v0.6. BE pytest 1086 passed ×2; FE tsc/eslint/prettier 0, vitest 562. **G3 ✅** (DEC-366, tự quyết theo ủy quyền user); DEC-359..365 |
+| 2026-10-06 | QA, Flow | G4: QA live 123/123 + E2E BE thật 56 + 1 skip trên build `06d2ea0`/`e6d04c2`; 04 KQ đủ 188 case, viết thêm 8 test (BE `66ac3d1`, FE `3acaad0`; BE pytest 1100 passed, FE vitest 564); 04a. **G4 ✅ đạt có điều kiện** (DEC-367) |
+| 2026-10-06 | Ops, BE, PO | G5 staging local (05-release, evidence/g5): nâng cấp Phase 1→2 có dữ liệu, smoke 32/32, backup/restore, rollback; BUG-G5-P2-2 (downgrade lọt khi J-01 còn trong hàng đợi) + BUG-G5-P2-3 (Caddy mất IP) đã sửa BE `3bfe6ae` (pytest 1101). **G5 ✅ có điều kiện** (DEC-368). Q&A nghiệp vụ Phase 2 (06-business-qa): 44 câu, **không CRITICAL**; Major L11–L15 (L11, L13, L15 đầu Phase 3; L14 chặn go-live cùng Q13 / T-3) |
+| 2026-10-06 | BE, FE, Dev | M10 xong (T-120 rollback archive, T-116 seed, T-118 contract + locust + migration 0005, T-162 E2E): E2E BE thật toàn bộ 56 + 1 skip. Tài liệu nghiệp vụ lát 6–10 (`docs/nghiep-vu/02-returns-reconciliation/`). Review G3 Phase 2 (nhiều reviewer): không CRITICAL cần user; đang sửa (BE + FE) |
+| 2026-10-06 | BE, FE | M9 xong: BE T-105/113/114/115 + T-121 ảnh từ khung vision (TC-04.40 0,02 s; 1018 pytest; QA live 123/123 với SHOPEE_ENABLED=true + adapter mock), FE T-153/156/160/161 (543 vitest, E2E mock 20, hết phụ thuộc mock trừ Shopee thật); E2E BE thật 45 + 1 skip (TC-05.03 chạy ở lượt cờ tắt) |
+| 2026-10-06 | BE, FE | M8 xong: BE T-110/111/119/112 (947 pytest; test bằng chứng bắt buộc đạt; QA live 114 + 2 skip, TC-04.40 ảnh 3,2 s > 3 s → thêm T-121 vào M9), FE T-154/155/157/158/159 (514 vitest, E2E mock 14); E2E BE thật 45/45 |
+| 2026-10-06 | BE, FE | M7 xong: BE T-104/107/108/117/109 (825 pytest, QA live 111 + 2 skip), FE T-132..137 (468 vitest, E2E mock 11); E2E BE thật 44/44 (UC-02). E2E helper `scan` → `hidScan` (mã bị cụt khi máy thiếu RAM). Còn mock: API-105 (T-119), `claim_code` (T-110) |
+| 2026-10-06 | BE, FE | M6 Nền tảng xong: BE T-101 (migration 0003), T-102, T-103, T-106 (727 pytest, QA live 101 + 2 skip); FE T-131, T-151, T-152 (384 vitest); E2E BE thật 43/43. Sự cố máy hết RAM / ngủ → chạy tuần tự, `caffeinate` |
+| 2026-10-05 | ai-flow-route | Mở item 02-returns-reconciliation, lane feature, quy mô M, component be + fe (station, admin); CP1 tự quyết theo ủy quyền user (DEC-201) |
+| 2026-10-05 | PO | Viết 01-srs.md v0.1: 43 FR (M 38 / S 5), 8 UC, BR-07..14 + BR-19..28, EX-R1..R13 + EX-P12, P13, NFR-32..36, AC-06, 07, 22..38; hardening L2–L9; Q6 tự quyết DEC-202 (đề xuất, cần xác nhận); camera bàn hoàn DEC-203; tài khoản bàn hoàn DEC-204 (giữ tài khoản chung + tên người kiểm); DEC-205..214 — tự quyết theo ủy quyền user |
+| 2026-10-05 | UX | 01 §10: kiểm kê REUSE / EXTEND / NEW, journey, 5 màn station (R1–R5) + 3 mở rộng, 4 màn dashboard (D14–D17) + 6 mở rộng, phác thảo ASCII, chữ thật, đủ trạng thái; DEC-215, 216 — tự quyết theo ủy quyền user. 01 → v0.2 |
+| 2026-10-05 | PO | **G1 ✅** tự duyệt theo ủy quyền user (DEC-217); 01-srs.md Approved |
+| 2026-10-05 | Architect | Viết 02-tech-spec.md (In review): reuse-first có file:line, 3 module mới, data model + enum, 25 API mới + 18 mở rộng, WS mới, luồng UC-02 / UC-05 / UC-11, rollout + rollback; ADR-009 (Proposed); architecture §4.1 thêm `returns/`, §16 thêm ADR-009; DEC-218..224; CP3 tự duyệt (DEC-232) |
+| 2026-10-05 | BE | Viết 02a-be-spec.md (In review): schema 9 bảng mới, migration 0003 / 0004 + downgrade có guard, chi tiết API-11 chế độ RETURN, BR → nơi thực thi, J-13..J-17, Shopee returns (chưa test — thiếu partner T-3), T-101..T-116; DEC-225..231; CP4a tự duyệt (DEC-233) |
+| 2026-10-05 | Lead review | Review G2 lượt 1 (subagent độc lập): **Chưa đạt** — 6 blocker, 11 major, 13 minor/nit |
+| 2026-10-05 | PO, Architect, BE, FE | Sửa theo review lượt 1 (tự quyết theo ủy quyền user, DEC-244..263): giữ clip theo hồ sơ hàng hoàn chưa kết thúc (BR-09 b, c), bỏ qua Cam 2 cho phiên hoàn, chặn kiện hoàn ở bàn đóng gói, `returns.attach_or_create` + một hồ sơ mở / đơn, hồ sơ một phiên cho khách trả hàng + `lines_mode` REFERENCE cho giao thất bại nhiều kiện, kiểm tập con migration 0004, khóa clip / kiện, rollback sang `phase2_archive`, tự hoàn tất phiên hoàn quá giờ có kết luận, `NEW → RETURN_EXPECTED`, BR-12 theo `status_changed_at`, nâng retention lên sàn, boom COD / hủy sau lấy hàng, rank `RETURN_EXPECTED`, kiện tạm + gộp hồ sơ khi gắn đơn, lịch sử sửa kết luận + giờ camera lúc đóng, 13 điểm minor. 01 → v0.3; 02, 02a, 02b ×2 → v0.2; task BE 20 (≈ 32 ngày, sửa tổng cộng sai 26,5); ADR-009 Accepted |
+| 2026-10-05 | QA | Viết 04-test-cases.md (Ready): 188 case (167 chức năng, 12 phân quyền, 9 NFR), 90 P1; phủ FR M, AC-06/07/22..39, BR, EX-R1..R16, migration up / down / up, hồi quy Phase 1; CP7 tự duyệt (DEC-277) |
+| 2026-10-05 | PM | Viết 03-plan.md: 39 task, M6–M10, ≈ 60 ngày, đường găng ≈ 22,5 ngày; hardening Phase 1 rải theo phụ thuộc; Plan ✅ tự duyệt (DEC-276) |
+| 2026-10-05 | Flow, Architect, BE, FE, PO | Review G2 lượt 3: Đạt có điều kiện, không CRITICAL → **G2 ✅ có điều kiện** (DEC-274, theo ủy quyền user); sửa C1–C6 + minor ở 02 §6.5 / 02a / 02b v0.4, 01 v0.5, ADR-009 (DEC-275); spec → Approved |
+| 2026-10-05 | Lead review | Review G2 lượt 2: **Chưa đạt (gần đạt)** — 25/30 R-n đúng, 5 một phần; 1 CRITICAL mới + 6 major |
+| 2026-10-05 | PO, Architect, BE, FE | Sửa lượt 2 (tự quyết theo ủy quyền user, DEC-264..273): hồ sơ một phiên chỉ khi khách trả hàng / đơn 1 kiện + lối thoát "Đây là kiện khác — vẫn ghi hình" (`force_new`, kiện tạm `TAM-…`); thứ tự khóa `order` → station → case → kiện → clip; `attach_or_create` xét hồ sơ đã nhận chưa có mã sàn + `signal_keys`; giữ clip thêm 7 ngày sau khi nhận; gộp kiện tạm sau upsert; archive rollback đủ bảng + `setval` + bỏ qua `held` của downgrade; trả một phần chỉ nhận kiện quét; WS `SESSION_AUTO_CLOSED` + flush nháp; sửa chữ cũ; đổi số DEC 02b (281, 282). 01 → v0.4; 02, 02a, 02b ×2 → v0.3; BE ≈ 32,5 ngày |
+| 2026-10-05 | FE | Viết 02b-fe-spec-station.md (T-131..T-137) và 02b-fe-spec-admin.md (T-151..T-162) (In review); DEC-235..243; CP4b tự duyệt (DEC-234) |
+
+## Decisions của bước điều phối
+| DEC | Bối cảnh | Lựa chọn | Lý do | Người chốt | Ngày |
+|---|---|---|---|---|---|
+| DEC-201 | Mở item Phase 2 (CP1) | Lane feature, quy mô M, component be + fe (station, admin), NN 02, slug `returns-reconciliation`; dải ID riêng (DEC-201+, API-100+, T-101+) | Yêu cầu đã rõ ở SRS hệ thống + 06-business-qa, không cần prototype; dải ID tránh nhầm với item 01 (DEC tới 175, API tới 92) | khanhtt (tự quyết theo ủy quyền user) | 2026-10-05 |
+| DEC-232 | CP3 (02) | Tự duyệt, sang 4a | Checklist §3 tự soát đạt: mọi field có tên / kiểu, mọi lỗi có mã, FR coverage đủ | khanhtt (tự quyết theo ủy quyền user) | 2026-10-05 |
+| DEC-233 | CP4a (02a) | Tự duyệt, sang 4b | Mọi API-xx / BR / job BE có dòng; migration có downgrade; task ≤ 2 ngày, truy về FR / API | khanhtt (tự quyết theo ủy quyền user) | 2026-10-05 |
+| DEC-234 | CP4b (02b ×2) | Tự duyệt, sang bước 5 | Mọi màn §10 và FR cột FE có dòng; mọi API-xx dùng có xử lý lỗi; task truy về màn / FR | khanhtt (tự quyết theo ủy quyền user) | 2026-10-05 |
+| DEC-366 | Chốt G3 Build sau review G3 (nhiều reviewer) + vòng xác minh (Đạt có điều kiện) | **G3 ✅**: điều kiện V2-1..V2-5 đã sửa và kiểm (BE `06d2ea0`, FE `e6d04c2`); tài liệu đồng bộ (02 v0.5, 01 v0.6, DEC-359..365); sang G4 | Không còn CRITICAL / major mở; bằng chứng: BE pytest 1086 passed ×2, FE tsc / eslint / prettier 0, vitest 562, QA live 123/123, E2E thật 55 + M9. Còn "chưa test — thiếu tài nguyên": Shopee thật (T-3), camera thật (T-4), chạy 1 giờ trên server kho. Loại: thêm một vòng review (không có finding mở) | khanhtt (điều phối, tự quyết theo ủy quyền user) | 2026-10-06 |
+| DEC-368 | Chốt G5 item 02 (staging local) | **G5 ✅ có điều kiện**: BUG-G5-P2-2 sửa + test INT migration thật (R2b staging chưa chạy lại — làm trước lần rollback thật đầu tiên); BUG-G5-P2-3 sửa + kiểm staging; deploy kho chờ 05 §7 (T-3, T-4, server kho, Q13 + L14, điện thoại, WAN); API-46 cắt lại khi phiên không có dòng clip → backlog | Luật user: release = staging local, ghi chưa test; không còn bug mở | khanhtt (điều phối, tự quyết theo ủy quyền user) | 2026-10-06 |

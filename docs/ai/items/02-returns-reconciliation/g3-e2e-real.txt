@@ -1,0 +1,205 @@
+$ playwright test -c playwright.real.config.ts
+[WebServer] $ vite --port 5181 --strictPort
+
+Running 57 tests using 1 worker
+
+  ✓   1 [chromium] › e2e/real/admin-d13.spec.ts:21:1 › TC-03.51: đóng gói lại — station gửi REPACK → Supervisor duyệt → station mở phiên đóng gói lại (11.8s)
+  ✓   2 [chromium] › e2e/real/admin-d13.spec.ts:45:1 › TC-03.40: lệch mã → Gọi quản lý → Cho tiếp tục → station về ĐANG ĐÓNG GÓI ≤ 2 giây (9.4s)
+  ✓   3 [chromium] › e2e/real/admin-d5.spec.ts:20:1 › TC-05.11: 500 đơn → xem trước, Nhập 500 đơn ≤ 30 giây, Lịch sử có dòng Nguyễn B (10.2s)
+  ✓   4 [chromium] › e2e/real/admin-d5.spec.ts:42:1 › TC-05.12: 1 dòng lỗi → bảng lỗi dòng 12, nút Nhập bị khóa (8.6s)
+[WebServer] 7:49:54 PM [vite] ws proxy error:
+[WebServer] Error: read ECONNRESET
+[WebServer]     at TCP.onStreamRead (node:internal/stream_base_commons:216:20)
+[WebServer] 7:49:54 PM [vite] ws proxy socket error:
+[WebServer] Error: read ECONNRESET
+[WebServer]     at TCP.onStreamRead (node:internal/stream_base_commons:216:20)
+  ✓   5 [chromium] › e2e/real/admin-d5.spec.ts:55:1 › TC-05.13: thiếu cột tracking_number → File thiếu cột bắt buộc: Mã vận đơn (8.5s)
+[WebServer] 7:50:02 PM [vite] ws proxy error:
+[WebServer] Error: read ECONNRESET
+[WebServer]     at TCP.onStreamRead (node:internal/stream_base_commons:216:20)
+[WebServer] 7:50:02 PM [vite] ws proxy socket error:
+[WebServer] Error: read ECONNRESET
+[WebServer]     at TCP.onStreamRead (node:internal/stream_base_commons:216:20)
+  ✓   6 [chromium] › e2e/real/admin-g4.spec.ts:35:1 › TC-02.13: mở D4 không ghi VIEW_CLIP; bấm phát + tua → đúng 1 dòng VIEW_CLIP của Lan (30.9s)
+  ✓   7 [chromium] › e2e/real/admin-live.spec.ts:11:1 › TC-01.10 (bắt tay): D11 mở WHEP cho Cam 1 + Cam 2 TST Station 01 qua /live (9.0s)
+  ✓   8 [chromium] › e2e/real/admin-live.spec.ts:25:1 › TC-01.10 (khung hình): Cam 1 và Cam 2 phát video thật qua WebRTC (ICE-TCP trên máy dev) (12.3s)
+  ✓   9 [chromium] › e2e/real/admin-roi.spec.ts:8:1 › TC-01.05: kéo khung x=0.2, y=0.2, w=0.6, h=0.6 trên ảnh Cam 2 → API-64 200, tải lại vẫn còn (13.2s)
+  ✓  10 [chromium] › e2e/real/admin-roi.spec.ts:44:1 › TC-01.06 (UI): khung quá nhỏ → nút Lưu bị khóa (15.2s)
+  ✓  11 [chromium] › e2e/real/admin-settings.spec.ts:8:1 › TC-02.09: D8 clip 20 < thô 30 → lỗi dưới ô, không lưu; TC-02.07 (UI) lưu 180 ngày (8.8s)
+  ✓  12 [chromium] › e2e/real/admin-settings.spec.ts:27:1 › API-81: D8 hiện sức khỏe — dịch vụ, ổ đĩa, camera seed (8.2s)
+  -  13 [chromium] › e2e/real/admin-settings.spec.ts:38:3 › D7 Shopee (cần BE T-16/T-22) › TC-05.03: SHOPEE_ENABLED=false → Kết nối Shopee báo chưa cấu hình
+  ✓  14 [chromium] › e2e/real/admin-stations.spec.ts:8:1 › TC-01.01: tạo station, kiểm tra kết nối Cam 2 (camera giả) → ảnh chụp, lưu (14.4s)
+  ✓  15 [chromium] › e2e/real/admin-stations.spec.ts:25:1 › TC-01.02: tên station trùng (khác hoa thường) → lỗi dưới ô tên (8.5s)
+  ✓  16 [chromium] › e2e/real/admin-stations.spec.ts:34:1 › D6: danh sách station hiện 2 station seed, Station 01 có camera (8.2s)
+  ✓  17 [chromium] › e2e/real/admin-uc03.spec.ts:12:1 › TC-07.01 + TC-07.07 (UI): đóng phiên ở station → CSKH quét mã ở D3 → D4 có clip → xuất Ghép → tải (24.1s)
+  ✓  18 [chromium] › e2e/real/admin-uc03.spec.ts:44:1 › TC-09.03: D2 tự cập nhật thẻ Đã đóng gói ≤ 5 giây sau khi station đóng phiên (11.1s)
+  ✓  19 [chromium] › e2e/real/admin-users.spec.ts:8:1 › FR-10.01: tạo người dùng CSKH trên D9 → đăng nhập được bằng tài khoản mới (9.4s)
+  ✓  20 [chromium] › e2e/real/admin-users.spec.ts:33:1 › TC-10.08: trùng username → lỗi dưới ô Tên đăng nhập (8.5s)
+  ✓  21 [chromium] › e2e/real/admin-users.spec.ts:46:1 › TC-10.07: khóa Admin cuối → Phải còn ít nhất một Admin.; tst_admin vẫn đăng nhập được (9.5s)
+  ✓  22 [chromium] › e2e/real/admin-users.spec.ts:66:1 › TC-10.06 (bước 1–2): thu hồi đăng nhập tst_station01 → API-91 204, toast nêu ≤ 15 phút (8.9s)
+  ✓  23 [chromium] › e2e/real/admin-users.spec.ts:82:1 › TC-10.09 (bước 10, UI): D10 hiện LOGIN của Quản trị; lọc Sửa tài khoản sau khi tạo user (8.8s)
+  ✓  24 [chromium] › e2e/real/m10-admin-returns.spec.ts:91:1 › TC-07.37 / 07.30 / 07.32 (seed): D14 tab có số → D3 tra mã chiều về → D4 khối Hàng hoàn kiện quá hạn (8.6s)
+  ✓  25 [chromium] › e2e/real/m10-admin-returns.spec.ts:131:1 › TC-07.33 + gộp: kiện chưa xác định đã nhận → Gắn đơn SPXTST0000049 (gộp vào hồ sơ quá hạn); TAM- seed → SPXTST0000011 (10.2s)
+  ✓  26 [chromium] › e2e/real/m10-admin-returns.spec.ts:206:1 › FR-04.11 / API-113: D4 Sửa kết luận phiên hoàn đã đóng — Nguyên vẹn → Thiếu hàng → Đã sửa 1 lần + hồ sơ khiếu nại tự tạo (9.8s)
+  ✓  27 [chromium] › e2e/real/m10-admin-returns.spec.ts:249:1 › TC-03.74 (seed): D2 thẻ Cam 2 không xác minh = số phiên PACK có cờ hôm nay → bấm → D3 lọc cờ đúng các kiện (8.4s)
+  ✓  28 [chromium] › e2e/real/m10-permissions.spec.ts:54:1 › TC-P2.01..P2.12 (API, P1): ma trận quyền Phase 2 theo vai (8.1s)
+  ✓  29 [chromium] › e2e/real/m10-permissions.spec.ts:188:1 › Quyền UI Phase 2: CSKH chỉ xem D15 / D14 / D4 (không Xử lý, Chạy đối soát, Gắn đơn, Điều chỉnh); Supervisor có; Supervisor không vào D8 (10.4s)
+  ✓  30 [chromium] › e2e/real/m10-recon-claims.spec.ts:23:1 › TC-06.02 / 06.13 / 06.12 (seed): D2 quá hạn → D15 lọc Cao → điều chỉnh trạng thái kiện 52 → đánh dấu đã xử lý 49 (9.5s)
+
+  ✓  31 [chromium] › e2e/real/m10-recon-claims.spec.ts:79:1 › TC-08.01 + VERSION_CONFLICT hai tab: KN-000001 (seed) Mới → Đã gửi → Đang chờ → Thắng → Đóng; gói zip SHA-256 khớp ho-so.json (11.4s)
+  ✓  32 [chromium] › e2e/real/m10-recon-claims.spec.ts:164:1 › TC-08.08: D4 SPXTST0000011 → Tạo hồ sơ khiếu nại (Khách báo thiếu / sai, Sàn) → D17 (9.2s)
+  ✓  33 [chromium] › e2e/real/m10-station-returns.spec.ts:40:1 › UC-02 seed: TC-04.53 kiện hoàn ở bàn đóng gói → R2 mã chiều về 47 → đóng bằng mã gốc → R4 đã nhận → kiện khác (force_new) → R4 chưa gửi đi (25.7s)
+  ✓  34 [chromium] › e2e/real/m10-station-returns.spec.ts:117:1 › R4 → R3: mã lạ → Tìm thủ công theo tiền tố mã đơn → Mở phiên 48 (trả một phần) → Hủy; mở phiên chưa xác định → đóng (11.4s)
+  ✓  35 [chromium] › e2e/real/m6-station-contract.spec.ts:22:1 › TC-01.30 (API) / TC-04.34 / TC-04.02: loại station, đổi chế độ, người kiểm theo contract mock (7.6s)
+  ✓  36 [chromium] › e2e/real/m7-return-uc02.spec.ts:28:1 › UC-02 (BE thật): R5 → R1 → R2 → kết luận + ảnh F2 → quét mã gốc đóng → R1; S1 cờ Cam 2; R4 mã lạ (13.8s)
+
+  ✓  37 [chromium] › e2e/real/m8-claims.spec.ts:51:1 › M8 (BE thật): phiên hoàn Hộp rỗng → KN tự tạo → D4 chip bảo vệ → D16 → D17 đổi trạng thái → gói zip tải về (46.8s)
+[WebServer] 7:58:25 PM [vite] ws proxy error:
+[WebServer] Error: write EPIPE
+[WebServer]     at afterWriteDispatched (node:internal/stream_base_commons:159:15)
+[WebServer]     at writeGeneric (node:internal/stream_base_commons:150:3)
+[WebServer]     at Socket._writeGeneric (node:net:1025:11)
+[WebServer]     at Socket._write (node:net:1037:8)
+[WebServer]     at writeOrBuffer (node:internal/streams/writable:570:12)
+[WebServer]     at _write (node:internal/streams/writable:499:10)
+[WebServer]     at Writable.write (node:internal/streams/writable:508:10)
+[WebServer]     at Socket.ondata (node:internal/streams/readable:1013:24)
+[WebServer]     at Socket.emit (node:events:508:20)
+[WebServer]     at addChunk (node:internal/streams/readable:564:12)
+[WebServer] 7:58:25 PM [vite] ws proxy socket error:
+[WebServer] Error: write EPIPE
+[WebServer]     at afterWriteDispatched (node:internal/stream_base_commons:159:15)
+[WebServer]     at writeGeneric (node:internal/stream_base_commons:150:3)
+[WebServer]     at Socket._writeGeneric (node:net:1025:11)
+[WebServer]     at Socket._write (node:net:1037:8)
+[WebServer]     at writeOrBuffer (node:internal/streams/writable:570:12)
+[WebServer]     at _write (node:internal/streams/writable:499:10)
+[WebServer]     at Writable.write (node:internal/streams/writable:508:10)
+[WebServer]     at Socket.ondata (node:internal/streams/readable:1013:24)
+[WebServer]     at Socket.emit (node:events:508:20)
+[WebServer]     at addChunk (node:internal/streams/readable:564:12)
+  ✘  38 [chromium] › e2e/real/m9-recon.spec.ts:71:1 › M9 (BE thật): J-13 mock → D14 Đang về / Chỉ hoàn tiền → API-123 → D15 cảnh báo Cao + D2 → xử lý → D8 hạ retention phải xác nhận (1.7m)
+  ✓  39 [chromium] › e2e/real/session-refresh-g4.spec.ts:75:1 › TC-10.05: access token 1 phút hết hạn → mỗi tab refresh theo client của mình, không ghi đè cookie của nhau (1.3m)
+  ✓  40 [chromium] › e2e/real/station-g4.spec.ts:21:1 › TC-03.30: station chưa đăng nhập quét → nhắc đăng nhập, không gọi API-11, ô tài khoản không bị điền mã (7.9s)
+  ✓  41 [chromium] › e2e/real/station-g4.spec.ts:40:1 › TC-03.31: gõ tay 200 ms/phím + Enter → không coi là quét, giữ SẴN SÀNG (11.2s)
+  ✓  42 [chromium] › e2e/real/station-g4.spec.ts:53:1 › TC-03.32: mất kết nối máy chủ > 5 giây → S6, không nhận quét; có lại → về ĐANG ĐÓNG GÓI rồi đóng được (22.8s)
+  ✓  43 [chromium] › e2e/real/station.spec.ts:8:1 › TC-10.01: station đăng nhập đúng → S1, tên station, cookie rt_station (7.4s)
+  ✓  44 [chromium] › e2e/real/station.spec.ts:17:1 › TC-10.02: sai mật khẩu → thông báo, ở lại S0 (7.3s)
+  ✓  45 [chromium] › e2e/real/station.spec.ts:27:1 › TC-10.03: tài khoản dashboard đăng nhập ở station → bị từ chối (7.4s)
+  ✓  46 [chromium] › e2e/real/station.spec.ts:38:1 › TC-03.01, TC-03.02: quét mở → S2 có sản phẩm; quét lại → S1, Hôm nay 1 kiện (7.4s)
+  ✓  47 [chromium] › e2e/real/station.spec.ts:50:1 › TC-03.04: quét đóng sai mã → lệch mã (7.5s)
+  ✓  48 [chromium] › e2e/real/station.spec.ts:64:1 › TC-03.08: đơn đã hủy trên sàn → cảnh báo, không mở phiên (7.4s)
+[WebServer] 8:01:23 PM [vite] ws proxy error:
+[WebServer] Error: read ECONNRESET
+[WebServer]     at TCP.onStreamRead (node:internal/stream_base_commons:216:20)
+[WebServer] 8:01:23 PM [vite] ws proxy socket error:
+[WebServer] Error: read ECONNRESET
+[WebServer]     at TCP.onStreamRead (node:internal/stream_base_commons:216:20)
+  ✓  49 [chromium] › e2e/real/station.spec.ts:73:1 › TC-03.09: đơn đã đóng gói → cảnh báo kèm giờ và station (7.3s)
+  ✓  50 [chromium] › e2e/real/station.spec.ts:85:1 › TC-03.10: đơn đã bàn giao → cảnh báo, không có nút đóng gói lại (7.4s)
+  ✓  51 [chromium] › e2e/real/station.spec.ts:94:1 › TC-03.14: mã sai định dạng → mã không hợp lệ (7.4s)
+  ✓  52 [chromium] › e2e/real/station.spec.ts:103:1 › TC-03.34: mã < 4 ký tự bị bỏ qua, không gọi API (7.8s)
+  ✓  53 [chromium] › e2e/real/station.spec.ts:117:1 › TC-03.18: hủy phiên lý do Hết hàng → về S1 (7.6s)
+  ✓  54 [chromium] › e2e/real/station.spec.ts:129:1 › TC-03.19: hủy phiên lý do Khác bắt buộc ghi chú (7.5s)
+  ✓  55 [chromium] › e2e/real/station.spec.ts:141:1 › TC-03.15: kiện đang mở ở station khác → cảnh báo (8.1s)
+  ✓  56 [chromium] › e2e/real/station.spec.ts:155:1 › TC-P.10: Supervisor vào /admin/settings/stations → trang không có quyền (7.6s)
+  ✓  57 [chromium] › e2e/real/station.spec.ts:164:1 › TC-P.10: tài khoản dashboard mở /station → màn đăng nhập station (cookie tách theo client) (7.8s)
+
+
+  1) [chromium] › e2e/real/m9-recon.spec.ts:71:1 › M9 (BE thật): J-13 mock → D14 Đang về / Chỉ hoàn tiền → API-123 → D15 cảnh báo Cao + D2 → xử lý → D8 hạ retention phải xác nhận 
+
+    Error: expect(locator).toContainText(expected) failed
+
+    Locator: getByRole('table', { name: 'Danh sách cảnh báo lệch trạng thái' }).getByRole('row').filter({ hasText: 'SPXTST0000041' })
+    Expected substring: "Hàng hoàn quá 1 ngày chưa về"
+    Timeout: 2000ms
+    Error: element(s) not found
+
+    Call log:
+      - Expect "toContainText" getByRole('table', { name: 'Danh sách cảnh báo lệch trạng thái' }).getByRole('row').filter({ hasText: 'SPXTST0000041' }) with timeout 2000ms
+      - waiting for getByRole('table', { name: 'Danh sách cảnh báo lệch trạng thái' }).getByRole('row').filter({ hasText: 'SPXTST0000041' })
+
+
+    Call Log:
+    - Timeout 90000ms exceeded while waiting on the predicate
+
+      122 |     await page.reload();
+      123 |     await expect(row).toContainText("Hàng hoàn quá 1 ngày chưa về", { timeout: 2_000 });
+    > 124 |   }).toPass({ timeout: 90_000, intervals: [3_000] });
+          |      ^
+      125 |   await expect(row).toContainText("Cao");
+      126 |   await expect(row).toContainText("Hoàn quá hạn");
+      127 |
+        at /Users/admin/KhanhCode/AI-cam-shop-managment/ai-cam-fe/e2e/real/m9-recon.spec.ts:124:6
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/m9-recon-M9-BE-thật-J-13-m-051a7--hạ-retention-phải-xác-nhận-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/m9-recon-M9-BE-thật-J-13-m-051a7--hạ-retention-phải-xác-nhận-chromium/test-failed-3.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #3: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/m9-recon-M9-BE-thật-J-13-m-051a7--hạ-retention-phải-xác-nhận-chromium/test-failed-5.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #4: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/m9-recon-M9-BE-thật-J-13-m-051a7--hạ-retention-phải-xác-nhận-chromium/test-failed-7.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #5: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/m9-recon-M9-BE-thật-J-13-m-051a7--hạ-retention-phải-xác-nhận-chromium/test-failed-2.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #6: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/m9-recon-M9-BE-thật-J-13-m-051a7--hạ-retention-phải-xác-nhận-chromium/test-failed-10.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #7: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/m9-recon-M9-BE-thật-J-13-m-051a7--hạ-retention-phải-xác-nhận-chromium/test-failed-13.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #8: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/m9-recon-M9-BE-thật-J-13-m-051a7--hạ-retention-phải-xác-nhận-chromium/test-failed-9.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #9: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/m9-recon-M9-BE-thật-J-13-m-051a7--hạ-retention-phải-xác-nhận-chromium/test-failed-11.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #10: screenshot (image/png) ─────────────────────────────────────────────────────────
+    test-results/m9-recon-M9-BE-thật-J-13-m-051a7--hạ-retention-phải-xác-nhận-chromium/test-failed-4.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #11: screenshot (image/png) ─────────────────────────────────────────────────────────
+    test-results/m9-recon-M9-BE-thật-J-13-m-051a7--hạ-retention-phải-xác-nhận-chromium/test-failed-14.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #12: screenshot (image/png) ─────────────────────────────────────────────────────────
+    test-results/m9-recon-M9-BE-thật-J-13-m-051a7--hạ-retention-phải-xác-nhận-chromium/test-failed-8.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #13: screenshot (image/png) ─────────────────────────────────────────────────────────
+    test-results/m9-recon-M9-BE-thật-J-13-m-051a7--hạ-retention-phải-xác-nhận-chromium/test-failed-12.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #14: screenshot (image/png) ─────────────────────────────────────────────────────────
+    test-results/m9-recon-M9-BE-thật-J-13-m-051a7--hạ-retention-phải-xác-nhận-chromium/test-failed-6.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/m9-recon-M9-BE-thật-J-13-m-051a7--hạ-retention-phải-xác-nhận-chromium/error-context.md
+
+    attachment #16: trace (application/zip) ────────────────────────────────────────────────────────
+    test-results/m9-recon-M9-BE-thật-J-13-m-051a7--hạ-retention-phải-xác-nhận-chromium/trace.zip
+    Usage:
+
+        pnpm exec playwright show-trace test-results/m9-recon-M9-BE-thật-J-13-m-051a7--hạ-retention-phải-xác-nhận-chromium/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+  1 failed
+    [chromium] › e2e/real/m9-recon.spec.ts:71:1 › M9 (BE thật): J-13 mock → D14 Đang về / Chỉ hoàn tiền → API-123 → D15 cảnh báo Cao + D2 → xử lý → D8 hạ retention phải xác nhận 
+  1 skipped
+  55 passed (13.3m)
+[ELIFECYCLE] Command failed with exit code 1.

@@ -1,0 +1,79 @@
+# G4 item 02 — test bổ sung cho 8 case ⬜ (2026-10-06, máy dev, chưa commit)
+# BE: Postgres/Redis compose dev (aicam-dev-postgres-1 :55432, aicam-dev-redis-1 :56379); log structlog đã lọc.
+# FE: vitest + MSW (jsdom).
+#
+# Case → test:
+#   TC-04.22 (AC-06)  test_claims_api.py::test_each_conclusion_creates_matching_claim[DAMAGED|MISSING_ITEM|WRONG_ITEM|EMPTY_BOX|OTHER|OK]
+#                     test_claims_api.py::test_ten_parcels_five_ok_five_issue_types
+#   TC-P2.04 (AC-35)  test_snapshots.py::test_station_clip_access_ends_when_return_session_closed_or_cancelled
+#   TC-04.28          test_return_hardening.py::test_j07_return_timer_restarts_after_assist_continue
+#   TC-04.29          InspectingPanel.test.tsx "TC-04.29, DEC-272: …warn_at…" + "TC-04.29: WS alert SESSION_WARN…"
+#   TC-P2.10          test_evidence_pack.py::test_pack_status_other_supervisor_404_station_403
+#   TC-N2.02          test_return_scan.py::test_tc_n2_02_slow_platform_lookup_return_mode   (số đo dòng "TC-N2.02:")
+#   TC-N2.07          tests/unit/test_worker_tasks.py::test_tc_n2_07_j13_sync_returns_beat_within_15_minutes
+#   TC-N2.08          test_snapshots.py::test_snapshot_url_expires_after_ten_minutes
+#                     test_evidence_pack.py::test_pack_zip_url_expires_after_ten_minutes
+
+## BE — cd ai-cam-be && uv run pytest -v -s <14 node id>
+============================= test session starts ==============================
+platform darwin -- Python 3.12.15, pytest-9.1.1, pluggy-1.6.0 -- /Users/admin/KhanhCode/AI-cam-shop-managment/ai-cam-be/.venv/bin/python
+rootdir: /Users/admin/KhanhCode/AI-cam-shop-managment/ai-cam-be
+configfile: pyproject.toml
+plugins: asyncio-1.4.0, anyio-4.15.1, respx-0.23.1
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 14 items
+
+tests/integration/test_claims_api.py::test_each_conclusion_creates_matching_claim[DAMAGED]
+PASSED
+tests/integration/test_claims_api.py::test_each_conclusion_creates_matching_claim[MISSING_ITEM]
+PASSED
+tests/integration/test_claims_api.py::test_each_conclusion_creates_matching_claim[WRONG_ITEM]
+PASSED
+tests/integration/test_claims_api.py::test_each_conclusion_creates_matching_claim[EMPTY_BOX]
+PASSED
+tests/integration/test_claims_api.py::test_each_conclusion_creates_matching_claim[OTHER]
+PASSED
+tests/integration/test_claims_api.py::test_each_conclusion_creates_matching_claim[OK]
+PASSED
+tests/integration/test_claims_api.py::test_ten_parcels_five_ok_five_issue_types
+PASSED
+tests/integration/test_snapshots.py::test_station_clip_access_ends_when_return_session_closed_or_cancelled
+PASSED
+tests/integration/test_return_hardening.py::test_j07_return_timer_restarts_after_assist_continue
+PASSED
+tests/integration/test_evidence_pack.py::test_pack_status_other_supervisor_404_station_403
+PASSED
+tests/integration/test_return_scan.py::test_tc_n2_02_slow_platform_lookup_return_mode
+TC-N2.02: n=5 min=2.026s p95=2.060s max=2.060s
+PASSED
+tests/unit/test_worker_tasks.py::test_tc_n2_07_j13_sync_returns_beat_within_15_minutes PASSED
+tests/integration/test_snapshots.py::test_snapshot_url_expires_after_ten_minutes
+PASSED
+tests/integration/test_evidence_pack.py::test_pack_zip_url_expires_after_ten_minutes
+PASSED
+
+============================= 14 passed in 17.36s ==============================
+exit=0
+
+## FE — cd ai-cam-fe && npx vitest run src/features/station/returns/InspectingPanel.test.tsx -t "TC-04.29" --reporter=verbose
+
+ RUN  v5.0.3 /Users/admin/KhanhCode/AI-cam-shop-managment/ai-cam-fe
+
+ ✓ src/features/station/returns/InspectingPanel.test.tsx > TC-04.29, DEC-272: nháp chưa lưu (debounce chưa tới) → tới warn_at gửi API-102; 30 giây trước abandon_at gửi lần nữa 467ms
+ ✓ src/features/station/returns/InspectingPanel.test.tsx > TC-04.29: WS alert SESSION_WARN (J-07 tới warn_at) → gửi nháp ngay, không chờ debounce 54ms
+
+ Test Files  1 passed (1)
+      Tests  2 passed | 17 skipped (19)
+   Start at  21:30:18
+   Duration  1.56s (tests 37%, environment 29%, transform 18%, setup 13%, import 3%)
+
+
+## Hồi quy toàn bộ sau khi thêm test
+BE  uv run ruff check .        → exit 0 (All checks passed!)
+BE  uv run ruff format --check . → exit 0 (243 files already formatted)
+BE  uv run mypy                → exit 0 (Success: no issues found in 143 source files)
+BE  uv run pytest -q           → exit 0 (1100 passed, 126 skipped, 1 warning in 210.17s (0:03:30))
+FE  npx tsc -b                 → exit 0
+FE  npx eslint src             → exit 0
+FE  npx prettier -c src        → exit 0
+FE  pnpm test                  → exit 0 (Test Files  58 passed (58) · Tests  564 passed (564))
