@@ -4,14 +4,14 @@
 |---|---|
 | Tác giả | khanhtt (FE, agent soạn, tự quyết theo ủy quyền user) |
 | Reviewer | khanhtt (tech lead, review ở bước 5) |
-| Trạng thái | **In review** · v0.1 |
-| Tổng quan & contract | [02-tech-spec.md](02-tech-spec.md) v0.1 §6 (API-10, 11, 12, 101) · Màn: [01-srs.md §10.4](01-srs.md) (S1, S2, S4, R2 mở rộng; R5 dùng lại) · nền [item 02 02b-station](../02-returns-reconciliation/02b-fe-spec-station.md) · [Design system](../../../design-system/README.md) |
-| Last update | 2026-10-06 · FE |
+| Trạng thái | **In review** · v0.2 (sửa theo review G2 lượt 1 — DEC-512) |
+| Tổng quan & contract | [02-tech-spec.md](02-tech-spec.md) v0.2 §6 (API-10, 11, 12, 101, 104) · Màn: [01-srs.md §10.4](01-srs.md) v0.3 (S1, S2, S4, R2, R1 / R3 mở rộng; R5 dùng lại) · nền [item 02 02b-station](../02-returns-reconciliation/02b-fe-spec-station.md) · [Design system](../../../design-system/README.md) |
+| Last update | 2026-10-07 · FE (v0.2: G2-2, G2-3) |
 
-> **TL;DR** — Không màn mới. Mở rộng 4 panel station: S1 dòng "Người đóng gói" + R5 đổi tiêu đề theo chế độ; S2 / R2 chip sàn · shop (`PlatformChip` dùng chung với dashboard) + cảnh báo "Kiện gộp N đơn"; S4 mã mới `ORDER_CANCEL_REQUESTED`; R2 luật hủy 60 giây theo **giờ server** (`self_cancel_until`), sau đó chỉ "Gọi quản lý".
+> **TL;DR** — Không màn mới. Mở rộng 4 panel station: S1 dòng "Người đóng gói" + R5 đổi tiêu đề theo chế độ; S2 / R2 chip sàn · shop (`PlatformChip` dùng chung với dashboard) + cảnh báo "Kiện gộp N đơn" + banner vàng khi đơn đang có yêu cầu hủy (cờ `ORDER_CANCEL_REQUESTED`); S4 mã mới `ORDER_CANCEL_REQUESTED`; R2 luật hủy 60 giây theo **giờ server** (`self_cancel_until`), sau đó chỉ "Gọi quản lý"; bàn hoàn mã đơn trùng nhiều shop → alert `RETURN_MULTIPLE_ORDERS` → R3 có chip shop.
 > State giữ nguyên `stationStore` (Zustand) + WS `station.state`; không thêm request mới — chỉ đọc trường mới của API-10 / API-11 / API-12.
 > Điểm khó: đổi nút đúng giây 61 không tải lại; xử lý 409 `CANCEL_REQUIRES_SUPERVISOR` khi bấm sát giờ.
-> 5 task T-231..T-235 (≈ 5 ngày công).
+> 6 task T-231..T-236 (≈ 6,5 ngày công).
 
 Không viết lại API — trỏ API-xx trong [02 §6](02-tech-spec.md#6-api-contract).
 
@@ -25,6 +25,8 @@ Không viết lại API — trỏ API-xx trong [02 §6](02-tech-spec.md#6-api-co
 | FR-03.16 tên người đóng gói ở S1 + R5 + chặn quét khi bắt buộc | Tài khoản / PIN người đóng gói (DEC-1) |
 | FR-05.17 S4 "ĐƠN ĐANG YÊU CẦU HỦY" | Thông báo Zalo / Telegram trên station (không có) |
 | FR-05.22 cảnh báo kiện gộp + đơn của từng sản phẩm ở S2 | |
+| BR-21 (làm rõ v0.3) banner vàng S2 khi đơn đang yêu cầu hủy | |
+| BR-29 / EX-R20: alert `RETURN_MULTIPLE_ORDERS` → R3 chọn đơn, chip sàn · shop từng dòng | Chọn shop thủ công khi **đóng gói** (EX-P14 giữ cho Supervisor) |
 | FR-04.14 R2 luật hủy 60 giây (BR-37) | Màn duyệt hủy — D13 (02b-admin) |
 
 | Màn / luồng | Route | FR / UC | REUSE / EXTEND / NEW |
@@ -34,6 +36,7 @@ Không viết lại API — trỏ API-xx trong [02 §6](02-tech-spec.md#6-api-co
 | S2 Đang đóng gói | `state = PACKING` | FR-03.03, 05.22 / UC-01 | EXTEND `PackingPanel.tsx` |
 | S4 Cảnh báo | overlay | FR-05.17 | EXTEND `AlertOverlay.tsx`, `copy.ts` |
 | R2 Đang kiểm hoàn | `state = INSPECTING` | FR-04.14, 03.03 / UC-22 | EXTEND `returns/InspectingPanel.tsx` |
+| R3 Tìm kiện hoàn | dialog | BR-29, EX-R20 | EXTEND `returns/ReturnLookupDialog.tsx` (chip shop), `stationStore.ts` (alert mới) |
 | `PlatformChip` | component dùng chung | FR-03.03 | NEW `src/shared/ui/PlatformChip.tsx` (02b-admin T-252 tạo; station dùng — DEC-479) |
 
 ## 2. Điều hướng
@@ -58,7 +61,8 @@ flowchart LR
 | `StationStatusBar` | EXTEND `features/station/StationStatusBar.tsx` | `state` | Chế độ PACK: "Người đóng gói: {tên}" + nút "Đổi"; chưa có tên → chữ xám "Chưa ghi tên người đóng gói · Nhập tên" (nút) |
 | `OperatorDialog` | REUSE `returns/OperatorDialog.tsx` | + `mode: "PACK" \| "RETURN"` | Tiêu đề "Người đóng gói" / "Người kiểm"; luật 2–40 ký tự giữ; `onSwitchToPack` chỉ ở RETURN |
 | `PlatformChip` | REUSE `src/shared/ui/PlatformChip.tsx` (từ T-252) | `platform: "SHOPEE"\|"TIKTOK"\|null`, `shopName`, `single?: boolean`, `size="lg"` | "Shopee · Áo Đẹp" / "TikTok · Áo Đẹp Official" / "Chưa rõ sàn" (`order = null`); chữ ≥ 24 px ở station |
-| `PackingPanel` | EXTEND | `session` | Thay chữ cứng "Shopee" (`PackingPanel.tsx:90`) bằng `PlatformChip`; `MergedOrdersBanner` khi `merged_orders.length > 0`; mỗi dòng sản phẩm thêm "(đơn …{4 số cuối})" khi gộp |
+| `PackingPanel` | EXTEND | `session` | Thay chữ cứng "Shopee" (`PackingPanel.tsx:90`) bằng `PlatformChip`; `MergedOrdersBanner` khi `merged_orders.length > 0`; `CancelRequestedBanner` khi `session.flags` có `ORDER_CANCEL_REQUESTED` (vàng, `role="alert"`, 2 bíp lần đầu thấy cờ; nút "Đóng gói xong" giữ nguyên); mỗi dòng sản phẩm thêm "(đơn …{4 số cuối})" khi gộp |
+| `ReturnLookupDialog` (R3) | EXTEND `returns/ReturnLookupDialog.tsx` | `initialQuery` | `Row` thêm `PlatformChip size="md"` (≥ 20 px) cạnh mã đơn từ `item.platform`, `item.shop_name`; `null` → "Chưa rõ sàn" |
 | `MergedOrdersBanner` | NEW `features/station/MergedOrdersBanner.tsx` | `orders: string[]` | Vàng: "Kiện gộp {n} đơn: …0123, …0456 — kiểm đủ hàng của cả hai" (n > 2: "của tất cả") |
 | `AlertOverlay` | EXTEND | `alert` | `ORDER_CANCEL_REQUESTED` nền vàng (như `ORDER_CANCELLED`), tiêu đề + chữ 01 §10.4 S4 |
 | `InspectingPanel` | EXTEND `returns/InspectingPanel.tsx:195` | `session`, `serverNow` | Khu nút cuối: `canSelfCancel(session, serverNow)` → [Hủy phiên] [Gọi quản lý]; ngược lại dòng "Muốn hủy phiên? Bấm Gọi quản lý." + [Gọi quản lý]; chip sàn cạnh mã kiện |
@@ -73,6 +77,8 @@ flowchart LR
 | Tên người đóng gói | API-101 (sẵn có, nay cả PACK) | `stationStore.setOperator` | WS trả state mới | ✗ |
 | Mở R5 cho PACK | ALERT `OPERATOR_REQUIRED {mode: PACK}` (API-11) | `stationStore.operatorOpen` (sẵn có) — bỏ điều kiện `work_mode === "RETURN"` ở `StationPage.tsx:182` khi mở do alert / nút "Đổi" | — | — |
 | Hủy phiên RETURN | API-12 | `CancelSessionDialog` (sẵn có) | 409 → đóng dialog + Toast + làm mới API-10 | ✗ |
+| Alert `RETURN_MULTIPLE_ORDERS` | API-11 | `stationStore.handleScanResult` — nhánh mới cạnh `RETURN_MULTIPLE_PACKAGES` (`stationStore.ts:544`): hiện R4 vàng `MULTIPLE_TO_LOOKUP_MS` (1,5 giây) rồi `lookup: {query: data.code}` | — | — |
+| Kết quả R3 | API-104 (`platform`, `shop_name` mới) | TanStack Query sẵn có của `ReturnLookupDialog` | Như Phase 2 | ✗ |
 
 ## 5. Form & validate
 
@@ -86,7 +92,8 @@ flowchart LR
 | Màn | Loading | Empty | Error | Forbidden | Success |
 |---|---|---|---|---|---|
 | S1 | Như Phase 2 | — | Như Phase 2 (S6 mất kết nối) | — (STATION) | "Người đóng gói: Minh" / "Chưa ghi tên người đóng gói · Nhập tên" |
-| S2 | — | `items` rỗng: "Đơn chưa có sản phẩm" (sẵn có) | — | — | Chip sàn đúng; kiện gộp → banner vàng; kiện chưa xác minh → "Chưa rõ sàn" |
+| S2 | — | `items` rỗng: "Đơn chưa có sản phẩm" (sẵn có) | — | — | Chip sàn đúng; kiện gộp → banner vàng; yêu cầu hủy khi đang đóng → banner vàng "Người mua đang xin hủy đơn này…"; kiện chưa xác minh → "Chưa rõ sàn" |
+| R3 | Như Phase 2 | Như Phase 2 | Như Phase 2 | — | Mỗi dòng chip sàn · shop; mở từ alert `RETURN_MULTIPLE_ORDERS` với mã đã điền |
 | S4 `ORDER_CANCEL_REQUESTED` | — | — | — | — | Nền vàng, 2 bíp, tự đóng theo `ALERT_MS` như `ORDER_CANCELLED` |
 | R2 | — | — | 409 hủy → Toast "Phiên đã quá 60 giây. Bấm Gọi quản lý để hủy." | — | Nút đổi đúng giây 61 theo giờ server; sau khi lưu kết luận / chụp ảnh → nút ẩn ngay (WS state mới có `self_cancel_until = null`) |
 
@@ -104,6 +111,7 @@ flowchart LR
 | API-11 `ORDER_CANCEL_REQUESTED` | S4 vàng "ĐƠN ĐANG YÊU CẦU HỦY" · "Người mua đang xin hủy đơn này. Chờ xử lý trên sàn, chưa đóng gói." | Tự đóng, về S1 |
 | API-11 `OPERATOR_REQUIRED` (`mode = PACK`) | Overlay vàng "Nhập tên người đóng gói trước khi đóng gói." + 2 bíp | Mở R5 (tiêu đề "Người đóng gói") |
 | API-11 `ORDER_CANCELLED` (chữ mới) | Như Phase 2, dùng `message` server | — |
+| API-11 `RETURN_MULTIPLE_ORDERS` | R4 vàng `message` server ("Mã {mã} có ở {n} đơn của các shop khác nhau. Chọn đúng đơn.") + 2 bíp | 1,5 giây → mở R3 với `data.code` |
 | API-12 `409 CANCEL_REQUIRES_SUPERVISOR` | Toast `message` | Đóng dialog, làm mới state |
 | Mã lạ | `message` server (như Phase 1) | — |
 
@@ -123,6 +131,8 @@ Chuỗi mới trong `features/station/copy.ts`:
 | `platform.unknown` | "Chưa rõ sàn" |
 | `returns.cancelViaSupervisor` | "Muốn hủy phiên? Bấm Gọi quản lý." |
 | `returns.cancelTooLate` | "Phiên đã quá 60 giây. Bấm Gọi quản lý để hủy." (dự phòng khi server không có `message`) |
+| `packing.cancelRequested` | "⚠ Người mua đang xin hủy đơn này. Đóng gói xong để riêng, chưa bàn giao." |
+| `alert.RETURN_MULTIPLE_ORDERS` | "MÃ CÓ Ở NHIỀU ĐƠN" (+ thân = `message` server; dự phòng "Mã này có ở nhiều đơn của các shop khác nhau. Chọn đúng đơn.") |
 
 a11y: chip có `aria-label` "Sàn: TikTok Shop, shop Áo Đẹp Official"; banner kiện gộp `role="alert"`; khu nút R2 đổi → `aria-live="polite"` đọc "Đã quá 60 giây — hủy phiên cần quản lý". Kiosk 1920×1080 (không responsive mới).
 
@@ -138,14 +148,15 @@ N/A — station không có analytics; log lỗi qua console như Phase 2.
 
 - `src/mocks/stationSim.ts`: thêm kịch bản mã `TTTST0000000077` (TikTok, kiện gộp 2 đơn), `TTTST0000000050` (yêu cầu hủy → `ORDER_CANCEL_REQUESTED`), `SPXTST…` có `shop_name`; cờ `operator_required` (bật bằng `?packerRequired=1` ở `pnpm dev:mock`); phiên RETURN có `self_cancel_until = started_at + 60 giây`, `null` sau khi lưu kết luận / chụp ảnh; API-12 trả 409 khi quá hạn.
 - `src/mocks/handlers/station.ts`: trả trường mới theo 02 §6.2 API-10 (contract).
+- v0.2: kịch bản `2410DUP00001` ở chế độ RETURN → `RETURN_MULTIPLE_ORDERS` (2 đơn Shopee · TST B / TikTok · TST TikTok A), API-104 trả 2 dòng có `platform`, `shop_name`; kịch bản `TTTST0000000051` đang đóng → WS state thêm cờ `ORDER_CANCEL_REQUESTED` sau 5 giây.
 
 ## 13. Test FE
 
 | Mức | Phạm vi | Case chính (TC-xx — QA đánh số ở `04`) |
 |---|---|---|
-| Unit / component | `cancelRule.ts` (59,9 giây được; 60,0 giây không; `null` không); `PlatformChip` 3 dạng; `MergedOrdersBanner`; `OperatorDialog` 2 tiêu đề; `AlertOverlay` `ORDER_CANCEL_REQUESTED` | FR-04.14, 03.03, 05.17, 05.22 |
+| Unit / component | `cancelRule.ts` (59,9 giây được; 60,0 giây không; `null` không); `PlatformChip` 3 dạng; `MergedOrdersBanner`; `CancelRequestedBanner`; `OperatorDialog` 2 tiêu đề; `AlertOverlay` `ORDER_CANCEL_REQUESTED`, `RETURN_MULTIPLE_ORDERS`; `ReturnLookupDialog` chip shop + "Chưa rõ sàn"; `stationStore` nhánh `RETURN_MULTIPLE_ORDERS` → `lookup.query = data.code` | FR-04.14, 03.03, 05.17, 05.22, BR-21, BR-29 |
 | Integration (MSW) | `StationPage`: PACK bắt buộc tên → quét → overlay → R5 → nhập → quét mở S2; R2 giờ giả (offset server) tới giây 61 → nút đổi không tải lại; bấm hủy lúc 60 giây → 409 → Toast | AC-56 (phần station), AC-62 |
-| E2E mock | `e2e/mock/station-phase3.spec.ts`: TikTok kiện gộp; yêu cầu hủy; luật 60 giây | UC-01, UC-22 |
+| E2E mock | `e2e/mock/station-phase3.spec.ts`: TikTok kiện gộp; yêu cầu hủy (chặn mở + banner khi đang đóng, đóng xong được); luật 60 giây; mã đơn trùng 2 shop ở bàn hoàn → R3 chọn đúng → mở phiên | UC-01, UC-22, EX-R20 |
 | E2E BE thật | `e2e/real/station-phase3.spec.ts` (sau T-212, T-213 BE): chip sàn với mock TikTok; 409 hủy sau 60 giây (đồng hồ giả của BE test) | AC-56, AC-62 |
 
 ## 14. Task
@@ -154,11 +165,12 @@ N/A — station không có analytics; log lỗi qua console như Phase 2.
 |---|---|---|---|---|
 | T-231 | Kiểu `lib/api/station.ts` (trường mới API-10/11/12) + `stationSim` + handler MSW (§12) | nền | 02 §6 API-10..12 (mock) | 1 |
 | T-232 | S1 + R5: dòng người đóng gói, `OperatorDialog` `mode`, mở R5 từ `OPERATOR_REQUIRED` ở PACK; copy | S1, R5 / FR-03.16 | API-10, 11, 101; T-231 | 1 |
-| T-233 | S2 `PlatformChip` + `MergedOrdersBanner` + đơn từng dòng; R2 chip; S4 `ORDER_CANCEL_REQUESTED` | S2, R2, S4 / FR-03.03, 05.17, 05.22 | API-10, 11; T-231, **T-252** (`PlatformChip` của 02b-admin) | 1 |
+| T-233 | S2 `PlatformChip` + `MergedOrdersBanner` + `CancelRequestedBanner` (cờ `ORDER_CANCEL_REQUESTED`) + đơn từng dòng; R2 chip; S4 `ORDER_CANCEL_REQUESTED` | S2, R2, S4 / FR-03.03, 05.17, 05.22, BR-21 | API-10, 11; T-231, **T-252** (`PlatformChip` của 02b-admin) | 1,5 |
 | T-234 | R2 luật hủy 60 giây (`cancelRule`, khu nút, `aria-live`, 409 → Toast) | R2 / FR-04.14 | API-10, 12; T-231 | 1 |
 | T-235 | Test component / integration + E2E mock; E2E BE thật khi BE T-212, T-213 xong | — | BE T-212, T-213 | 1 |
+| T-236 | Bàn hoàn mã trùng nhiều shop: nhánh `RETURN_MULTIPLE_ORDERS` trong `stationStore` (R4 → R3 với `data.code`), `ReturnLookupDialog` chip sàn · shop, kiểu API-104 mới, copy, mock `2410DUP00001`, test component + E2E mock | R1, R3 / BR-29, EX-R20 | API-11, 104; T-231, T-233 (`PlatformChip`); BE T-271 cho E2E thật | 1 |
 
-Tổng ≈ 5 ngày công.
+Tổng ≈ 6,5 ngày công.
 
 ## Phương án đã cân nhắc
 
@@ -184,3 +196,4 @@ Tổng ≈ 5 ngày công.
 | DEC-480 | Đổi nút hủy đúng giây 61 (01 §10.4 R2) | So `useServerNow()` với `self_cancel_until` mỗi giây; WS state mới (lưu kết luận / ảnh) đặt `null` → ẩn ngay | Đồng hồ server, không tải lại; server vẫn chặn | khanhtt (FE, tự quyết theo ủy quyền user) |
 | DEC-481 | Bắt buộc tên người đóng gói | Không mở R5 cưỡng bức lúc tải; quét → `OPERATOR_REQUIRED` → overlay + R5 | Đúng UX 01 §10.4 S1; station không bị khóa khi chưa cần quét | khanhtt (FE, tự quyết theo ủy quyền user) |
 | DEC-482 | Thứ tự task với 02b-admin | T-233 phụ thuộc T-252 (`PlatformChip`); nếu admin chậm, T-233 tạo component trước theo cùng spec và T-252 dùng lại | Không chặn đường găng station | khanhtt (FE, tự quyết theo ủy quyền user) |
+| DEC-510 | (v0.2) Bàn hoàn mã đơn trùng nhiều shop (G2-2) + yêu cầu hủy khi đang đóng (G2-3) | `RETURN_MULTIPLE_ORDERS` dùng lại đúng mẫu `RETURN_MULTIPLE_PACKAGES` (R4 1,5 giây → R3 có mã) + chip shop trong R3; banner vàng S2 theo cờ phiên, không chặn "Đóng gói xong" | Người kiểm đã quen R3; không thêm màn. Loại: dialog chọn đơn mới (thêm thành phần, khác thao tác quen); khóa nút đóng gói khi có yêu cầu hủy (kiện nằm dở trên bàn, trái BR-21 làm rõ) | khanhtt (FE, tự quyết theo ủy quyền user) |

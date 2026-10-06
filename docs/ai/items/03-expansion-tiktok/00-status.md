@@ -8,18 +8,18 @@
 | Quy mô | M |
 | Component bị chạm | ai-cam-be (be), ai-cam-fe (fe: admin; station nếu L11 cần) |
 | Nhánh | `feat/03-expansion-tiktok` ở cả 3 repo, tạo từ `main` sau merge Phase 2 (PR #2) |
-| Last update | 2026-10-06 · Architect + BE + FE (bước 3, 4a, 4b — bộ spec In review, chờ bước 5) |
+| Last update | 2026-10-07 · PO + Architect + BE + FE (bước 5 lượt 1 Chưa đạt → đã sửa G2-1..G2-20, chờ review lượt 2) |
 
 Phạm vi: [SRS hệ thống §13.2](../../system/SRS.md) giai đoạn 3 "Mở rộng" — **chỉ TikTok Shop, không Lazada** (quyết định user 2026-10-05); báo cáo M09 (FR-09.02..04), sao lưu cloud, chia sẻ link, thông báo Zalo / Telegram (FR-06.04); kèm hardening L11, L13, L15 từ [06-business-qa Phase 2](../02-returns-reconciliation/06-business-qa.md). Phần cần tài nguyên ngoài (TikTok Shop partner thật, bucket cloud thật, bot Zalo / Telegram thật, camera thật, server kho) làm bằng adapter mock + ghi "chưa test — thiếu tài nguyên".
 Số item: 03 (`docs/ai/items/` có 01, 02; remote 3 repo có `main`, `feat/01-…`, `feat/02-…` — 2026-10-06).
-**Dải ID của item này** (tránh trùng item 01, 02): DEC-401+, API-150+, J-20+, T-201+ (BE), T-231+ (FE station), T-251+ (FE admin), màn D20+ (dashboard) và R10+ (station). Bước 2 dùng thêm: P7+, UC-15+, BR-29+, NFR-37+, AC-40+, Q18+, RK-16+, AS-12+, CO-05+, EX-P14, EX-R17+, EX-T/B/K/S/N, sự kiện thông báo N01..N10, trang công khai W1. FR / BR / AC / EX / NFR nối tiếp số đã có trong SRS hệ thống và item 01, 02.
+**Dải ID của item này** (tránh trùng item 01, 02): DEC-401+, API-150+, J-20+, T-201+ (BE; bổ sung sau G2 lượt 1: T-271+), T-231+ (FE station), T-251+ (FE admin), màn D20+ (dashboard) và R10+ (station). Bước 2 dùng thêm: P7+, UC-15+, BR-29+, NFR-37+, AC-40+, Q18+, RK-16+, AS-12+, CO-05+, EX-P14, EX-R17+, EX-T/B/K/S/N, sự kiện thông báo N01..N10, trang công khai W1. FR / BR / AC / EX / NFR nối tiếp số đã có trong SRS hệ thống và item 01, 02.
 
 ## Tiến độ
 | Gate | Trạng thái | Ngày | Người duyệt | Ghi chú |
 |:---:|:---:|---|---|---|
 | G1 Yêu cầu | ✅ | 2026-10-06 | khanhtt (tự quyết theo ủy quyền user, DEC-427) | 01-srs.md v0.2 Approved: 46 FR, 14 UC, 23 AC, màn D20–D23 + W1; checklist Chốt G1 7/7 ✓; câu hỏi chặn G1 = 0 (Q13, Q18..Q21 chặn go-live) |
-| Spec 02 / 02a / 02b | In review | 2026-10-06 | — (chờ `ai-lead-review` bước 5) | [02](02-tech-spec.md) v0.1 · [02a](02a-be-spec.md) v0.1 · [02b-admin](02b-fe-spec-admin.md) v0.1 · [02b-station](02b-fe-spec-station.md) v0.1; W1 do BE sinh — không có 02b-public (DEC-428) |
-| G2 Thiết kế | ⬜ | | | |
+| Spec 02 / 02a / 02b | In review | 2026-10-07 | — (chờ `ai-lead-review` lượt 2) | [01](01-srs.md) v0.3 (change request DEC-490) · [02](02-tech-spec.md) v0.2 · [02a](02a-be-spec.md) v0.2 · [02b-admin](02b-fe-spec-admin.md) v0.2 · [02b-station](02b-fe-spec-station.md) v0.2 · ADR-010, ADR-011 sửa 2026-10-07; W1 do BE sinh — không có 02b-public (DEC-428) |
+| G2 Thiết kế | ⬜ | 2026-10-07 | | Lượt 1 **Chưa đạt** (1 CRITICAL, 8 blocker, 5 major, 5 minor, 1 nit) → đã sửa toàn bộ (DEC-512), chờ lượt 2 |
 | Plan | ⬜ | | | |
 | G3 Build | ⬜ | | | |
 | G4 Kiểm thử | ⬜ | | | |
@@ -35,7 +35,7 @@ Số item: 03 (`docs/ai/items/` có 01, 02; remote 3 repo có `main`, `feat/01-�
 | 3 | Tech spec | ✅ | 2026-10-06 | [02-tech-spec.md](02-tech-spec.md) v0.1 In review: 26 API mới (API-150..156, 160..164, 170..176, 180..186) + mở rộng 25 API; ADR-010 (kho lưu cloud dùng chung), ADR-011 (đa sàn / shop, nhóm trạng thái), ADR-009 bổ sung (L15); architecture §2, §6.2, §7.3, §8.2, §10, §16 + system-map (phần lệch: Phase 2 đã merge, 28 bảng, mục Phase 3); DEC-428..462 |
 | 4a | BE spec | ✅ | 2026-10-06 | [02a-be-spec.md](02a-be-spec.md) v0.1 In review: migration 0006 (25 cột + 9 bảng, chỉ thêm) + 0007 (unique theo shop), downgrade `phase3_archive`; J-04/05/06/12/13 một task / shop; J-20..J-28; module `cloud`, `backup`, `shares`, `notify`; adapter TikTok + mock; 30 task T-201..T-230 ≈ 54 ngày công; DEC-463..478 |
 | 4b | FE spec | ✅ | 2026-10-06 | [02b-fe-spec-admin.md](02b-fe-spec-admin.md) v0.1 (D7 Kết nối sàn, D20–D23, ShareLinkDialog, PlatformChip, mở rộng 10 màn; 12 task T-251..T-262 ≈ 21,5 ngày) · [02b-fe-spec-station.md](02b-fe-spec-station.md) v0.1 (S1, S2, S4, R2, R5; 5 task T-231..T-235 ≈ 5 ngày); DEC-479..489 |
-| 5 | Review bộ spec | ⬜ | | |
+| 5 | Review bộ spec | 🔄 | 2026-10-07 | Lượt 1 Chưa đạt → đã sửa, chờ lượt 2. Sửa: 01 v0.3 (CR DEC-490), 02 v0.2 (+ API-187, 188; mở rộng API-104, 180, 181, 185), 02a v0.2 (bảng tra theo mã §5.1, downgrade / backfill 0006, J-20..J-23 cứng hóa, 2 bucket, queue `sync_fast` / `sync` / `notify`; +10 task T-271..T-280 ≈ +15 ngày → ≈ 69), 02b-station v0.2 (+T-236, T-233 +0,5 → ≈ 6,5), 02b-admin v0.2 (+T-263, T-260 +0,5 → ≈ 23,5); ADR-010, ADR-011, system-map; DEC-490..512 |
 | 6 | Kế hoạch | ⬜ | | |
 | 7 | Test cases | ⬜ | | |
 | 8 | Implement | ⬜ | | |
@@ -48,14 +48,15 @@ Số item: 03 (`docs/ai/items/` có 01, 02; remote 3 repo có `main`, `feat/01-�
 ## NOW
 | Owner tiếp | Việc tiếp | Skill |
 |---|---|---|
-| Tech lead (review) | Bước 5: soát bộ spec 02 + 02a + 02b-admin + 02b-station (+ ADR-010, ADR-011, bổ sung ADR-009) → findings → chốt G2 | `ai-lead-review` (spec) |
+| Tech lead (review) | Bước 5 **lượt 2**: soát lại bộ spec theo bảng "Sửa theo review G2 lượt 1" cuối 02 / 02a (+ 01 v0.3 change request, ADR-010, ADR-011) → chốt G2 | `ai-lead-review` (spec) |
 
 ## Phản hồi giữa các vai
 | Từ | Tới | Nội dung | Trạng thái |
 |---|---|---|---|
 | PO | Architect | Bước 3 cần: (1) cập nhật architecture §7 / job `media.backup_pending` — sao lưu chỉ bằng chứng cần giữ, không mọi clip (DEC-406); (2) ADR-009 thêm luật "bỏ bằng chứng giữ như đóng hồ sơ" (DEC-418); (3) cân nhắc ADR mới cho kho lưu cloud dùng chung sao lưu + link chia sẻ (DEC-407, 409, 425) và adapter theo sàn của shop + nhóm trạng thái chung (DEC-402, 403); (4) migration bỏ unique toàn cục `order.platform_order_sn` (BR-29) | **Đóng** 2026-10-06: (1) architecture §2, §6.2, §7.3, §8.2; (2) ADR-009 mục "Bổ sung 2026-10-06" (DEC-449, 458); (3) ADR-010, ADR-011; (4) migration 0007 (02a §3, DEC-431, 456) |
-| Architect | PO | Đề xuất bổ sung 01 (không đổi FR, chỉ làm rõ): (a) EX-S7 "Thu hồi khi kho mất Internet → link còn mở được trên cloud tới khi có mạng lại hoặc hết hạn; D21 hiện 'Đang thu hồi — chờ Internet'" (FR-07.08 ≤ 60 giây chỉ đúng khi có mạng — DEC-442); (b) N01 "giờ làm việc" = ngoài giờ yên lặng (DEC-444) — xác nhận cùng Q22; (c) token Zalo OA xoay vòng lưu DB mã hóa — ngoại lệ DEC-408 (DEC-445); (d) Q18 thêm: TikTok có nhận redirect `https://x.local/…` không (RK-26); Q20 thêm: nhà cung cấp phải phục vụ `text/html` inline qua URL ký 7 ngày (RK-27) | Mở |
-| FE | UX | 01 §10.5 chưa vẽ 2 ô cấu hình có trong SETTING (§9): "Hạn mặc định Chỉ hoàn tiền (giờ)" → đặt ở D8 nhóm ngưỡng (DEC-485); "Giới hạn tốc độ tải lên (Mbit/s)" → D23 mục "Nâng cao" (DEC-486). Xác nhận hoặc vẽ lại khi cập nhật §10 | Mở (không chặn G2) |
+| Architect | PO | Đề xuất bổ sung 01 (không đổi FR, chỉ làm rõ): (a) EX-S7 "Thu hồi khi kho mất Internet → link còn mở được trên cloud tới khi có mạng lại hoặc hết hạn; D21 hiện 'Đang thu hồi — chờ Internet'" (FR-07.08 ≤ 60 giây chỉ đúng khi có mạng — DEC-442); (b) N01 "giờ làm việc" = ngoài giờ yên lặng (DEC-444) — xác nhận cùng Q22; (c) token Zalo OA xoay vòng lưu DB mã hóa — ngoại lệ DEC-408 (DEC-445); (d) Q18 thêm: TikTok có nhận redirect `https://x.local/…` không (RK-26); Q20 thêm: nhà cung cấp phải phục vụ `text/html` inline qua URL ký 7 ngày (RK-27) | **Đóng** 2026-10-07: PO đưa vào 01 v0.3 (change request DEC-490) — (a) EX-S7 + D21 chip; (b) §7.5 N01 + Q22; (c) §11 Zalo OA ngoại lệ DEC-408 (DEC-445); (d) Q18 + RK-26, Q20 + RK-27 (+ RK-28 versioning — DEC-501) |
+| FE | UX | 01 §10.5 chưa vẽ 2 ô cấu hình có trong SETTING (§9): "Hạn mặc định Chỉ hoàn tiền (giờ)" → đặt ở D8 nhóm ngưỡng (DEC-485); "Giới hạn tốc độ tải lên (Mbit/s)" → D23 mục "Nâng cao" (DEC-486). Xác nhận hoặc vẽ lại khi cập nhật §10 | **Đóng** 2026-10-07: 01 v0.3 §10.5 D8 (ô hạn Chỉ hoàn tiền), D23 "Nâng cao" (giới hạn tốc độ) — xác nhận DEC-485, 486 trong DEC-490 |
+| Tech lead | PO, Architect, BE, FE | Review G2 lượt 1: G2-1..G2-20 + "cần xác minh" downgrade 0006 / đơn TikTok | **Đóng** 2026-10-07: sửa hết (bảng "Sửa theo review G2 lượt 1" cuối 02 và 02a); "cần xác minh" → DEC-509 (lùi từ chối mặc định, cờ tách kiện) |
 
 ## Lịch sử
 | Ngày | Vai | Việc |
@@ -66,6 +67,7 @@ Số item: 03 (`docs/ai/items/` có 01, 02; remote 3 repo có `main`, `feat/01-�
 | 2026-10-06 | Architect | Bước 3: 02-tech-spec.md v0.1 (đọc code thật `platforms`, `orders`, `returns`, `reconciliation`, `sessions`, `claims`, `media.protection`, `reports`, `settings`, `core`, `workers`, alembic 0001–0005, compose, ops); ADR-010, ADR-011 (Proposed), ADR-009 bổ sung, ADR-007 liên kết; architecture + system-map cập nhật; DEC-428..462 (tự quyết theo ủy quyền user) |
 | 2026-10-06 | BE | Bước 4a: 02a-be-spec.md v0.1 — 30 task T-201..T-230; DEC-463..478 (tự quyết theo ủy quyền user) |
 | 2026-10-06 | FE | Bước 4b: 02b-fe-spec-admin.md v0.1 (T-251..T-262) + 02b-fe-spec-station.md v0.1 (T-231..T-235); DEC-479..489; API-156 thêm vào 02 theo DEC-484 (tự quyết theo ủy quyền user). Không sửa code, không commit |
+| 2026-10-07 | PO + Architect + BE + FE | Sửa theo review G2 lượt 1 (Chưa đạt): 01 v0.3 change request (BR-39 loại phiên quét nhầm, BR-21 làm rõ, BR-29 tra theo mã, EX-K6..K8, EX-S7, EX-R20, FR-02.14..17, Q18 / Q20 / Q22, RK-26..28); 02 v0.2; 02a v0.2 (T-271..T-280); 02b-station v0.2 (T-236); 02b-admin v0.2 (T-263); ADR-010 (2 bucket, versioning, đổi khóa, khôi phục), ADR-011; system-map (worker); đóng Phản hồi Architect → PO, FE → UX; DEC-490..512. Không sửa code, không commit |
 | 2026-10-06 | UX | Bước 2b: 01 §10 (v0.2) — kiểm kê REUSE / EXTEND / NEW, journey UC-10, 15, 16/17, 18, 20, 22, 23, đặc tả D7, D20, D21, D22, D23, W1, ShareLinkDialog + mở rộng station / dashboard đủ trạng thái và chữ thật; DEC-422..424 |
 
 ## Quyết định (DEC)
@@ -104,10 +106,10 @@ Số item: 03 (`docs/ai/items/` có 01, 02; remote 3 repo có `main`, `feat/01-�
 | DEC-431 | BR-29 mã đơn trùng giữa shop | Unique (shop, mã) + nhóm đơn file; shop đầu tiên nhận đơn file; giữ khóa `order:{sn}` | Giữ thứ tự khóa DEC-266 | khanhtt (tự quyết theo ủy quyền user) | 2026-10-06 |
 | DEC-432 | EX-T2 báo ở đâu | `shop.sync_warnings`, không `last_error` | Một kiện lạ không làm shop "lỗi" | khanhtt (tự quyết theo ủy quyền user) | 2026-10-06 |
 | DEC-433 | TikTok grant nhiều shop | `shop.grant_ref` + khóa Redis `grant:` khi làm mới, ghi mọi shop cùng grant | Refresh token dùng một lần | khanhtt (tự quyết theo ủy quyền user) | 2026-10-06 |
-| DEC-434 | NFR-39 cô lập shop | Một task Celery / shop, ngân sách thời gian, `worker-sync -c 4` | Shop chậm không kéo cả chu kỳ | khanhtt (tự quyết theo ủy quyền user) | 2026-10-06 |
+| DEC-434 | NFR-39 cô lập shop | Một task Celery / shop, ngân sách thời gian, `worker-sync -c 4` (sửa: DEC-503) | Shop chậm không kéo cả chu kỳ | khanhtt (tự quyết theo ủy quyền user) | 2026-10-06 |
 | DEC-435 | BR-32 tra song song | `asyncio.gather` + cắt 2 giây, DB đọc trước; ≥ 2 shop → `AMBIGUOUS_SHOP` | NFR-01 | khanhtt (tự quyết theo ủy quyền user) | 2026-10-06 |
 | DEC-436 | Cờ TikTok | `TIKTOK_ENABLED`, `TIKTOK_RETURNS_ENABLED`, `TIKTOK_ADAPTER`; `PLATFORM_ADAPTER` giữ cho Shopee | Tương thích cấu hình cũ | khanhtt (tự quyết theo ủy quyền user) | 2026-10-06 |
-| DEC-437 | Kho lưu dùng chung | Một bucket riêng tư, tiền tố `backup/` `share/`, boto3 (ADR-010) | Một cấu hình, một nhà cung cấp | khanhtt (tự quyết theo ủy quyền user) | 2026-10-06 |
+| DEC-437 | Kho lưu dùng chung | Một bucket riêng tư, tiền tố `backup/` `share/`, boto3 (ADR-010) (sửa: 2 bucket — DEC-501) | Một cấu hình, một nhà cung cấp | khanhtt (tự quyết theo ủy quyền user) | 2026-10-06 |
 | DEC-438 | Mã hóa sao lưu | AES-256-GCM theo khối 4 MiB, `BACKUP_ENCRYPTION_KEY`, dấu vân tay | Chuẩn có xác thực, giải mã luồng | khanhtt (tự quyết theo ủy quyền user) | 2026-10-06 |
 | DEC-439 | Ai sao lưu DB lên cloud | Worker queue `backup` (`worker-backup`, pg_dump 16 trong image); giữ `pg-backup.sh` local | Có trạng thái cho D23, thử lại | khanhtt (tự quyết theo ủy quyền user) | 2026-10-06 |
 | DEC-440 | Phát hiện bằng chứng cần giữ | J-21 quét SQL bảo vệ ADR-009 mỗi 10 phút | Một nguồn sự thật với retention | khanhtt (tự quyết theo ủy quyền user) | 2026-10-06 |
@@ -145,7 +147,7 @@ Số item: 03 (`docs/ai/items/` có 01, 02; remote 3 repo có `main`, `feat/01-�
 | DEC-472 | (BE) Thả tin HELD | Gộp một tin tóm tắt / kênh | BR-36 (3), (4) | khanhtt (tự quyết theo ủy quyền user) | 2026-10-06 |
 | DEC-473 | (BE) Dọn notify_event | Điều kiện nhìn lại ≤ 24 giờ, dọn > 30 ngày | Bỏ trùng đúng, bảng không phình | khanhtt (tự quyết theo ủy quyền user) | 2026-10-06 |
 | DEC-474 | (BE) Mock | Shopee nhiều shop, TikTok 2 shop, fixture định dạng TikTok qua mapping thật | Chạy AC-40..44 không cần tài khoản | khanhtt (tự quyết theo ủy quyền user) | 2026-10-06 |
-| DEC-475 | (BE) Downgrade 0006 / 0007 | 0007 từ chối khi trùng; 0006 archive, bằng chứng đã bỏ còn hạn → `held`, link sống → từ chối trừ env | DEC-331, 336, 338 | khanhtt (tự quyết theo ủy quyền user) | 2026-10-06 |
+| DEC-475 | (BE) Downgrade 0006 / 0007 | 0007 từ chối khi trùng; 0006 archive, bằng chứng đã bỏ còn hạn → `held` (sửa: DEC-497, DEC-509), link sống → từ chối trừ env | DEC-331, 336, 338 | khanhtt (tự quyết theo ủy quyền user) | 2026-10-06 |
 | DEC-476 | (BE) CSV | Sinh bộ nhớ, UTF-8 BOM, dấu phẩy, tỷ lệ "4,0%" | Excel VN | khanhtt (tự quyết theo ủy quyền user) | 2026-10-06 |
 | DEC-477 | (BE) Ngân sách thời gian | `platforms/budget.py` dùng chung, `soft_time_limit` = ngân sách + 30 giây | Task không treo | khanhtt (tự quyết theo ủy quyền user) | 2026-10-06 |
 | DEC-478 | (BE) WS chỉ ADMIN | Kênh `ws:admin` | Không lộ trạng thái sao lưu / shop | khanhtt (tự quyết theo ủy quyền user) | 2026-10-06 |
@@ -160,3 +162,26 @@ Số item: 03 (`docs/ai/items/` có 01, 02; remote 3 repo có `main`, `feat/01-�
 | DEC-487 | (FE admin) Tiến độ ShareLinkDialog | WS + poll 2 giây, chạy nền + Toast | Như EvidencePackDialog | khanhtt (tự quyết theo ủy quyền user) | 2026-10-06 |
 | DEC-488 | (FE admin) URL đích khi bấm số | Tham số sẵn có D3 / D14 / D16 | Không thêm màn | khanhtt (tự quyết theo ủy quyền user) | 2026-10-06 |
 | DEC-489 | (FE admin) Hiện link ở D21 | Chỉ nút Sao chép, không in URL | URL chứa chữ ký | khanhtt (tự quyết theo ủy quyền user) | 2026-10-06 |
+| DEC-490 | G2 lượt 1 chạm SRS đã Approved; phản hồi Architect → PO, FE → UX còn Mở | Change request 01 v0.3 (không thêm FR, không đổi phạm vi, G1 giữ); đóng 2 phản hồi | Sửa nguồn yêu cầu trước spec | khanhtt (PO, tự quyết theo ủy quyền user) | 2026-10-07 |
+| DEC-491 | G2-1 CRITICAL: phiên RETURN hủy vì quét nhầm thành bằng chứng / phiên chính | `WRONG_SCAN`, `NOT_A_RETURN`: giữ clip, nhãn "Hủy: quét nhầm", không tự chọn, không bao giờ phiên chính, D17 Alert, không tính N03 / D2 | Video kiện khác không chứng minh gì | khanhtt (tự quyết theo ủy quyền user) | 2026-10-07 |
+| DEC-492 | G2-2: tra theo mã khi bỏ unique toàn cục | Bảng 21 điểm (02a §5.1); bàn hoàn ≥ 2 đơn → `RETURN_MULTIPLE_ORDERS` + R3 chip shop; file nhập chỉ `shop_id IS NULL` | Không đoán shop | khanhtt (tự quyết theo ủy quyền user) | 2026-10-07 |
+| DEC-493 | Khóa advisory khi mã không unique | Giữ `order:{sn}` | Khóa trước khi có dòng; tuần tự cả đơn file | khanhtt (tự quyết theo ủy quyền user) | 2026-10-07 |
+| DEC-494 | G2-3: yêu cầu hủy | Chỉ chặn mở phiên + cờ vàng khi đang đóng; chỉ `CANCELLED` hủy kiện; Shopee `IN_CANCEL` cùng luật | Người bán có thể từ chối | khanhtt (tự quyết theo ủy quyền user) | 2026-10-07 |
+| DEC-495 | G2-4: đổi khóa sao lưu | `key_fingerprint` theo bản; D23 đếm bản khóa cũ + API-187 tải lại; khôi phục nhiều khóa | Không mất khả năng khôi phục | khanhtt (tự quyết theo ủy quyền user) | 2026-10-07 |
+| DEC-496 | G2-5: lease, `SOURCE_DELETED`, lệch băm | Lease J-22; `SOURCE_DELETED` / `IGNORED` cuối; API-188 | Mọi trạng thái có lối ra | khanhtt (tự quyết theo ủy quyền user) | 2026-10-07 |
+| DEC-497 | G2-6: lùi 0006 với bằng chứng đã bỏ | Hồ sơ hệ thống `LEGACY_HOLD` `CLOSED` theo kiện, kiểm tập con `raise`, nâng cấp lại xử lý trùng | Bảo vệ cả clip lẫn ảnh đúng hạn | khanhtt (tự quyết theo ủy quyền user) | 2026-10-07 |
+| DEC-498 | G2-7: hồ sơ mở thiếu phiên trước | Backfill 0006 bước 4b theo BR-39 v0.3, `backfilled` | Hồ sơ đang tranh chấp hưởng L11 | khanhtt (tự quyết theo ủy quyền user) | 2026-10-07 |
+| DEC-499 | G2-8: khôi phục | Duyệt cloud theo metadata; `MISSING`; `RESTORE_PENDING` tới khi `backup-verify` đạt; J-23 chỉ xóa theo retention; runbook đủ bí mật | Máy mới không tự xóa bản cloud | khanhtt (tự quyết theo ủy quyền user) | 2026-10-07 |
+| DEC-500 | G2-9: J-20 lượt treo, lỗi liên tiếp | `fail_stale_runs` trước lượt mới; 2 lượt liền lỗi → `DB_FAILED_TWICE` + N08 | Phát hiện sớm | khanhtt (tự quyết theo ủy quyền user) | 2026-10-07 |
+| DEC-501 | G2-10, G2-15: bảo vệ bản sao, `share/` không phiên bản | 2 bucket: sao lưu versioning + lifecycle 7 ngày + khóa không xóa phiên bản; link không versioning | Sống sót khi máy kho bị chiếm quyền; thu hồi xóa thật | khanhtt (tự quyết theo ủy quyền user) | 2026-10-07 |
+| DEC-502 | G2-11: TikTok yêu cầu hủy | Luôn lấy chi tiết đơn; nhóm = f(trạng thái đơn, yêu cầu hủy mới nhất); fixture từ chối / rút | Không kẹt nhóm | khanhtt (tự quyết theo ủy quyền user) | 2026-10-07 |
+| DEC-503 | G2-12: shop chậm chiếm slot | Queue `sync_fast` (J-04/05/12) tách `sync` (J-06/13), 2 worker | NFR-38, NFR-39 | khanhtt (tự quyết theo ủy quyền user) | 2026-10-07 |
+| DEC-504 | G2-13: queue thông báo | `notify` riêng, `worker-notify -c 1` | Không chờ J-20 | khanhtt (tự quyết theo ủy quyền user) | 2026-10-07 |
+| DEC-505 | G2-14: giữ bản DB | Luôn ≥ 3 bản `SUCCESS` mới nhất | Không còn 0 bản | khanhtt (tự quyết theo ủy quyền user) | 2026-10-07 |
+| DEC-506 | G2-15: W1 | CSP `default-src 'none'` + `referrer no-referrer`, không script | Không lộ URL ký | khanhtt (tự quyết theo ủy quyền user) | 2026-10-07 |
+| DEC-507 | G2-16: thứ tự khóa | `sync:` (không chờ) → `grant:` → `order:{sn}`; J-12 chỉ `grant:`, bỏ shop `DISCONNECTED` | Khớp code J-04, không vòng chờ | khanhtt (tự quyết theo ủy quyền user) | 2026-10-07 |
+| DEC-508 | G2-17: ghi trạng thái sàn | Helper duy nhất `set_platform_status` (đơn, hồ sơ hàng hoàn) + test AST; NFR-28 thêm `rules.py:229-243`, `platforms/service.py:41` | Một nơi quyết luật hủy | khanhtt (tự quyết theo ủy quyền user) | 2026-10-07 |
+| DEC-509 | Cần xác minh: lùi 0006 + đơn TikTok `shop_id = NULL` | Xác minh code `main`: J-06 Phase 2 gọi Shopee bằng mọi mã đơn (không lọc shop) → có thể kẹt; lùi từ chối mặc định, `AICAM_DOWNGRADE_DETACH_FOREIGN_ORDERS=1` tách kiện khỏi đơn ngoài, nâng cấp lại gắn lại; test T-230 / T-275 | Lùi không làm hỏng đồng bộ Shopee | khanhtt (tự quyết theo ủy quyền user) | 2026-10-07 |
+| DEC-510 | (FE station) mã trùng ở bàn hoàn, yêu cầu hủy khi đang đóng | `RETURN_MULTIPLE_ORDERS` theo mẫu `RETURN_MULTIPLE_PACKAGES` → R3 chip shop; banner vàng S2 | Dùng lại thao tác quen | khanhtt (FE, tự quyết theo ủy quyền user) | 2026-10-07 |
+| DEC-511 | (FE admin) D23 đổi khóa / lệch băm / khôi phục; D17 phiên quét nhầm | Alert + dialog có lý do; banner `RESTORE_PENDING`; phiên chính theo server | Một nguồn luật | khanhtt (FE, tự quyết theo ủy quyền user) | 2026-10-07 |
+| DEC-512 | Review G2 lượt 1 Chưa đạt | Sửa toàn bộ G2-1..G2-20; bước 5 = chờ lượt 2 | Quy trình G2 | khanhtt (điều phối, tự quyết theo ủy quyền user) | 2026-10-07 |

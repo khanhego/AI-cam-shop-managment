@@ -4,15 +4,15 @@
 |---|---|
 | Tác giả (Architect) | khanhtt (agent soạn, tự quyết theo ủy quyền user) |
 | Reviewer | BE lead · FE lead (khanhtt, solo — review ở bước 5) |
-| Trạng thái | **In review** · v0.1 |
-| SRS | [01-srs.md](01-srs.md) v0.2 (G1 ✅ DEC-427) · FR phủ: FR-02.08, 02.13–02.18, FR-03.03, 03.16, FR-04.14, FR-05.07, 05.08, 05.13–05.22, FR-06.04, 06.07–06.11, FR-07.01, 07.05, 07.07–07.09, FR-08.07–08.10, FR-09.01–09.07, FR-10.02, 10.03 (46 FR) |
+| Trạng thái | **In review** · v0.2 (sửa theo review G2 lượt 1 — DEC-512) |
+| SRS | [01-srs.md](01-srs.md) v0.3 (G1 ✅ DEC-427; change request DEC-490) · FR phủ: FR-02.08, 02.13–02.18, FR-03.03, 03.16, FR-04.14, FR-05.07, 05.08, 05.13–05.22, FR-06.04, 06.07–06.11, FR-07.01, 07.05, 07.07–07.09, FR-08.07–08.10, FR-09.01–09.07, FR-10.02, 10.03 (46 FR) |
 | Spec con | BE: [02a-be-spec.md](02a-be-spec.md) · FE: [02b-fe-spec-admin.md](02b-fe-spec-admin.md), [02b-fe-spec-station.md](02b-fe-spec-station.md) · W1 (trang người nhận link) do BE dựng — không có 02b riêng (DEC-428) |
 | Nền | Contract Phase 1 [item 01 02 v0.7](../01-packing-mvp/02-tech-spec.md) §6 (quy ước giữ nguyên) · Phase 2 [item 02 02 v0.5](../02-returns-reconciliation/02-tech-spec.md) · [architecture.md](../../system/architecture.md) · ADR-001..009 · **ADR mới:** [ADR-010](../../system/decisions/ADR-010-shared-cloud-object-store.md) (kho lưu cloud dùng chung), [ADR-011](../../system/decisions/ADR-011-multi-platform-shops-status-groups.md) (nhiều sàn / shop, nhóm trạng thái) · ADR-009 **bổ sung** (bỏ bằng chứng — L15) |
-| Last update | 2026-10-06 · Architect |
+| Last update | 2026-10-07 · Architect (v0.2: G2-1..G2-20 — bảng "Sửa theo review G2 lượt 1" cuối tài liệu) |
 
 > **TL;DR** — Mở rộng hệ thống Phase 2, không dựng mới: `platforms` thành **đa sàn đa shop** (adapter TikTok thứ hai + mock; nhóm trạng thái chung; mã đơn duy nhất trong shop; job một task / shop) — ADR-011. Bốn module BE mới: `cloud` (S3-compatible + mã hóa), `backup`, `shares`, `notify`; `reports` thêm 3 báo cáo + CSV. Hardening L11 / L13 / L14 / L15 trong `sessions`, `claims`, `reports`, `media.protection`.
-> Kho lưu cloud **một** bucket riêng tư, chỉ gọi ra ngoài: sao lưu mã hóa AES-256-GCM tại kho; link chia sẻ = URL ký ≤ 7 ngày của trang HTML tĩnh, thu hồi = xóa đối tượng (ADR-010). Thông báo = bộ quét điều kiện 30 giây + hàng đợi chống spam → Telegram / Zalo OA (mock sink ở dev).
-> 26 API mới (API-150..156, 160..164, 170..176, 180..186 — gồm 1 CLI) + mở rộng 25 API cũ, chỉ thêm trường / mã — client cũ không vỡ, vẫn `/v1`. 2 migration (0006 thêm, 0007 unique theo shop), downgrade sang `phase3_archive`.
+> Kho lưu cloud **hai** bucket riêng tư cùng nhà cung cấp, chỉ gọi ra ngoài: bucket sao lưu (bật phiên bản, khóa ứng dụng không xóa vĩnh viễn được) chứa bản mã AES-256-GCM; bucket link (không phiên bản) chứa trang HTML tĩnh + video, link = URL ký ≤ 7 ngày, thu hồi = xóa đối tượng (ADR-010, DEC-501). Thông báo = bộ quét điều kiện 30 giây + hàng đợi chống spam → Telegram / Zalo OA (mock sink ở dev).
+> 28 API mới (API-150..156, 160..164, 170..176, 180..188 — gồm 1 CLI) + mở rộng 26 API cũ, chỉ thêm trường / mã — client cũ không vỡ, vẫn `/v1`. 2 migration (0006 thêm, 0007 unique theo shop), downgrade sang `phase3_archive`.
 > Rủi ro lớn nhất: API TikTok chưa xác minh (Q18, Q19) → adapter + bảng ánh xạ riêng, mock; nhà cung cấp kho lưu (Q20) phải phục vụ được `text/html` qua URL ký.
 
 ---
@@ -46,7 +46,8 @@ Giải quyết P7–P12 của [01](01-srs.md) §2. Hiện trạng (nhánh `main`
 | Job đồng bộ J-04/05/06/12/13 | be | `platforms/sync.py:329` `sync_orders` (lặp shop, không cô lập lỗi), `:372` J-05, `:475` J-06 (một token), `:713` J-13 (đã cô lập — DEC-361) | EXTEND | Một task / shop (fan-out), ngân sách thời gian, J-05 / J-06 theo shop của kiện; khóa grant khi làm mới token |
 | Tra sàn khi quét | be | `sessions/service.py:272` `_lookup_platform`, `sessions/return_scan.py:67` `platform_find` | EXTEND | Một hàm `platforms.lookup.find_everywhere()` song song mọi shop (BR-32) |
 | Đơn / kiện | be | `orders/models.py:56` `Order` (`:62` unique), `orders/service.py:228` `upsert_platform_order` (`:271` gắn kiện của đơn khác), `:394` `is_cancelled` | EXTEND | Unique (shop, mã đơn); nhận đơn file; EX-T2; nhóm trạng thái; bảng `package_order` (kiện gộp) |
-| Lõi đọc chữ Shopee | be | `reconciliation/rules.py:32,33`, `returns/service.py:52,83-108`, `sessions/return_scan.py:245`, `sessions/service.py:156`, `orders/packages.py:562`, `platforms/sync.py:204` | EXTEND | Đọc `platform_status_group` / `shop.platform` (NFR-28) |
+| Lõi đọc chữ Shopee | be | `reconciliation/rules.py:32,33`, `rules.py:229-243` (`DONE_PLATFORM_STATUSES` của BR-19), `returns/service.py:52,83-108`, `sessions/return_scan.py:245`, `sessions/service.py:156` (`platform="SHOPEE"` cứng), `orders/packages.py:562`, `platforms/sync.py:204`, `platforms/service.py:41` (`PLATFORM = "SHOPEE"`); chỗ **ghi** `platform_status`: `orders/service.py:255` upsert, `platforms/sync.py:441` J-06, `returns/service.py:329` hồ sơ hàng hoàn | EXTEND | Đọc `platform_status_group` / `shop.platform` (NFR-28); ghi chữ + nhóm qua **một** helper (`orders.set_platform_status`, `returns.set_platform_status` — DEC-508) |
+| Tra đơn / yêu cầu trả theo mã | be | `orders/service.py:111-127` khóa `order:{sn}`, `:237` upsert, `:299` `orders_by_sn` (`imports/service.py:80`), `:345` `apply_csv_order`; `returns/service.py:450,551` (`platform_return_sn` toàn cục), `:736-738` bàn hoàn; `platforms/sync.py:164` `_order_packages`, `:574` J-13; `sessions/return_lookup.py:36-50` API-104; `returns/views.py:169`, `orders/packages.py:266`, `claims/views.py:110` ô tìm | EXTEND | Bảng "điểm tra theo mã → luật mới" 02a §5.1 (DEC-492, 493) |
 | Hủy phiên RETURN, duyệt | be | `sessions/service.py:761` `cancel`, `approvals/service.py:317` CANCEL_SESSION | EXTEND | BR-37 (≤ 60 giây, chưa kết luận / ảnh), lý do bắt buộc khi Supervisor hủy |
 | Bằng chứng tự chọn, bỏ bằng chứng | be | `claims/service.py:258` `auto_evidence`, `:682` `set_evidence` (xóa dòng), `:276` `_deadline` | EXTEND | BR-39 phiên trước; bỏ mềm (BR-38); hạn đã qua (BR-42) |
 | Bảo vệ bằng chứng (ADR-009) | be | `media/protection.py:80` `claim_session_ids`, `:92` `claim_snapshot_ids` | EXTEND | Tính `removed_at`; dùng lại cho tập "bằng chứng cần giữ" (BR-33) |
@@ -149,17 +150,18 @@ erDiagram
 | ORDER (đổi) | + `shop` `{id, name, platform}` \| null (đơn file chưa gắn shop), `platform_status` (chữ sàn), `platform_status_group` (§5.2), `merged_orders[]` (kiện gộp) | Unique (shop, `platform_order_sn`) — BR-29 |
 | PACKAGE_ORDER (mới) | (kiện, đơn) — đơn **thêm** cùng mã vận đơn | FR-05.22 (S, chờ Q19) |
 | RETURN_CASE (đổi) | + `platform`, `shop` `{id, name}`, `platform_status_group` (§5.2), `response_due_at`, `response_due_source` (`PLATFORM`/`DEFAULT`) (chỉ đọc, tính lúc đọc — DEC-451), `claim` `{id, code}` \| null | Unique (shop, `platform_return_sn`) |
-| SESSION (đổi) | `operator_name` nay có cả ở phiên PACK (người đóng gói — FR-03.16); `self_cancel_until` (phiên RETURN `OPEN`, chỉ đọc); flag mới `AMBIGUOUS_SHOP` | |
+| SESSION (đổi) | `operator_name` nay có cả ở phiên PACK (người đóng gói — FR-03.16); `self_cancel_until` (phiên RETURN `OPEN`, chỉ đọc); flag mới `AMBIGUOUS_SHOP`, `ORDER_CANCEL_REQUESTED` (BR-21 làm rõ); `cancel_reason` trả ở mọi chỗ có phiên RETURN (FE nhãn "Hủy: quét nhầm" — BR-39) | |
 | CLAIM (đổi) | + `submitted_at`, `result_at` (chỉ đọc); `deadline_source` thêm `DEFAULT_PLATFORM_PASSED` | BR-41, BR-42 |
 | CLAIM_EVIDENCE (đổi) | + `removed` `{at, by {id, display_name}, reason, keep_until}` \| null; `prior_return` (bool), `primary` (bool), `removal_keep_until` (chỉ đọc) | BR-38, BR-39; dòng không bị xóa |
+| CLIP (đổi) | `status` thêm `MISSING` (chỉ do lệnh khôi phục đặt — EX-K8) | Không phải `DELETED`: J-23 không xóa bản cloud (DEC-499) |
 | SHARE_LINK (mới) | `id`, `status` (§5.2), `source` `{type: CLAIM\|SESSION, claim_id, claim_code, package_id, tracking_number, platform, shop_name}`, `recipient` (3–100), `layout` (`SIDE_BY_SIDE`/`CAM1`), `include_snapshots`, `session_count`, `expires_at`, `created_by`, `created_at`, `revoked_at`, `revoked_by`, `revoke_pending`, `url` (chỉ khi `ACTIVE`), `progress`, `step`, `error` | Thư mục cloud `share/{token}/` (token 256 bit, không trả API) |
 | SHARE_ITEM (mới) | `session_id`, `order` (1..4), `video_sha256`, `size_bytes`, `source_sha256` `{CAM1, CAM2}`, `snapshot_count` | |
-| BACKUP_RUN (mới) | `id`, `kind` (`DB`), `started_at`, `finished_at`, `status` (`RUNNING`/`SUCCESS`/`FAILED`), `size_bytes`, `error` | Giữ 400 ngày; D23 hiện 14 ngày |
-| BACKUP_OBJECT (mới) | `kind` (`DB_DUMP`/`IMPORTS`/`CLIP`/`SNAPSHOT`), `clip_id` \| `snapshot_id` \| `run_id`, `status` (§5.2), `sha256` (bản gốc), `size_bytes`, `attempts`, `uploaded_at`, `cloud_deleted_at`, `last_error` | BR-33; không trả danh sách đầy đủ qua API (chỉ số đếm + API-185 lỗi) |
+| BACKUP_RUN (mới) | `id`, `kind` (`DB`), `started_at`, `finished_at`, `status` (`RUNNING`/`SUCCESS`/`FAILED`), `size_bytes`, `error`, `key_fingerprint` | Giữ 400 ngày; D23 hiện 14 ngày |
+| BACKUP_OBJECT (mới) | `kind` (`DB_DUMP`/`IMPORTS`/`CLIP`/`SNAPSHOT`), `clip_id` \| `snapshot_id` \| `run_id`, `status` (§5.2), `sha256` (bản gốc), `size_bytes`, `attempts`, `uploaded_at`, `cloud_deleted_at`, `last_error`, `key_fingerprint` (khóa đã mã hóa bản đang trên cloud — DEC-495), `resolution` `{action, note, by, at}` (API-188) | BR-33; không trả danh sách đầy đủ qua API (chỉ số đếm + API-185 lỗi) |
 | NOTIFY_CHANNEL (mới) | `id`, `name` (2–40, unique), `type` (`TELEGRAM`/`ZALO_OA`), `target` (chat ID / Zalo user ID), `events[]` (N01..N10, ≥ 1), `enabled`, `last_status` (`OK`/`ERROR`/`NEVER`), `last_sent_at`, `last_error` | Bot token / khóa OA ở cấu hình máy chủ (DEC-408); token Zalo xoay vòng lưu DB mã hóa (DEC-445) |
 | NOTIFY_EVENT (mới, nội bộ) | `code`, `severity`, `dedupe_key`, `occurred_at`, `data` (không chứa dữ liệu người mua) | Bỏ trùng theo (`code`, `dedupe_key`) — BR-36 (1) |
 | NOTIFY_MESSAGE (mới) | `id`, `channel`, `event_code`, `item_count`, `text`, `status` (§5.2), `attempts`, `last_error`, `created_at`, `send_after`, `sent_at`, `next_attempt_at` | Giữ 30 ngày |
-| SETTING (đổi) | + `packer_name_required` (false), `refund_only_default_hours` (48), quiet hours `{enabled: true, start: "22:00", end: "07:00"}` (qua API-176), sao lưu `{enabled, confirmed_fingerprint, confirmed_at, confirmed_by, upload_mbps: 10, all_pack_clips: false}` (qua API-180..182) | Bí mật mới chỉ ở biến môi trường (§8) |
+| SETTING (đổi) | + `packer_name_required` (false), `refund_only_default_hours` (48), quiet hours `{enabled: true, start: "22:00", end: "07:00"}` (qua API-176), sao lưu `{enabled, confirmed_fingerprint, confirmed_at, confirmed_by, upload_mbps: 10, all_pack_clips: false, restore_pending: false}` (qua API-180..182; `restore_pending` do lệnh khôi phục đặt, `backup-verify` đạt mới xóa — DEC-499) | Bí mật mới chỉ ở biến môi trường (§8) |
 
 ### 5.2 Enum mới (FE map nhãn tiếng Việt theo 01 §10)
 
@@ -170,15 +172,18 @@ erDiagram
 | `return_case.platform_status_group` (BR-31) | `REQUESTED` Chờ người bán duyệt · `ACCEPTED` Đã chấp nhận · `CANCELLED` Đã hủy · `DONE` Đã hoàn tiền · `CLOSED` Đã đóng |
 | `session.flags` (thêm) | `AMBIGUOUS_SHOP` Mã có ở nhiều shop |
 | `claim.deadline_source` (thêm) | `DEFAULT_PLATFORM_PASSED` Hạn sàn đã qua — dùng mặc định |
-| `alert.code` (WS-01 / API-11, thêm) | `ORDER_CANCEL_REQUESTED` Đơn đang yêu cầu hủy |
+| `alert.code` (WS-01 / API-11, thêm) | `ORDER_CANCEL_REQUESTED` Đơn đang yêu cầu hủy · `RETURN_MULTIPLE_ORDERS` Mã có ở nhiều đơn (bàn hoàn — DEC-492) |
+| `session.flags` (thêm) | `ORDER_CANCEL_REQUESTED` Người mua đang xin hủy (đặt khi đơn vào nhóm `CANCEL_REQUESTED` lúc phiên PACK đang mở — DEC-494) |
+| `session.cancel_reason` (FE nhãn khi phiên RETURN `CANCELLED`) | `WRONG_SCAN` Hủy: quét nhầm · `NOT_A_RETURN` Hủy: không phải hàng hoàn · `SUPERVISOR` Quản lý hủy · `OTHER` Hủy: lý do khác |
 | `share.status` | `CREATING` Đang tạo · `ACTIVE` Đang hoạt động · `FAILED` Lỗi · `REVOKED` Đã thu hồi · `EXPIRED` Hết hạn |
 | `share.layout` | `SIDE_BY_SIDE` Ghép Cam 1 + Cam 2 · `CAM1` Chỉ Cam 1 |
-| `backup.state` | `ON` Đang bật · `NOT_CONFIGURED` Chưa cấu hình · `KEY_UNCONFIRMED` Chưa xác nhận khóa · `KEY_CHANGED` Khóa đã đổi · `DISABLED` Đã tắt |
-| `backup_object.status` | `PENDING` Đang chờ · `UPLOADING` Đang tải · `UPLOADED` Đã sao lưu · `FAILED` Lỗi (đang thử lại) · `HASH_MISMATCH` Lệch mã băm · `CLOUD_DELETED` Đã xóa trên cloud |
+| `backup.state` | `ON` Đang bật · `NOT_CONFIGURED` Chưa cấu hình · `KEY_UNCONFIRMED` Chưa xác nhận khóa · `KEY_CHANGED` Khóa đã đổi · `DISABLED` Đã tắt · `RESTORE_PENDING` Chờ kiểm khôi phục (DEC-499) |
+| `backup_object.status` | `PENDING` Đang chờ · `UPLOADING` Đang tải · `UPLOADED` Đã sao lưu · `FAILED` Lỗi (đang thử lại) · `HASH_MISMATCH` Lệch mã băm · `SOURCE_DELETED` Tệp đã bị xóa tại kho trước khi tải (cuối, không tính chờ) · `IGNORED` Bỏ qua (Admin, cuối) · `CLOUD_DELETED` Đã xóa trên cloud |
+| `clip.status` (thêm) | `MISSING` Thiếu tệp (khôi phục) |
 | `notify_channel.type` | `TELEGRAM` Telegram · `ZALO_OA` Zalo OA |
 | `notify.event_code` (§7.5 01) | `N01`..`N10` (nhãn + mức trả trong API-170 `events[]`) |
 | `notify_message.status` (01 §7.4) | `QUEUED` Đang chờ · `HELD` Tạm giữ (giờ yên lặng / vượt trần) · `SENT` Đã gửi · `RETRYING` Lỗi · đang thử lại · `DROPPED` Bị bỏ · `SKIPPED` Trùng, bỏ qua |
-| `attention.kind` (API-32, thêm) | `REFUND_ONLY_PENDING`, `CLAIM_OVERDUE`, `RETURN_SESSION_DROPPED`, `BACKUP_STALE` (§6.2 API-32) |
+| `attention.kind` (API-32, thêm) | `REFUND_ONLY_PENDING`, `CLAIM_OVERDUE`, `RETURN_SESSION_DROPPED`, `BACKUP_STALE` (§6.2 API-32; `reason` thêm `DB_FAILED_TWICE` — DEC-500) |
 
 ### 5.3 Nhóm trạng thái theo sàn (ADR-011)
 
@@ -190,7 +195,8 @@ Bảng ánh xạ nằm trong `platforms/<sàn>/mapping.py`; lõi chỉ thấy c�
 | `AWAITING_SHIPMENT` | READY_TO_SHIP, PROCESSED, RETRY_SHIP | AWAITING_SHIPMENT, PARTIALLY_SHIPPING, AWAITING_COLLECTION | Mở phiên được |
 | `SHIPPED` | SHIPPED | IN_TRANSIT | J-06 → `HANDED_OVER`; BR-10 |
 | `DELIVERED` | TO_CONFIRM_RECEIVE, COMPLETED | DELIVERED, COMPLETED | → `DELIVERED` |
-| `CANCEL_REQUESTED` | IN_CANCEL | đơn có yêu cầu hủy `PENDING` (nhóm Cancellation) | Chặn mở phiên (BR-01, alert `ORDER_CANCEL_REQUESTED`); đang đóng → cờ BR-21 |
+| `CANCEL_REQUESTED` | IN_CANCEL | trạng thái đơn chưa giao + yêu cầu hủy **mới nhất** của đơn đang `PENDING` (02a §7.1, DEC-502) | Chặn mở phiên (BR-01, alert `ORDER_CANCEL_REQUESTED`); đang đóng → cờ phiên `ORDER_CANCEL_REQUESTED` (BR-21 làm rõ), **không** gọi luật hủy kiện, trạng thái kho giữ nguyên; rời nhóm (từ chối / rút) → đóng gói tiếp (DEC-494) |
+| `CANCELLED` (luật kho) | | | **Chỉ** nhóm này gọi `orders.apply_platform_cancel` (`orders/service.py:154-165`) — sửa hành vi Phase 2 coi `IN_CANCEL` là hủy (`platforms/base.py:9`) |
 | `CANCELLED` | CANCELLED | CANCELLED | `CANCELLED` / `CANCELLED_AFTER_PACK` (BR-11) |
 | `RETURNING` | TO_RETURN (+ vận chuyển giao thất bại / COD từ chối qua `warehouse_hint`) | vận chuyển giao thất bại / trả về người bán | `RETURN_EXPECTED` + hồ sơ "Giao thất bại" |
 | `UNKNOWN` | chữ lạ | chữ lạ | Không đổi trạng thái kho, log `platform_status_unknown` |
@@ -248,7 +254,9 @@ Loại yêu cầu TikTok (BR-31): `REFUND_ONLY` → `needs_parcel = false` → h
 | API-183 | `POST /backup/test` | Kiểm tra kết nối kho lưu (≤ 10 giây) | ADMIN | FR-02.17 | admin D23 |
 | API-184 | `POST /backup/run-db` | Sao lưu DB ngay | ADMIN | FR-02.15 | admin D23 |
 | API-185 | `GET /backup/issues` | Danh sách lệch mã băm / lỗi tải | ADMIN | EX-K6 | admin D23 |
-| API-186 | CLI `aicam backup-restore`, `aicam backup-verify`, `aicam backup-keygen` | Khôi phục, kiểm SHA-256, tạo khóa | ops (dòng lệnh) | FR-02.16 | — |
+| API-186 | CLI `aicam backup-restore`, `aicam backup-verify`, `aicam backup-keygen` | Khôi phục (nhiều khóa), kiểm SHA-256, tạo khóa | ops (dòng lệnh) | FR-02.16 | — |
+| API-187 | `POST /backup/reupload-old-key` | Tải lại bằng chứng còn ở kho đang mã hóa bằng khóa cũ (EX-K7) | ADMIN | FR-02.17 | admin D23 |
+| API-188 | `POST /backup/issues/{object_id}/resolve` | Xử lý tệp lệch mã băm: vẫn sao lưu / bỏ qua + lý do (EX-K6) | ADMIN | FR-02.15, EX-K6 | admin D23 |
 | W1 | `GET <kho lưu>/share/{token}/index.html?X-Amz-…` | Trang người nhận link | ai có link còn hạn | FR-07.07 | trình duyệt người nhận |
 | WS-02 | `share.updated`, `backup.updated`, `shop.updated` | Làm mới D21 / dialog, D23, D7 | ADMIN, SUPERVISOR, CSKH (`backup.updated`, `shop.updated` chỉ ADMIN) | FR-07.05, 02.15, 05.13 | admin |
 
@@ -258,11 +266,12 @@ Loại yêu cầu TikTok (BR-31): `REFUND_ONLY` → `needs_parcel = false` → h
 |---|---|---|
 | API-04 `/me` | `permissions` thêm `reports.returns`, `reports.claims`, `reports.productivity`, `shares.create`, `shares.read`, `shares.revoke_any`, `notify.manage`, `backup.manage`, `backup.read` (§8 AuthZ) | FR-10.02 |
 | API-10 / WS `station.state` | `station.operator_required`; `session.package.order.{platform, shop_name, merged_orders[]}`; `items[].platform_order_sn` (kiện gộp); `session.self_cancel_until` (RETURN) | FR-03.03, 03.16, 05.22, 04.14 |
-| API-11 | `alert.code` thêm `ORDER_CANCEL_REQUESTED`; `OPERATOR_REQUIRED` nay cả chế độ PACK khi bật `packer_name_required`; cờ phiên `AMBIGUOUS_SHOP`; `ORDER_CANCELLED` câu chữ không còn "Shopee" | FR-05.17, 05.19, 03.16 |
+| API-11 | `alert.code` thêm `ORDER_CANCEL_REQUESTED`, `RETURN_MULTIPLE_ORDERS` (bàn hoàn); `OPERATOR_REQUIRED` nay cả chế độ PACK khi bật `packer_name_required`; cờ phiên `AMBIGUOUS_SHOP`, `ORDER_CANCEL_REQUESTED`; `ORDER_CANCELLED` câu chữ không còn "Shopee" | FR-05.17, 05.19, 03.16, BR-29 |
+| API-104 (R3 tìm kiện hoàn) | Item thêm `platform`, `shop_name` (null = chưa gắn shop); tra mã đơn / mã yêu cầu trả trả **mọi** đơn khớp ở mọi shop | BR-29, EX-R20 |
 | API-12 | Phiên RETURN ngoài BR-37 → `409 CANCEL_REQUIRES_SUPERVISOR` (**mới, có chủ đích**) | FR-04.14 |
 | API-20 | Item phiên RETURN thêm `return_summary {conclusion, snapshot_count, opened_at}` | FR-04.14 |
 | API-21 | `CANCEL_SESSION` cho phiên RETURN bắt `note` 5–500 (**mới, có chủ đích**) | FR-04.14 |
-| API-30 | Lọc `platform`, `shop_id`; `session_status` nhận nhiều giá trị cách dấu phẩy (D2 → D3 phiên hủy / bỏ dở); item thêm `platform`, `shop {id, name}` | FR-07.01, 09.01 |
+| API-30 | Lọc `platform`, `shop_id`; `session_status` nhận nhiều giá trị cách dấu phẩy (D2 → D3 phiên hủy / bỏ dở); `return_dropped=true` = phiên RETURN `CANCELLED`/`ABANDONED` trừ `cancel_reason ∈ {WRONG_SCAN, NOT_A_RETURN}` (cùng luật thẻ D2 — BR-39); item thêm `platform`, `shop {id, name}` | FR-07.01, 09.01 |
 | API-31 | `order.{platform, shop, platform_status_group, merged_orders[]}`; `shares[]` (≤ 3 đang hoạt động gần nhất) + `shares_active_count`; `sessions[]` PACK có `operator_name` | FR-07.01, 07.09, 03.16 |
 | API-32 | `counts` + `attention` mới; `SYNC_ERROR` thêm trường, chỉ ADMIN; `RETURN_SESSION_ABANDONED` chỉ còn phiên `AUTO_CLOSE_BLOCKED` | FR-09.01, 08.08, 08.10, 02.15, 05.14 |
 | API-70 | `platforms[]` (cấu hình từng sàn); item thêm `region`, `sync_warnings[]`, `disconnected_at`, `sync_in_progress`; trả cả shop đã ngắt | FR-05.13, 05.14, 05.20 |
@@ -274,9 +283,10 @@ Loại yêu cầu TikTok (BR-31): `REFUND_ONLY` → `needs_parcel = false` → h
 | API-110 | Lọc `platform`, `shop_id`, `pending_only`, `sort`; item thêm `platform`, `shop`, `platform_status_group`, `response_due_at`, `response_due_source`, `claim` | FR-08.08, 07.01 |
 | API-120, API-130 | Lọc `platform`, `shop_id`; item thêm `platform`, `shop` | FR-07.01 |
 | API-131 | Hạn sàn đã qua → BR-42; bằng chứng tự chọn gồm phiên mở hoàn trước (BR-39) | FR-08.07, 08.10 |
-| API-132 | `evidence[]` thêm `prior_return`, `primary`, `removal_keep_until`; `removed_evidence[]`; `prior_return_sessions[]`; `shares[]` + `shares_active_count`; `deadline_source` giá trị mới | FR-08.07, 08.09, 07.09 |
+| API-132 | `evidence[]` thêm `prior_return`, `primary`, `removal_keep_until`, `session.cancel_reason`; `removed_evidence[]`; `prior_return_sessions[]`; `excluded_return_sessions[]` (BR-39 phiên quét nhầm); `shares[]` + `shares_active_count`; `deadline_source` giá trị mới | FR-08.07, 08.09, 07.09 |
 | API-134 | Bỏ **mọi** bằng chứng cần `note` 5–500 (**mới, có chủ đích**); bỏ mềm (BR-38); thêm lại bằng chứng đã bỏ = khôi phục | FR-08.09 |
-| API-136..138 / zip | Phiên chính = phiên mở hoàn có clip sớm nhất; thư mục `…-phien-truoc-…` | FR-08.07 |
+| API-136..138 / zip | Phiên chính = phiên mở hoàn có clip sớm nhất trừ `cancel_reason ∈ {WRONG_SCAN, NOT_A_RETURN}`; thư mục `…-phien-truoc-…` | FR-08.07 |
+| API-180, 181, 185 | API-180 thêm `key.old_keys[]`, `state = RESTORE_PENDING`, `evidence.{ignored, source_deleted}`, `db.consecutive_failures`, `history[].key_fingerprint`; API-181 bật khi `RESTORE_PENDING` → 409; API-185 item thêm `status`, `sha256_expected`, `sha256_actual`, `resolution` | FR-02.15, 02.17, EX-K6..K8 |
 | API-92 | `action` mới (§6.2 API-92) | FR-10.03 |
 
 ### 6.2 Chi tiết API
@@ -366,6 +376,11 @@ API-11 alert mới / đổi:
 | `ORDER_CANCEL_REQUESTED` | Mở phiên PACK, đơn nhóm `CANCEL_REQUESTED` | `{ "platform": "TIKTOK" }` | S4 vàng "ĐƠN ĐANG YÊU CẦU HỦY", 2 bíp |
 | `ORDER_CANCELLED` | Đơn nhóm `CANCELLED` (chữ: "… đã bị hủy trên sàn. Không đóng gói.") | `{ "platform" }` | S4 như cũ |
 | `OPERATOR_REQUIRED` | Như Phase 2, nay cả PACK khi `operator_required` | `{ "mode": "PACK" \| "RETURN" }` | Overlay vàng "Nhập tên người đóng gói trước khi đóng gói." + mở R5 |
+| `RETURN_MULTIPLE_ORDERS` (mới, bàn hoàn) | Mã quét là mã đơn sàn / mã yêu cầu trả và khớp ≥ 2 đơn khác shop (BR-29, EX-R20); không mở phiên | `{ "code": "2410ABCDEF", "orders": [ { "platform": "SHOPEE", "shop_name": "Áo Đẹp", "platform_order_sn": "2410ABCDEF" }, { "platform": "TIKTOK", "shop_name": "Áo Đẹp Official", "platform_order_sn": "2410ABCDEF" } ] }` — `message` "Mã 2410ABCDEF có ở 2 đơn của các shop khác nhau. Chọn đúng đơn." | Alert vàng 2 bíp → mở R3 (`ReturnLookupDialog`) với `code`; chọn dòng → API-105 `package_id` |
+
+Cờ phiên `ORDER_CANCEL_REQUESTED` (DEC-494): J-04 / J-06 thấy đơn vào nhóm `CANCEL_REQUESTED` khi kiện `PACKING` → task `sessions.flag_order_cancelled(package_id, kind="CANCEL_REQUESTED")` thêm cờ vào phiên đang mở, WS `station.state`; S2 banner vàng, phiên đóng bình thường, trạng thái kho không đổi. Nhóm `CANCELLED` → như Phase 2 (cờ `ORDER_CANCELLED`, luật hủy kiện).
+
+API-104 (R3, mở rộng): item thêm `"platform": "TIKTOK" | null`, `"shop_name": "Áo Đẹp Official" | null`; tra mã đơn / mã yêu cầu trả trả mọi đơn khớp ở mọi shop (không còn giả định duy nhất), sắp như Phase 2.
 
 Tra sàn khi quét mã lạ (BR-32): mọi shop `CONNECTED` của sàn đang bật, song song, cắt 2 giây. Đúng 1 shop thấy → kiện gắn đơn của shop đó. ≥ 2 shop thấy → kiện chưa xác minh + cờ `AMBIGUOUS_SHOP`, sự kiện phiên ghi danh sách shop (D4 hiện "Mã có ở 2 shop: …"). 0 / quá hạn → chưa xác minh (như Phase 1).
 
@@ -428,7 +443,7 @@ Item thêm:
 
 <details><summary><b>API-32 mở rộng</b> — Tổng quan D2</summary>
 
-`counts` thêm (hiện tại, không theo ngày): `returns_dropped_7d` (phiên RETURN `CANCELLED` / `ABANDONED` có `ended_at` trong 7 ngày, **không** trừ khi kiện có phiên sau hoàn tất — L11), `refund_only_pending` (BR-40), `claims_overdue_unsent` (claim `NEW`, `deadline_at < now` — BR-42).
+`counts` thêm (hiện tại, không theo ngày): `returns_dropped_7d` (phiên RETURN `CANCELLED` / `ABANDONED` có `ended_at` trong 7 ngày, trừ `cancel_reason ∈ {WRONG_SCAN, NOT_A_RETURN}` (BR-39 — DEC-491), **không** trừ khi kiện có phiên sau hoàn tất — L11), `refund_only_pending` (BR-40), `claims_overdue_unsent` (claim `NEW`, `deadline_at < now` — BR-42).
 
 `attention[]` thêm:
 
@@ -436,8 +451,8 @@ Item thêm:
 |---|---|---|---|
 | `REFUND_ONLY_PENDING` | `count`, `nearest_due_at` | ADMIN, SUPERVISOR, CSKH | "⏱ {count} yêu cầu Chỉ hoàn tiền chưa xử lý · hạn gần nhất {dd/mm HH:mm}" → D14 `tab=NO_PARCEL&pending_only=true` |
 | `CLAIM_OVERDUE` | `count` | 3 vai | "⚠ {count} hồ sơ quá hạn chưa gửi" → D16 `due=overdue&status=NEW` |
-| `RETURN_SESSION_DROPPED` | `count` | 3 vai | "⚠ {count} phiên mở hoàn bị hủy / bỏ dở trong 7 ngày" → D3 `session_type=RETURN&session_status=CANCELLED,ABANDONED&date_from=…` (7 ngày) |
-| `BACKUP_STALE` | `reason` (`DB_LATE` / `EVIDENCE_LATE` / `HASH_MISMATCH` / `ERROR`), `hours` (DB_LATE), `count` | **chỉ ADMIN** | "⚠ Sao lưu cloud trễ {hours} giờ" / "{count} tệp chờ quá 24 giờ" / "{count} tệp lệch mã băm" → D23 |
+| `RETURN_SESSION_DROPPED` | `count` (= `returns_dropped_7d`) | 3 vai | "⚠ {count} phiên mở hoàn bị hủy / bỏ dở trong 7 ngày" → D3 `session_type=RETURN&return_dropped=true&date_from=…` (7 ngày) |
+| `BACKUP_STALE` | `reason` (`DB_LATE` / `DB_FAILED_TWICE` / `EVIDENCE_LATE` / `HASH_MISMATCH` / `ERROR`), `hours` (DB_LATE), `count` | **chỉ ADMIN** | "⚠ Sao lưu cloud trễ {hours} giờ" / "{count} tệp chờ quá 24 giờ" / "{count} tệp lệch mã băm" → D23 |
 | `SYNC_ERROR` (đổi) | thêm `shop_name`, `platform`, `code` | **chỉ ADMIN** (trước: 3 vai) | "⚠ Shop {shop_name} ({TikTok}) hết hạn ủy quyền" (`code = AUTH_EXPIRED`) / "đồng bộ lỗi" → D7 |
 | `RETURN_SESSION_ABANDONED` (đổi nghĩa) | `count` = phiên RETURN mở có cờ `AUTO_CLOSE_BLOCKED` | 3 vai | như cũ |
 
@@ -461,7 +476,7 @@ API-81 thêm:
 
 <details><summary><b>API-131 / API-132 / API-134 mở rộng</b> — hồ sơ khiếu nại (L11, L14, L15)</summary>
 
-**Tạo hồ sơ (API-131, và hồ sơ tự tạo khi đóng phiên RETURN):** bằng chứng tự chọn = phiên PACK hiệu lực + **mọi** phiên RETURN của kiện / hồ sơ hàng hoàn (gồm `CANCELLED`, `ABANDONED`) có ≥ 1 clip không `DELETED` + ảnh (BR-39). Hạn: `seller_due_at` của sàn; nếu `seller_due_at < now` → `deadline_at = now + claim_deadline_days`, `deadline_source = "DEFAULT_PLATFORM_PASSED"`, ghi chú hệ thống "Hạn sàn ({dd/mm HH:mm}) đã qua khi tạo hồ sơ — dùng hạn mặc định. Kiểm hạn thật trên sàn." (BR-42).
+**Tạo hồ sơ (API-131, và hồ sơ tự tạo khi đóng phiên RETURN):** bằng chứng tự chọn = phiên PACK hiệu lực + **mọi** phiên RETURN của kiện / hồ sơ hàng hoàn (gồm `CANCELLED`, `ABANDONED`) có ≥ 1 clip không `DELETED` + ảnh, **trừ** phiên `CANCELLED` có `cancel_reason ∈ {WRONG_SCAN, NOT_A_RETURN}` (BR-39 v0.3 — DEC-491; phiên đó vẫn được bảo vệ theo BR-09 b). Hạn: `seller_due_at` của sàn; nếu `seller_due_at < now` → `deadline_at = now + claim_deadline_days`, `deadline_source = "DEFAULT_PLATFORM_PASSED"`, ghi chú hệ thống "Hạn sàn ({dd/mm HH:mm}) đã qua khi tạo hồ sơ — dùng hạn mặc định. Kiểm hạn thật trên sàn." (BR-42).
 
 **API-132** thêm:
 
@@ -483,7 +498,8 @@ API-81 thêm:
 }
 ```
 
-- `prior_return` = phiên RETURN `CANCELLED` / `ABANDONED` bắt đầu trước phiên RETURN hoàn tất mới nhất của kiện (hoặc hồ sơ chưa có phiên hoàn tất). `primary` = đúng một phiên RETURN có clip sớm nhất (theo `started_at`) trong `evidence`; không có phiên RETURN → phiên PACK hiệu lực.
+- `prior_return` = phiên RETURN `CANCELLED` / `ABANDONED` bắt đầu trước phiên RETURN hoàn tất mới nhất của kiện (hoặc hồ sơ chưa có phiên hoàn tất), trừ `cancel_reason ∈ {WRONG_SCAN, NOT_A_RETURN}`. `primary` = đúng một phiên RETURN có clip sớm nhất (theo `started_at`) trong `evidence`, **trừ** phiên có `cancel_reason ∈ {WRONG_SCAN, NOT_A_RETURN}` kể cả khi thêm tay; không có → phiên PACK hiệu lực. Một hàm `claims.views.primary_session()` dùng cho API-132, J-16, link (DEC-448).
+- `excluded_return_sessions[]` = `[{session_id, status: "CANCELLED", cancel_reason, started_at, has_clip, in_evidence}]` — phiên RETURN của kiện / hồ sơ hàng hoàn bị BR-39 loại, có ≥ 1 clip không `DELETED`. D17 Alert "Kiện có {n} phiên mở hoàn bị hủy vì quét nhầm ({dd/mm HH:mm}) — không đưa vào bằng chứng. Video vẫn được giữ; thêm tay nếu cần." khi có phần tử `in_evidence = false`. `evidence[].session.cancel_reason` để FE gắn chip "Hủy: quét nhầm".
 - `removal_keep_until` = max(`clip.end_at` muộn nhất của phiên / `taken_at` của ảnh, lúc hiện tại) + max(`retention_clip_days`, sàn) — ngày Dialog bỏ bằng chứng hiển thị (FR-08.09). `keep_until` của dòng đã bỏ = tính theo `removed.at`. Clip / ảnh còn được bảo vệ vì lý do khác thì vẫn giữ lâu hơn (Dialog ghi "trừ khi thuộc hồ sơ khác").
 - `evidence[]` chỉ gồm bằng chứng đang dùng; zip / link chỉ dùng `evidence[]`.
 
@@ -725,25 +741,33 @@ API-180 `GET /backup`:
   "storage": { "endpoint_host": "s3.example.vn", "bucket": "aicam-backup" },
   "key": { "configured": true, "fingerprint": "7F3A-91C2-0B5E-44D1",
            "confirmed_fingerprint": "7F3A-91C2-0B5E-44D1", "confirmed_at": "…Z",
-           "confirmed_by": { "id": "…", "display_name": "khanhtt" } },
+           "confirmed_by": { "id": "…", "display_name": "khanhtt" },
+           "old_keys": [ { "fingerprint": "21C4-0D9A-77E1-5B30", "evidence_objects": 812, "db_runs": 42,
+                           "reuploadable": 790, "reuploadable_bytes": 146028888064 } ] },
   "state": "ON", "enabled": true,
   "db": { "last_success_at": "…Z", "last_size_bytes": 190840832, "next_run_at": "…Z",
-          "hours_since_success": 2.1, "late": false, "running": false },
+          "hours_since_success": 2.1, "late": false, "running": false, "consecutive_failures": 0 },
   "evidence": { "uploaded": 1204, "pending": 3, "failed": 0, "oldest_pending_at": "…Z",
-                "late_count": 0, "hash_mismatch": 2 },
+                "late_count": 0, "hash_mismatch": 2, "ignored": 1, "source_deleted": 4 },
   "cloud_bytes": 162135113728,
   "last_error": { "code": "CLOUD_UNREACHABLE", "message": "Không kết nối được kho lưu.", "at": "…Z" },
   "settings": { "upload_mbps": 10, "all_pack_clips": false, "all_pack_clips_estimate_gb_per_day": 30.4 },
   "history": [ { "id": "…", "kind": "DB", "started_at": "…Z", "finished_at": "…Z",
-                 "status": "SUCCESS", "size_bytes": 190840832, "error": null } ]
+                 "status": "SUCCESS", "size_bytes": 190840832, "error": null,
+                 "key_fingerprint": "7F3A-91C2-0B5E-44D1" } ]
 }
 ```
 
-- `state`: `NOT_CONFIGURED` (thiếu `S3_*` hoặc `BACKUP_ENCRYPTION_KEY`) · `KEY_UNCONFIRMED` (chưa xác nhận) · `KEY_CHANGED` (`fingerprint` ≠ `confirmed_fingerprint`) · `DISABLED` (Admin tắt) · `ON`. Chỉ `ON` thì job chạy (EX-K1, K2).
-- `db.late` = > 26 giờ không thành công; `evidence.late_count` = tệp chờ > 24 giờ (K5). `history` 14 ngày, mới nhất trước. `all_pack_clips_estimate_gb_per_day` = trung bình 7 ngày (số phiên PACK × kích thước clip) — chú thích FR-02.18.
+- `state` (ưu tiên từ trên xuống): `NOT_CONFIGURED` (thiếu `S3_*` hoặc `BACKUP_ENCRYPTION_KEY`) · `RESTORE_PENDING` (vừa khôi phục, chưa `backup-verify` đạt — DEC-499) · `KEY_UNCONFIRMED` (chưa xác nhận) · `KEY_CHANGED` (`fingerprint` ≠ `confirmed_fingerprint`) · `DISABLED` (Admin tắt) · `ON`. Chỉ `ON` thì J-20..J-23 chạy (EX-K1, K2, K8).
+- `key.old_keys[]` (DEC-495): mỗi dấu vân tay ≠ khóa hiện tại còn bản trên cloud (`backup_object` `UPLOADED` + `backup_run` `SUCCESS` chưa xóa); `reuploadable` = tệp `CLIP`/`SNAPSHOT` còn ở kho (clip / ảnh `READY`); rỗng → FE không hiện Alert.
+- `db.late` = > 26 giờ không thành công; `db.consecutive_failures` ≥ 2 → `BACKUP_STALE` `DB_FAILED_TWICE` + N08 (DEC-500); `evidence.late_count` = tệp chờ > 24 giờ (K5); `pending` không tính `SOURCE_DELETED`, `IGNORED`. `history` 14 ngày, mới nhất trước. `all_pack_clips_estimate_gb_per_day` = trung bình 7 ngày (số phiên PACK × kích thước clip) — chú thích FR-02.18.
 - Khi `configured = false`: `storage`, `key.fingerprint` = `null`.
 
-API-181 `PUT /backup/settings` `{enabled?, upload_mbps? (1–1000), all_pack_clips?}` → `200` như API-180. API-182 `POST /backup/confirm-key` `{fingerprint}` → `200` như API-180 (`enabled = true`, `state = "ON"`). API-183 `POST /backup/test` → `200 {"ok": true, "elapsed_ms": 1840}` (ghi → đọc → xóa một đối tượng 1 KB dưới `backup/_probe/`). API-184 `POST /backup/run-db` → `202 {"run_id": "…"}`. API-185 `GET /backup/issues?kind=HASH_MISMATCH|UPLOAD_FAILED&page` → `{items: [{object_id, kind: "CLIP"|"SNAPSHOT", session_id, package_id, tracking_number, detected_at, detail}], page, page_size, total}`.
+API-181 `PUT /backup/settings` `{enabled?, upload_mbps? (1–1000), all_pack_clips?}` → `200` như API-180 (`enabled: true` khi `RESTORE_PENDING` → 409 `BACKUP_RESTORE_UNVERIFIED`). API-182 `POST /backup/confirm-key` `{fingerprint}` → `200` như API-180 (`enabled = true`, `state = "ON"`). API-183 `POST /backup/test` → `200 {"ok": true, "elapsed_ms": 1840}` (ghi → đọc → xóa một đối tượng 1 KB dưới `backup/_probe/`). API-184 `POST /backup/run-db` → `202 {"run_id": "…"}`. API-185 `GET /backup/issues?kind=HASH_MISMATCH|UPLOAD_FAILED&page` → `{items: [{object_id, kind: "CLIP"|"SNAPSHOT", status, session_id, package_id, tracking_number, detected_at, detail, sha256_expected, sha256_actual, resolution: {action, note, by {id, display_name}, at} | null}], page, page_size, total}` — mặc định chỉ mục chưa xử lý (`resolution = null`); `include_resolved=true` lấy cả đã xử lý.
+
+API-187 `POST /backup/reupload-old-key` (body rỗng) → `202 {"queued": 790, "bytes": 146028888064}`: mọi `backup_object` `UPLOADED` kind `CLIP`/`SNAPSHOT` có `key_fingerprint` ≠ khóa hiện tại và tệp còn ở kho → `PENDING` (J-22 tải đè cùng `object_key` bằng khóa mới, ghi `key_fingerprint` mới). Bản DB cũ **không** mã hóa lại (hết hạn theo FR-02.14). Idempotent (gọi lại chỉ xếp tệp chưa xếp). Audit `BACKUP_REUPLOAD_OLD_KEY` `{fingerprints, queued}`.
+
+API-188 `POST /backup/issues/{object_id}/resolve` `{"action": "UPLOAD_ANYWAY" | "IGNORE", "note": "5–500 ký tự"}` → `200` item API-185. `UPLOAD_ANYWAY`: `HASH_MISMATCH` → `PENDING` với cờ `hash_override` — J-22 tải bản hiện có, metadata `sha256` = băm thực tế + `sha256-expected` = giá trị DB + `integrity=MISMATCH_ACCEPTED`; `IGNORE` → `IGNORED` (cuối, không tính chờ / cảnh báo). Audit `BACKUP_ISSUE_RESOLVE` `{object_id, action, note, sha256_expected, sha256_actual}` (DEC-496).
 
 | HTTP | Mã lỗi | Khi nào | FE xử lý |
 |---|---|---|---|
@@ -751,13 +775,16 @@ API-181 `PUT /backup/settings` `{enabled?, upload_mbps? (1–1000), all_pack_cli
 | 409 | BACKUP_KEY_UNCONFIRMED | API-181 `enabled: true` / API-184 khi chưa xác nhận / khóa đổi | Mở Dialog xác nhận khóa |
 | 409 | BACKUP_KEY_MISMATCH | API-182 `fingerprint` khác khóa hiện tại (khóa vừa đổi) | Tải lại API-180, Alert "Khóa trên máy chủ vừa đổi — kiểm lại dấu vân tay." |
 | 409 | BACKUP_RUNNING | API-184 khi đang có lượt DB chạy | Toast "Đang sao lưu, thử lại sau." |
+| 409 | BACKUP_RESTORE_UNVERIFIED | API-181 `enabled: true` / API-184 / API-187 khi `state = RESTORE_PENDING` | Banner D23 "Hệ thống vừa được khôi phục…" |
+| 409 | BACKUP_ISSUE_RESOLVED | API-188 khi tệp không còn `HASH_MISMATCH` (đã xử lý / trạng thái khác) | Toast `message`, tải lại API-185 |
+| 422 | VALIDATION_ERROR | API-188 `action` lạ / `note` < 5 hoặc > 500 → `fields.note = "Nhập lý do (5–500 ký tự)."` | Lỗi dưới ô |
 | 502 | CLOUD_AUTH_FAILED | API-183: sai khóa truy cập / không có quyền bucket | Alert "Kho lưu từ chối: sai khóa truy cập." |
 | 502 | CLOUD_ERROR | API-183: lỗi khác của nhà cung cấp (`message` rút gọn) | Alert `message` |
 | 504 | CLOUD_UNREACHABLE | API-183 quá 10 giây / không kết nối | Alert "Không kết nối được kho lưu. Kiểm tra Internet." |
 | 422 | VALIDATION_ERROR | `upload_mbps` ngoài 1–1000 | Lỗi dưới ô |
 | 403 | FORBIDDEN | Không phải ADMIN | D12 |
 
-Audit: `BACKUP_SETTINGS_UPDATE`, `BACKUP_KEY_CONFIRM` (`{fingerprint}`), `BACKUP_TEST` (`{ok, code}`), `BACKUP_RUN_NOW`.
+Audit: `BACKUP_SETTINGS_UPDATE`, `BACKUP_KEY_CONFIRM` (`{fingerprint, previous_fingerprint}`), `BACKUP_TEST` (`{ok, code}`), `BACKUP_RUN_NOW`, `BACKUP_REUPLOAD_OLD_KEY`, `BACKUP_ISSUE_RESOLVE`.
 </details>
 
 <details><summary><b>API-186</b> — lệnh vận hành (không qua HTTP)</summary>
@@ -765,8 +792,10 @@ Audit: `BACKUP_SETTINGS_UPDATE`, `BACKUP_KEY_CONFIRM` (`{fingerprint}`), `BACKUP
 | Lệnh | Việc | Kết quả |
 |---|---|---|
 | `aicam backup-keygen` | Sinh khóa 256 bit (base64) + in dấu vân tay | IT chép vào `docker/.env` `BACKUP_ENCRYPTION_KEY` + cất bản ngoài máy |
-| `aicam backup-restore --db latest\|<khóa đối tượng> [--evidence] [--claims-first] [--target-dir]` | Tải + giải mã DB dump, `pg_restore` vào DB trống; tải bằng chứng (hồ sơ khiếu nại chưa đóng trước) về đúng đường dẫn | Mã thoát 0; khóa sai → báo "Khóa giải mã không khớp (dấu vân tay …)" + mã 2, **không ghi** gì; DB đích không trống → từ chối trừ `--force` |
-| `aicam backup-verify [--from-cloud]` | Kiểm SHA-256 từng clip / ảnh trên đĩa (hoặc bản cloud) với DB | In `khớp N / lệch N / thiếu N`; mã thoát 1 nếu lệch hoặc thiếu |
+| `aicam backup-restore --db latest\|<khóa đối tượng> [--evidence] [--claims-first] [--target-dir] [--key-file F]…` | Khóa giải mã: `BACKUP_ENCRYPTION_KEY` + `BACKUP_OLD_KEYS` (base64, cách dấu phẩy) + mỗi `--key-file`; chọn khóa theo dấu vân tay trong header từng đối tượng (DEC-495). (1) Tải + giải mã DB dump, `pg_restore` vào DB trống; ngay sau đó đặt `setting.backup_enabled = false`, `backup_restore_pending = true` (DEC-499). (2) `--evidence`: **duyệt** `backup/evidence/` trên cloud (`list` + `HEAD` metadata `relpath`, `sha256`, `kind`, `id`) và so với DB vừa khôi phục: đối tượng có dòng clip / ảnh trong DB → tải về `relpath` (hồ sơ khiếu nại chưa đóng trước); đối tượng không có trong DB (tải lên sau bản dump) → vẫn tải về `relpath`, in "không có trong DB"; clip / ảnh trong DB không `DELETED`, không có đối tượng cloud, không có tệp trên đĩa → `status = MISSING` (không `DELETED`) | Mã thoát 0; khóa không khớp mọi khóa đã cho → báo "Khóa giải mã không khớp (dấu vân tay …)" + mã 2, **không ghi** gì; DB đích không trống → từ chối trừ `--force`; in `tải N / thiếu (MISSING) N / ngoài DB N` |
+| `aicam backup-verify [--from-cloud]` | Kiểm SHA-256 từng clip / ảnh trên đĩa (hoặc bản cloud) với DB; clip `MISSING` tính "thiếu" | In `khớp N / lệch N / thiếu N`; mã thoát 1 nếu lệch; thiếu chỉ do `MISSING` đã ghi nhận + lệch = 0 → đạt: xóa `backup_restore_pending` (audit `BACKUP_RESTORE_VERIFIED`, người dùng hệ thống) → Admin bật lại ở D23 |
+
+**Bí mật phải cất ngoài máy** (runbook ops §6.2, kiểm ở diễn tập AC-50): `BACKUP_ENCRYPTION_KEY` + mọi khóa cũ còn bản trên cloud; `FERNET_KEY` (token sàn, mật khẩu camera, URL link, token Zalo trong DB — mất → kết nối lại mọi shop, nhập lại mật khẩu camera, link cũ không sao chép được); `S3_ENDPOINT`, `S3_BUCKET`, `S3_SHARE_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` (+ tài khoản quản trị nhà cung cấp để khôi phục phiên bản cũ); `JWT_SECRET`; `MEDIA_SIGNING_KEY`; `POSTGRES_PASSWORD`; `SHOPEE_PARTNER_ID` / `SHOPEE_PARTNER_KEY`; `TIKTOK_APP_KEY` / `TIKTOK_APP_SECRET` / `TIKTOK_SERVICE_ID`; `TELEGRAM_BOT_TOKEN`; `ZALO_APP_ID` / `ZALO_APP_SECRET`; `SITE_ADDRESS`, `LAN_IP`.
 
 Chi tiết runbook: `ai-cam-be/docs/ops.md` mục "Sao lưu cloud" (02a T-223).
 </details>
@@ -782,12 +811,12 @@ Chi tiết runbook: `ai-cam-be/docs/ops.md` mục "Sao lưu cloud" (02a T-223).
 
 <details><summary><b>API-92 action mới</b></summary>
 
-`SHOP_DISCONNECT`, `SHARE_CREATE`, `SHARE_REVOKE`, `SHARE_EXPIRE` (người dùng `null` = hệ thống), `NOTIFY_CHANNEL_CREATE`, `NOTIFY_CHANNEL_UPDATE`, `NOTIFY_CHANNEL_DELETE`, `NOTIFY_TEST`, `NOTIFY_SETTINGS_UPDATE`, `BACKUP_SETTINGS_UPDATE`, `BACKUP_KEY_CONFIRM`, `BACKUP_TEST`, `BACKUP_RUN_NOW`, `REPORT_EXPORT`, `CLAIM_EVIDENCE_REMOVE`. `SHOP_CONNECT` thêm `data.platform` (đã có). Quyết định hủy phiên hoàn: `APPROVAL_DECISION` có `note` (đã có). FE D10 map nhãn tiếng Việt (02b-admin §9).
+`SHOP_DISCONNECT`, `SHARE_CREATE`, `SHARE_REVOKE`, `SHARE_EXPIRE` (người dùng `null` = hệ thống), `NOTIFY_CHANNEL_CREATE`, `NOTIFY_CHANNEL_UPDATE`, `NOTIFY_CHANNEL_DELETE`, `NOTIFY_TEST`, `NOTIFY_SETTINGS_UPDATE`, `BACKUP_SETTINGS_UPDATE`, `BACKUP_KEY_CONFIRM`, `BACKUP_TEST`, `BACKUP_RUN_NOW`, `REPORT_EXPORT`, `CLAIM_EVIDENCE_REMOVE`, `BACKUP_REUPLOAD_OLD_KEY`, `BACKUP_ISSUE_RESOLVE`, `BACKUP_RESTORE_VERIFIED` (người dùng `null` = hệ thống / CLI). `SHOP_CONNECT` thêm `data.platform` (đã có). Quyết định hủy phiên hoàn: `APPROVAL_DECISION` có `note` (đã có). FE D10 map nhãn tiếng Việt (02b-admin §9).
 </details>
 
 ### 6.3 W1 — nội dung trang người nhận link (FR-07.07, DEC-411, DEC-428)
 
-Trang HTML tĩnh do J-24 sinh từ template BE, một file `index.html` (CSS inline, không script ngoài, không cookie, `<meta name="robots" content="noindex">`), tiếng Việt, một cột, rộng tối thiểu 320 px. Video H.264 `+faststart` (phát ngay trên Chrome Android / Safari iOS — NFR-46).
+Trang HTML tĩnh do J-24 sinh từ template BE, một file `index.html` (CSS inline, **không script**, không cookie, `<meta name="robots" content="noindex">`), tiếng Việt, một cột, rộng tối thiểu 320 px. Đầu `<head>` (DEC-506): `<meta http-equiv="Content-Security-Policy" content="default-src 'none'; img-src https://{host bucket link}; media-src https://{host bucket link}; style-src 'unsafe-inline'; base-uri 'none'; form-action 'none'">` (host lấy từ `S3_PUBLIC_ENDPOINT` lúc dựng; dev MinIO `http://`) + `<meta name="referrer" content="no-referrer">` (URL ký không lọt sang trang khác qua Referer). Đối tượng `share/` nằm ở bucket link **không bật phiên bản** (DEC-501) — thu hồi / hết hạn xóa thật; nếu nhà cung cấp buộc bật phiên bản, J-25 xóa **mọi** phiên bản (`ListObjectVersions` + `DeleteObject VersionId`). Video H.264 `+faststart` (phát ngay trên Chrome Android / Safari iOS — NFR-46).
 
 | Có | Không có |
 |---|---|
@@ -890,9 +919,9 @@ sequenceDiagram
     W->>DB: SQL bảo vệ ADR-009 (a–d) − đã có BACKUP_OBJECT → INSERT PENDING (ON CONFLICT DO NOTHING)
     B->>W: J-22 mỗi 5 phút (ngân sách 240 giây)
     W->>W: SHA-256 file == clip.sha256? lệch → HASH_MISMATCH (không tải)
-    W->>S3: PUT backup/evidence/clips/{id}.enc (AES-256-GCM theo khối, 10 Mbit/s)
+    W->>S3: PUT bucket sao lưu backup/evidence/clips/{id}.enc (AES-256-GCM theo khối, 10 Mbit/s; metadata relpath, sha256, key_fp)
     W->>DB: UPLOADED, uploaded_at
-    Note over B,S3: 02:00 J-02 xóa clip tại kho → 03:00 J-23 xóa bản cloud (≤ 24 giờ)
+    Note over B,S3: 02:00 J-02 xóa clip tại kho (audit DELETE_CLIP RETENTION) → 03:00 J-23 xóa bản cloud (delete marker; phiên bản cũ nhà cung cấp tự xóa ≤ 7 ngày — DEC-501)
 ```
 
 **UC-19: sự kiện → tin (BR-36)**
@@ -911,7 +940,7 @@ sequenceDiagram
     TG-->>W: ok → SENT · lỗi → RETRYING (1, 2, 4 … 60 phút) · > 24 giờ → DROPPED
 ```
 
-**UC-22 (L11):** R2 ≤ 60 giây, chưa kết luận / ảnh → API-12 hủy (như Phase 2). Còn lại → API-13 ASSIST → D13 thẻ có `return_summary` → API-21 `CANCEL_SESSION` + `note` → phiên `CANCELLED`, kiện về trạng thái trước, clip giữ (BR-09 b) → kiện quét lại, phiên sau `COMPLETED` có vấn đề → hồ sơ tự tạo gồm phiên PACK + phiên hủy (chính) + phiên sau (BR-39).
+**UC-22 (L11):** R2 ≤ 60 giây, chưa kết luận / ảnh → API-12 hủy (như Phase 2). Còn lại → API-13 ASSIST → D13 thẻ có `return_summary` → API-21 `CANCEL_SESSION` + `note` → phiên `CANCELLED`, kiện về trạng thái trước, clip giữ (BR-09 b) → kiện quét lại, phiên sau `COMPLETED` có vấn đề → hồ sơ tự tạo gồm phiên PACK + phiên hủy (`cancel_reason = SUPERVISOR` — chính) + phiên sau (BR-39). Station tự hủy ≤ 60 giây với `WRONG_SCAN` / `NOT_A_RETURN` → clip giữ (BR-09 b) nhưng không tự vào bằng chứng, không là phiên chính, không tính N03 / D2 (DEC-491).
 
 **UC-23 (L13):** J-13 tạo hồ sơ `REFUND_ONLY` → J-26 N04 "mới" → D2 `REFUND_ONLY_PENDING` → D14 `tab=NO_PARCEL&pending_only=true` sắp `due_asc` → API-131 tạo hồ sơ → rời D2. Còn ≤ 12 giờ chưa có hồ sơ → N04 "nhắc" (một lần, `dedupe_key = {case}:12h`).
 
@@ -923,16 +952,16 @@ sequenceDiagram
 | AuthZ | RBAC theo 01 §5.10, kiểm ở server mọi API. Quyền mới (API-04): ADMIN có tất cả; SUPERVISOR `reports.returns`, `reports.claims`, `reports.productivity`, `shares.create`, `shares.read`, `shares.revoke_any`, `backup.read`; CSKH `reports.returns`, `reports.claims`, `shares.create`, `shares.read` (thu hồi chỉ link mình tạo — kiểm ở service); `notify.manage`, `backup.manage` chỉ ADMIN. API-32 lọc `SYNC_ERROR`, `BACKUP_STALE` theo vai |
 | Bí mật (DEC-408) | Biến môi trường mới: `TIKTOK_APP_KEY`, `TIKTOK_APP_SECRET`, `TIKTOK_SERVICE_ID`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY`, `BACKUP_ENCRYPTION_KEY`, `TELEGRAM_BOT_TOKEN`, `ZALO_APP_ID`, `ZALO_APP_SECRET`, `ZALO_OA_REFRESH_TOKEN` (khởi tạo). Ngoại lệ có chủ đích: token Zalo OA xoay vòng lưu DB mã hóa Fernet (DEC-445); URL link lưu DB mã hóa Fernet (DEC-441). Validator production từ chối giá trị dev / thiếu khi cờ bật |
 | Dữ liệu nhạy cảm | Tin nhắn và W1 không có dữ liệu người mua dạng chữ (NFR-45); ShareLinkDialog cảnh báo nhãn Cam 2. Bản sao lưu mã hóa (NFR-41). Log không ghi URL link, token, chữ ký (che `X-Amz-Signature`, `access_token`, `sign` — mở rộng `core/logging.py` redaction) |
-| Đa sàn (ADR-011) | Nhóm trạng thái §5.3; adapter theo `shop.platform`; unique (shop, mã đơn); mã vận đơn unique toàn hệ thống; khóa `order:{sn}` không kèm shop |
-| Thứ tự khóa (DEC-266 mở rộng) | Redis `grant:{platform}:{ref}` (chỉ khi làm mới token) → Redis `sync:{shop}` / `sync_returns:{shop}` → advisory `order:{sn}` → station → `return_case` → `package` (id tăng) → `clip` → `claim_evidence` / `snapshot`. Job sao lưu / link chỉ khóa dòng của bảng mới (`backup_object`, `share_link` `FOR UPDATE SKIP LOCKED`), đọc clip không khóa — J-02 xóa clip thì J-22 gặp file mất → `FAILED` có lý do, J-23 dọn |
+| Đa sàn (ADR-011) | Nhóm trạng thái §5.3; adapter theo `shop.platform`; unique (shop, mã đơn); mã vận đơn unique toàn hệ thống; khóa `order:{sn}` không kèm shop (DEC-493 — khóa trước khi có dòng, tuần tự hóa mọi shop cùng mã + đơn file); mọi điểm tra theo mã theo bảng 02a §5.1: biết shop → (shop, mã), không biết shop → danh sách (bàn hoàn ≥ 2 → `RETURN_MULTIPLE_ORDERS`), file nhập chỉ `shop_id IS NULL` (DEC-492); ghi `platform_status` + nhóm chỉ qua helper (DEC-508) |
+| Thứ tự khóa (DEC-266 mở rộng, DEC-507) | Redis `sync:{shop}` / `sync_returns:{shop}` (`SET NX`, **không chờ** — bận → `SKIPPED`) → Redis `grant:{platform}:{ref}` (chỉ khi làm mới token, chờ ≤ 10 giây; J-12 chỉ lấy khóa này, không lấy `sync:`) → advisory `order:{sn}` → station → `return_case` → `package` (id tăng) → `clip` → `claim_evidence` / `snapshot`. Job sao lưu / link chỉ khóa dòng của bảng mới (`backup_object`, `share_link` `FOR UPDATE SKIP LOCKED`), đọc clip không khóa — J-02 xóa clip thì J-22 gặp file mất → `FAILED` có lý do, J-23 dọn |
 | Idempotency | J-21 `INSERT … ON CONFLICT DO NOTHING` theo (kind, clip_id/snapshot_id) — partial unique, vị từ `WHERE` **literal** (DEC-362); J-26 theo (code, dedupe_key); API-160 không idempotent (mỗi lần một link — FE khóa nút khi đang gửi); API-163 / API-154 idempotent |
 | Cô lập lỗi (V2-1) | Job theo shop / theo bản ghi: lặp theo **id**, đọc lại đối tượng sau khóa, lỗi một mục → rollback mục đó + ghi lỗi + đi tiếp; lỗi một shop không chặn shop khác |
 | Ngân sách thời gian | Task J-04 / shop 120 giây, J-06 / J-13 / shop 300 giây, J-22 240 giây / lượt, J-24 600 giây / link, J-26 20 giây, J-27 10 giây / lượt; quá ngân sách → dừng sạch, lượt sau tiếp (cursor chỉ tiến khi xong) |
-| NFR | NFR-01: tra song song trong api (§7), DB đọc trước timer. NFR-37: SQL theo tập + index mới (02a §8) + cache Redis 60 giây theo bộ lọc. NFR-38: J-04 5 phút, J-13 15 phút. NFR-39: một task / shop, queue `sync` concurrency 4. NFR-40/41: J-20 6 giờ, J-22 ≤ 1 giờ, AES-256-GCM. NFR-42: token 256 bit, bucket riêng tư, thu hồi = xóa. NFR-43: J-26 30 giây + gom 2 phút + J-27 15 giây ≈ ≤ 2,9 phút. NFR-44: token bucket Redis chung, mặc định 10 Mbit/s. NFR-46: H.264 `+faststart`, trang ≤ 30 KB |
+| NFR | NFR-01: tra song song trong api (§7), DB đọc trước timer. NFR-37: SQL theo tập + index mới (02a §8) + cache Redis 60 giây theo bộ lọc. NFR-38: J-04 5 phút, J-13 15 phút. NFR-39: một task / shop; J-04, J-05, J-12 trên queue `sync_fast` (`worker-sync -c 3`), J-06, J-13 trên queue `sync` (`worker-sync-long -c 2`) — shop chậm ở J-06 / J-13 không chiếm slot của J-04 (DEC-503); `worker_prefetch_multiplier = 1`, `acks_late`. NFR-40/41: J-20 6 giờ, J-22 ≤ 1 giờ, AES-256-GCM. NFR-42: token 256 bit, bucket riêng tư, thu hồi = xóa. NFR-43: J-26 30 giây + gom 2 phút + J-27 15 giây ≈ ≤ 2,9 phút; J-26..J-28 trên queue `notify` riêng (`worker-notify -c 1` — DEC-504), không chờ sau J-20 / J-24. NFR-44: token bucket Redis chung, mặc định 10 Mbit/s. NFR-46: H.264 `+faststart`, trang ≤ 30 KB |
 | Observability | Log thêm `shop_id`, `platform`, `share_id`, `backup_object_id`, `channel_id`; metric (02a §10) `aicam_platform_sync_seconds{platform}`, `aicam_platform_lookup_seconds`, `aicam_backup_pending`, `aicam_backup_last_success_timestamp`, `aicam_share_build_seconds`, `aicam_notify_sent_total{status}`, `aicam_report_seconds{report}` |
-| Feature flag / cấu hình | Mặc định **tắt / chưa cấu hình** tất cả tích hợp mới: `TIKTOK_ENABLED=false`, `TIKTOK_RETURNS_ENABLED=false`, `TIKTOK_ADAPTER=mock`; kho lưu: thiếu `S3_ENDPOINT` → sao lưu + link khóa; `NOTIFY_ENABLED=true` nhưng không có kênh / bot → không gửi; `NOTIFY_TRANSPORT=real|mock` (mock ghi Redis `notify:mock:{type}` + log). Dev compose: MinIO + `S3_*` trỏ MinIO, `TIKTOK_ENABLED=true` với mock, `NOTIFY_TRANSPORT=mock` |
+| Feature flag / cấu hình | Mặc định **tắt / chưa cấu hình** tất cả tích hợp mới: `TIKTOK_ENABLED=false`, `TIKTOK_RETURNS_ENABLED=false`, `TIKTOK_ADAPTER=mock`; kho lưu: thiếu `S3_ENDPOINT` → sao lưu + link khóa; `S3_BUCKET` (sao lưu, versioning + lifecycle) và `S3_SHARE_BUCKET` (link, không versioning) — production bắt hai bucket khác nhau (DEC-501); `NOTIFY_ENABLED=true` nhưng không có kênh / bot → không gửi; `NOTIFY_TRANSPORT=real|mock` (mock ghi Redis `notify:mock:{type}` + log). Dev compose: MinIO + `S3_*` trỏ MinIO, `TIKTOK_ENABLED=true` với mock, `NOTIFY_TRANSPORT=mock` |
 | Thời gian | Không đổi — giờ `Z`; ngày / giờ yên lặng / lịch sao lưu theo giờ Việt Nam (`TZ_DISPLAY`) |
-| Nâng cấp | Dừng service trước migrate (DEC-336); `SCHEMA_HEAD = "0007"`; schema guard như Phase 2 |
+| Nâng cấp | Dừng service trước migrate (DEC-336); `SCHEMA_HEAD = "0007"`; schema guard như Phase 2 — J-23 kiểm lại schema ngay trước khi xóa đối tượng cloud (như J-02 `skipped_schema_mismatch`) |
 
 ## 9. Phương án đã cân nhắc
 
@@ -958,25 +987,27 @@ sequenceDiagram
 
 ## 10. Rollout & rollback
 
-0. **Nâng cấp bắt buộc dừng service** (như Phase 2 DEC-336): `stop api vision worker worker-sync worker-export beat` → sao lưu local (`pg-backup.sh once`) → `alembic current` (0005) → `upgrade head` → `current` (0007) → `VACUUM ANALYZE "order", return_case` → `up -d`. Runbook mới `docs/ops.md` §7.2 (02a T-230).
-1. **Migration 0006** (chỉ thêm): bảng `package_order`, `share_link`, `share_item`, `backup_run`, `backup_object`, `notify_channel`, `notify_event`, `notify_message`, `notify_provider_token`; cột mới `shop`, `order`, `return_case`, `claim`, `claim_evidence`, `setting`; CHECK `shop.platform` thêm `TIKTOK`; backfill nhóm trạng thái đơn / yêu cầu trả từ chữ Shopee, `return_case.shop_id` từ đơn, `claim.submitted_at` / `result_at` từ audit; index báo cáo. `lock_timeout` 5 giây.
+0. **Nâng cấp bắt buộc dừng service** (như Phase 2 DEC-336): `stop api vision worker worker-sync worker-export beat` (lùi từ Phase 3: thêm `worker-sync-long worker-backup worker-notify`) → sao lưu local (`pg-backup.sh once`) → `alembic current` (0005) → `upgrade head` → `current` (0007) → `VACUUM ANALYZE "order", return_case` → `up -d`. Runbook mới `docs/ops.md` §7.2 (02a T-230).
+1. **Migration 0006** (chỉ thêm): bảng `package_order`, `share_link`, `share_item`, `backup_run`, `backup_object`, `notify_channel`, `notify_event`, `notify_message`, `notify_provider_token`; cột mới `shop`, `order`, `return_case`, `claim`, `claim_evidence`, `setting`; CHECK `shop.platform` thêm `TIKTOK`, `clip.status` thêm `MISSING`; backfill nhóm trạng thái đơn / yêu cầu trả từ chữ Shopee, `return_case.shop_id` từ đơn, `claim.submitted_at` / `result_at` từ audit, **phiên mở hoàn trước** vào bằng chứng của hồ sơ chưa đóng theo BR-39 v0.3 (`auto = true`, log số dòng — DEC-498); index báo cáo. `lock_timeout` 5 giây.
 2. **Migration 0007**: bỏ unique toàn cục `order.platform_order_sn` → 2 unique một phần (`shop_id IS NOT NULL` / `IS NULL`); `return_case` unique (`shop_id`, `platform_return_sn`). Kiểm trước: không có trùng (dữ liệu Phase 2 luôn đạt).
-3. BE: api, worker (`default,video`), `worker-sync` (`-c 4`), `worker-export`, **`worker-backup` mới** (`-Q backup -c 1`, image có `postgresql-client-16`), beat (J-20..28 vào lịch), vision không đổi. `SCHEMA_HEAD = "0007"`.
+3. BE: api, worker (`default,video`), `worker-sync` (`-Q sync_fast -c 3`), **`worker-sync-long` mới** (`-Q sync -c 2`), `worker-export`, **`worker-backup` mới** (`-Q backup -c 1`, image có `postgresql-client-16`), **`worker-notify` mới** (`-Q notify -c 1`), beat (J-20..28 vào lịch), vision không đổi. `SCHEMA_HEAD = "0007"`.
 4. FE: build mới (station + dashboard); `/admin/settings/shopee` chuyển hướng `/admin/settings/platforms`.
-5. Bật dần: (a) Phase 3 hardening + báo cáo chạy ngay; (b) kết nối thêm shop Shopee; (c) `TIKTOK_ENABLED=true` (+ `TIKTOK_RETURNS_ENABLED`) khi có Q18 + T-3 TikTok; (d) `S3_*` + `BACKUP_ENCRYPTION_KEY` khi chốt Q20 → Admin xác nhận khóa ở D23 → link chia sẻ mở; (e) bot Telegram / Zalo khi có Q21 → Admin thêm kênh, gửi thử.
+5. Bật dần: (a) Phase 3 hardening + báo cáo chạy ngay; (b) kết nối thêm shop Shopee; (c) `TIKTOK_ENABLED=true` (+ `TIKTOK_RETURNS_ENABLED`) khi có Q18 + T-3 TikTok; (d) khi chốt Q20: tạo 2 bucket (sao lưu: bật versioning + lifecycle `NoncurrentVersionExpiration 7 ngày` + object lock governance 7 ngày nếu có; link: không versioning, lifecycle xóa `share/` > 8 ngày làm lưới an toàn), khóa ứng dụng theo chính sách quyền ADR-010 → `S3_*` + `BACKUP_ENCRYPTION_KEY` → Admin xác nhận khóa ở D23 → link chia sẻ mở; (e) bot Telegram / Zalo khi có Q21 → Admin thêm kênh, gửi thử.
 
-**Rollback:** (a) Lỗi FE → image FE trước (BE tương thích). (b) Lỗi BE → **ưu tiên sửa tiến**. Phải lùi: dừng service → `alembic downgrade 0005` **bằng image mới** → image Phase 2. Downgrade **0007** từ chối khi đã có mã đơn / mã yêu cầu trả trùng giữa hai shop (in danh sách) — không có đường lùi tự động, sửa tiến. Downgrade **0006**: từ chối khi còn link `CREATING` / `ACTIVE` (code cũ không thu hồi / hết hạn được — `AICAM_DOWNGRADE_ALLOW_ACTIVE_SHARES=1` để chấp nhận link sống tới hạn); chép sang `phase3_archive` rồi xóa khỏi bảng chính: shop TikTok (+ `order.shop_id` của chúng → `NULL`), shop Shopee `CONNECTED` thừa (giữ shop mới nhất — code Phase 2 dùng một shop) → `DISCONNECTED`, dòng `claim_evidence` đã bỏ còn hạn giữ → `held = true` (người dùng hệ thống như DEC-338), bảng mới, cột mới. Nâng cấp lại khôi phục từ `phase3_archive`. File trên cloud (sao lưu, link) giữ nguyên. (c) `pg_dump` là phương án cuối.
+**Rollback:** (a) Lỗi FE → image FE trước (BE tương thích). (b) Lỗi BE → **ưu tiên sửa tiến**. Phải lùi: dừng service (gồm `worker-sync-long`, `worker-backup`, `worker-notify`) → `alembic downgrade 0005` **bằng image mới** → image Phase 2. Downgrade **0007** từ chối khi đã có mã đơn / mã yêu cầu trả trùng giữa hai shop (in danh sách) — không có đường lùi tự động, sửa tiến. Downgrade **0006** (02a §3): (1) từ chối khi còn link `CREATING` / `ACTIVE` trừ `AICAM_DOWNGRADE_ALLOW_ACTIVE_SHARES=1`; (2) từ chối khi còn kiện của **đơn ngoài shop Shopee được giữ** (đơn TikTok, đơn của shop Shopee bị ngắt) trừ `AICAM_DOWNGRADE_DETACH_FOREIGN_ORDERS=1` → tách kiện khỏi đơn (lưu `phase3_archive`) để J-06 Phase 2 không gọi Shopee bằng mã đơn sàn khác (DEC-509); (3) chép sang `phase3_archive` rồi xóa khỏi bảng chính: shop TikTok, shop Shopee `CONNECTED` thừa → `DISCONNECTED`, bảng / cột mới; (4) bằng chứng **đã bỏ** còn hạn giữ → mỗi kiện một hồ sơ hệ thống `LEGACY_HOLD` `CLOSED` (`closed_at` = mốc bỏ) mà code Phase 2 vẫn bảo vệ cả clip lẫn ảnh, ghi chú "Bằng chứng đã bỏ — giữ tới {keep_until}", kiểm tập con trước ⊆ sau, sai → `raise` (DEC-497); (5) clip `MISSING` → `FAILED` (archive). Nâng cấp lại khôi phục từ `phase3_archive`, xử lý trùng (hồ sơ, phiên). File trên cloud (sao lưu, link) giữ nguyên. (c) `pg_dump` là phương án cuối.
 
 ## 11. Rủi ro & câu hỏi mở
 
 | Rủi ro / câu hỏi | Mức | Hướng xử lý / hỏi ai |
 |---|:---:|---|
 | RK-16 / Q19: tên hàm, trạng thái, loại trả, hạn người bán, gộp kiện TikTok khác giả định §5.3 | Cao | Bảng trong `platforms/tiktok/mapping.py`; lưu payload gốc; trạng thái lạ → `UNKNOWN`; xác minh T-3 TikTok trước go-live |
-| RK-26 (mới): TikTok yêu cầu `redirect_uri` công khai HTTPS (không nhận `https://x.local/…`) | Cao | Hỏi khi đăng ký app (Q18). Dự phòng: redirect tới trang tĩnh trên kho lưu cloud chỉ chuyển tiếp `code` + `state` về `x.local` bằng JS phía trình duyệt Admin (không mở cổng vào) — ADR mới nếu cần |
-| RK-27 (mới): nhà cung cấp S3 VN không phục vụ `text/html` inline / không hỗ trợ presign 7 ngày | Trung bình | Kiểm khi chốt Q20 (ADR-010 "Câu hỏi mở"); dự phòng bucket riêng cho `share/` |
+| RK-26 (01 v0.3, Q18): TikTok yêu cầu `redirect_uri` công khai HTTPS (không nhận `https://x.local/…`) | Cao | Hỏi khi đăng ký app (Q18). Dự phòng: redirect tới trang tĩnh trên kho lưu cloud chỉ chuyển tiếp `code` + `state` về `x.local` bằng JS phía trình duyệt Admin (không mở cổng vào) — ADR mới nếu cần |
+| RK-27 (01 v0.3, Q20): nhà cung cấp S3 VN không phục vụ `text/html` inline / không hỗ trợ presign 7 ngày | Trung bình | Kiểm khi chốt Q20 (ADR-010 "Câu hỏi mở"); bucket link đã tách riêng (DEC-501) — đổi cấu hình phục vụ không đụng sao lưu |
+| RK-28 (01 v0.3): máy kho bị chiếm quyền, khóa kho lưu bị dùng để xóa sạch bản sao | Cao | Bucket sao lưu versioning + lifecycle 7 ngày + khóa ứng dụng không có `DeleteObjectVersion` / `PutBucketVersioning` / `PutLifecycleConfiguration` (ADR-010, DEC-501); N08 khi sao lưu lỗi; nhà cung cấp không hỗ trợ → ghi nhận ở Q20 |
 | RK-19: mất khóa sao lưu | Cao | Xác nhận theo dấu vân tay; `backup-keygen` in hướng dẫn cất; diễn tập AC-50 |
 | RK-23: tải lên chiếm băng thông | Trung bình | Token bucket chung 10 Mbit/s; đo NFR-44 khi có mạng kho thật |
-| Thu hồi khi kho mất Internet không có hiệu lực ngay | Trung bình | `revoke_pending` hiện ở D21; thử xóa lại mỗi phút; *Phản hồi* PO thêm EX-S7 |
+| Thu hồi khi kho mất Internet không có hiệu lực ngay | Trung bình | `revoke_pending` hiện ở D21; thử xóa lại mỗi phút; 01 v0.3 EX-S7 |
+| Downgrade 0006 khi đã có đơn TikTok / nhiều shop Shopee: J-06 Phase 2 lấy **mọi** kiện `PACKED`/`HANDED_OVER` không lọc shop (`platforms/sync.py:494-509`) rồi gọi Shopee bằng token shop mới nhất (`sync.py:484`, `:515-518`) — lô có mã đơn lạ có thể làm `get_order_detail` lỗi cả lô → `break`, J-06 kẹt mãi ở lô đầu | Cao (chỉ khi lùi) | DEC-509: downgrade từ chối mặc định; `AICAM_DOWNGRADE_DETACH_FOREIGN_ORDERS=1` tách kiện khỏi đơn ngoài; test T-230 / T-275 |
 | Báo cáo 366 ngày chạm 10 giây trên máy kho yếu | Trung bình | Index + `statement_timeout` 15 giây + cache; đo AC-48 trên dữ liệu sinh (máy dev ≠ máy kho — ghi rõ) |
 | Zalo OA: token xoay vòng, phí tin ngoài khung tương tác (Q21) | Trung bình | Token lưu DB mã hóa; "Gửi thử" phát hiện sớm; Telegram là kênh thứ hai |
 | Q13 + L14: hạn khiếu nại thật | — | Chặn go-live (không chặn spec) |
@@ -990,9 +1021,9 @@ sequenceDiagram
 | FR-02.08 | J-20, J-21, J-22; §7 UC-20; BR-33 | ✔ | — |
 | FR-02.13 | ADR-010; `AICAMENC1` (02a §7) | ✔ | — |
 | FR-02.14 | J-23 (DB 30 ngày + ngày 1 / tháng 12 tháng; cloud ≤ 24 giờ sau J-02) | ✔ | — |
-| FR-02.15 | API-180, API-81 `backup`, API-32 `BACKUP_STALE`, N08 | ✔ | ✔ admin D23, D8, D2 |
-| FR-02.16 | API-186 CLI + ops runbook | ✔ | — |
-| FR-02.17 | API-182, API-183; `state` | ✔ | ✔ admin D23 |
+| FR-02.15 | API-180, API-81 `backup`, API-32 `BACKUP_STALE` (+ `DB_FAILED_TWICE`), N08; API-188 (EX-K6) | ✔ | ✔ admin D23, D8, D2 |
+| FR-02.16 | API-186 CLI (nhiều khóa, duyệt cloud, `MISSING`, `RESTORE_PENDING`) + ops runbook (danh sách bí mật) | ✔ | ✔ admin D23 banner `RESTORE_PENDING` |
+| FR-02.17 | API-182, API-183, API-187; `state`, `key.old_keys[]` | ✔ | ✔ admin D23 |
 | FR-02.18 | API-181 `all_pack_clips`; J-21 | ✔ | ✔ admin D23 |
 | FR-03.03 | API-10 `order.platform/shop_name` | ✔ | ✔ station S2, R2 |
 | FR-03.16 | API-80 `packer_name_required`, API-10 `operator_required`, API-11 `OPERATOR_REQUIRED`, API-101 (PACK), API-152 | ✔ | ✔ station S1, R5; admin D8, D4, D20 |
@@ -1046,10 +1077,10 @@ Mọi DEC dưới đây: **tự quyết theo ủy quyền user** (user 2026-10-0
 | DEC-431 | BR-29 mã đơn trùng giữa shop; khóa advisory hiện là `order:{sn}` | Unique (shop, mã) + unique mã trong nhóm đơn file (shop null); shop đầu tiên thấy mã nhận đơn file; **giữ** khóa `order:{sn}` không kèm shop | Giữ thứ tự khóa DEC-266, không sửa mọi chỗ khóa; tranh chấp giữa shop cùng mã rất hiếm. Loại: khóa `order:{shop}:{sn}` (đơn file chưa có shop, phải khóa hai khóa) | khanhtt (tự quyết theo ủy quyền user) | 2026-10-06 |
 | DEC-432 | EX-T2 mã vận đơn đã thuộc đơn shop khác: báo ở đâu | `shop.sync_warnings` (≤ 20 mục mới nhất), D7 hiện; không đặt `last_error` | `last_error` nghĩa là shop đang lỗi (D2 `SYNC_ERROR`, N06) — một kiện lạ không làm shop "lỗi". Loại: `last_error`; chỉ log | khanhtt (tự quyết theo ủy quyền user) | 2026-10-06 |
 | DEC-433 | TikTok: một lần ủy quyền → nhiều shop, token theo người bán (giả định) | `shop.grant_ref` + `shop_cipher`; làm mới token dưới khóa Redis `grant:{platform}:{ref}`, đọc lại, ghi token cho mọi shop cùng grant | Refresh token dùng một lần: hai shop cùng grant làm mới song song sẽ làm hỏng nhau. Loại: bảng `platform_grant` riêng (đúng hơn nhưng thêm migration tách token khỏi shop, đụng mọi chỗ Phase 1 đọc token) | khanhtt (tự quyết theo ủy quyền user) | 2026-10-06 |
-| DEC-434 | NFR-39 cô lập lỗi shop | Beat → task phân phối → 1 task Celery / shop trên queue `sync` (concurrency 4), ngân sách thời gian từng task | Shop chậm chỉ chiếm một slot ≤ ngân sách. Loại: lặp shop trong một task (shop chậm kéo trễ cả chu kỳ) | khanhtt (tự quyết theo ủy quyền user) | 2026-10-06 |
+| DEC-434 | NFR-39 cô lập lỗi shop | Beat → task phân phối → 1 task Celery / shop trên queue `sync` (concurrency 4), ngân sách thời gian từng task (v0.2: queue tách `sync_fast` / `sync` — DEC-503) | Shop chậm chỉ chiếm một slot ≤ ngân sách. Loại: lặp shop trong một task (shop chậm kéo trễ cả chu kỳ) | khanhtt (tự quyết theo ủy quyền user) | 2026-10-06 |
 | DEC-435 | BR-32 tra song song khi quét | `asyncio.gather` trong api, mỗi lời gọi `wait_for` 2 giây, danh sách shop + token đọc trước timer; ≥ 2 shop → kiện chưa xác minh + cờ `AMBIGUOUS_SHOP` | NFR-01 ≤ 3 giây. Loại: tra lần lượt (4 × 2 giây); chỉ tra shop "mặc định" | khanhtt (tự quyết theo ủy quyền user) | 2026-10-06 |
 | DEC-436 | Cờ / adapter TikTok | `TIKTOK_ENABLED`, `TIKTOK_RETURNS_ENABLED` (mặc định `false`), `TIKTOK_ADAPTER = mock \| tiktok` (mặc định `mock`); `PLATFORM_ADAPTER` giữ nghĩa cho Shopee | Tương thích cấu hình Phase 1–2; bật từng sàn riêng. Loại: một biến `PLATFORM_ADAPTER` cho mọi sàn (không bật Shopee thật + TikTok mock cùng lúc được) | khanhtt (tự quyết theo ủy quyền user) | 2026-10-06 |
-| DEC-437 | Kho lưu cloud dùng chung (PO phản hồi #3) | Một bucket riêng tư, tiền tố `backup/` + `share/`, client boto3 trong worker (thread) — ADR-010 | Một cấu hình, một nhà cung cấp; boto3 hỗ trợ mọi S3-compatible. Loại: hai bucket bắt buộc (thêm cấu hình); `aiobotocore` (phụ thuộc phiên bản botocore chặt) | khanhtt (tự quyết theo ủy quyền user) | 2026-10-06 |
+| DEC-437 | Kho lưu cloud dùng chung (PO phản hồi #3) | Một bucket riêng tư, tiền tố `backup/` + `share/`, client boto3 trong worker (thread) — ADR-010 (v0.2: **hai bucket** — DEC-501) | Một cấu hình, một nhà cung cấp; boto3 hỗ trợ mọi S3-compatible. Loại: hai bucket bắt buộc (thêm cấu hình); `aiobotocore` (phụ thuộc phiên bản botocore chặt) | khanhtt (tự quyết theo ủy quyền user) | 2026-10-06 |
 | DEC-438 | Mã hóa sao lưu (DEC-407, NFR-41) | AES-256-GCM theo khối 4 MiB (`cryptography`), header có dấu vân tay 64 bit; khóa `BACKUP_ENCRYPTION_KEY` (base64 32 byte) | Chuẩn có xác thực, giải mã theo luồng (file lớn), phát hiện sai khóa trước khi ghi. Loại: `age` / `gpg` CLI (thêm binary, khó kiểm trong test); Fernet (đọc cả file vào bộ nhớ) | khanhtt (tự quyết theo ủy quyền user) | 2026-10-06 |
 | DEC-439 | Ai chạy sao lưu DB lên cloud | Worker queue `backup` (service `worker-backup -c 1`, image có `postgresql-client-16`); giữ `pg-backup.sh` bản local 14 ngày | Ghi `backup_run`, D23, thử lại, cùng mã hóa với bằng chứng. Loại: mở rộng script shell (khó kiểm, không có trạng thái cho D23) | khanhtt (tự quyết theo ủy quyền user) | 2026-10-06 |
 | DEC-440 | Phát hiện "bằng chứng cần giữ" (BR-33) | J-21 mỗi 10 phút: SQL bảo vệ ADR-009 (`media/protection.py`) − đã có `backup_object` → PENDING | Một nguồn sự thật với retention; không sót đường tạo hồ sơ. Loại: hook ở mỗi chỗ tạo hồ sơ / thêm bằng chứng (sót đường migration, J-13) | khanhtt (tự quyết theo ủy quyền user) | 2026-10-06 |
@@ -1075,6 +1106,41 @@ Mọi DEC dưới đây: **tự quyết theo ủy quyền user** (user 2026-10-0
 | DEC-460 | NFR-44 nhiều tiến trình cùng tải lên | Token bucket Redis chung (`upload:bucket`); job link xin lượt trước, J-22 nhường khi có link đang tải | Tổng ≤ giới hạn; link ≤ 3 phút. Loại: giới hạn riêng từng worker (tổng vượt) | khanhtt (tự quyết theo ủy quyền user) | 2026-10-06 |
 | DEC-461 | BR-41 "gửi trước hạn", "tỷ lệ thắng theo giờ có kết quả" cần mốc chuyển trạng thái | Cột `claim.submitted_at` (lần đầu → `SUBMITTED`), `result_at` (→ `WON`/`LOST`); backfill từ audit `CLAIM_UPDATE` | Truy vấn báo cáo đơn giản, có index. Loại: đọc `claim_note` / audit mỗi lần báo cáo | khanhtt (tự quyết theo ủy quyền user) | 2026-10-06 |
 | DEC-462 | Năng suất theo người khi tên nhập tay | Gộp `lower(trim(operator_name))`, hiện tên đầu tiên; `null` → "(Không ghi tên)" (FE) | BR-41; RK-24. Loại: gộp phân biệt hoa thường | khanhtt (tự quyết theo ủy quyền user) | 2026-10-06 |
+| DEC-492 | (contract) BR-29 v0.3 — tra theo mã khi bỏ unique toàn cục | API-11 alert `RETURN_MULTIPLE_ORDERS {code, orders[{platform, shop_name, platform_order_sn}]}`; API-104 item `platform`, `shop_name`; bảng điểm tra 02a §5.1 | Không đoán shop; FE dùng lại R3. Loại: mã lỗi 409 riêng (station xử lý ALERT sẵn có) | khanhtt (Architect, tự quyết theo ủy quyền user) | 2026-10-07 |
+| DEC-493 | Khóa advisory khi mã đơn không còn unique (G2-2) | Giữ `order:{sn}` (không id, không (shop, sn)) | Khóa phải lấy **trước** khi có dòng (tạo đơn) → không theo id được; (shop, sn) không tuần tự hóa đơn file (shop null) với shop nhận nó; chung khóa cho 2 shop cùng mã chỉ làm chậm ca rất hiếm. Loại: `order:{id}`, `order:{shop}:{sn}` | khanhtt (Architect, tự quyết theo ủy quyền user) | 2026-10-07 |
+| DEC-496 | Tệp lệch mã băm kẹt mãi, `UPLOADING` treo khi worker chết, tệp bị xóa trước khi tải bị đếm "chờ" | API-188 `UPLOAD_ANYWAY` / `IGNORE` + lý do + audit; lease J-22 (`UPLOADING` quá ngân sách + 60 giây → `FAILED`); `SOURCE_DELETED`, `IGNORED` là trạng thái cuối, không tính chờ | Mọi trạng thái có lối ra, D2 không báo động mãi. Loại: chỉ log (Admin không làm gì được) | khanhtt (Architect, tự quyết theo ủy quyền user) | 2026-10-07 |
+| DEC-501 | Một bucket (v0.1) — G2-10 bảo vệ bản sao khi máy kho bị chiếm quyền; G2-15 link không được còn phiên bản | **Hai bucket**: sao lưu (versioning + lifecycle phiên bản cũ 7 ngày + object lock governance nếu có; khóa ứng dụng không xóa phiên bản / không đổi versioning, lifecycle) và link (không versioning). J-23 xóa = delete marker | Kẻ có khóa ứng dụng không xóa vĩnh viễn được bản sao; thu hồi link xóa thật. Loại: khóa không quyền xóa + lifecycle theo tag (kẻ tấn công gắn tag được); một bucket versioning (thu hồi link phải xóa mọi phiên bản, dễ sót) | khanhtt (Architect, tự quyết theo ủy quyền user) | 2026-10-07 |
+| DEC-503 | NFR-39: shop luôn timeout giữ 1 slot 300 giây ở J-06 / J-13, J-04 của shop khác chờ | Queue `sync_fast` (J-04, J-05, J-12; `worker-sync -c 3`) tách `sync` (J-06, J-13; `worker-sync-long -c 2`); prefetch 1 | J-04 (NFR-38 ≤ 5 phút) không bao giờ xếp sau task dài. Loại: priority trong một queue (Redis broker ưu tiên gần đúng, vẫn chung pool) | khanhtt (Architect, tự quyết theo ủy quyền user) | 2026-10-07 |
+| DEC-504 | Thông báo chạy chung worker `default` với cắt clip / dọn dẹp — trễ NFR-43; chạy chồng | Queue `notify` riêng, `worker-notify -c 1` (J-26, J-27, J-28) | Tuần tự tự nhiên + không chờ việc nặng. Loại: trong `worker-backup` (J-20 chạy tới 1 giờ chặn tin) | khanhtt (Architect, tự quyết theo ủy quyền user) | 2026-10-07 |
+| DEC-506 | W1 nhúng URL ký; trang mở ở trình duyệt người ngoài | CSP `default-src 'none'` chỉ cho ảnh / video từ host bucket link + style inline; `referrer no-referrer`; không script | Không tải tài nguyên ngoài, URL ký không lọt qua Referer. Loại: header CSP từ nhà cung cấp (không cấu hình được qua presign) | khanhtt (Architect, tự quyết theo ủy quyền user) | 2026-10-07 |
+| DEC-507 | Thứ tự khóa v0.1 (grant → sync) ngược code J-04 (sync → grant) | Chuẩn: `sync:{shop}` (không chờ) → `grant:` (chờ ≤ 10 giây) → `order:{sn}` …; J-12 chỉ khóa `grant:`, bỏ qua shop `DISCONNECTED` | Không vòng chờ: bên giữ `grant:` (J-12) không bao giờ chờ `sync:`. Loại: J-12 lấy `sync:` mọi shop của grant (chờ lẫn nhau) | khanhtt (Architect, tự quyết theo ủy quyền user) | 2026-10-07 |
+| DEC-509 | **Cần xác minh (G2):** lùi 0006 để `order.shop_id = NULL` cho đơn TikTok — J-06 Phase 2 có gọi Shopee bằng mã TikTok? | **Có** (code `main`): J-06 Phase 2 chọn mọi kiện `PACKED` / `HANDED_OVER` / hoàn giao thất bại join `order` không lọc shop (`sync.py:494-509`), gọi `get_shipping_statuses` bằng token shop Shopee mới nhất (`:484`, `:515`); Shopee trả lỗi cả lô → `break` (`:518`) → J-06 kẹt; nếu trả rỗng thì vô hại — chưa biết (T-3). Quyết: downgrade 0006 **từ chối** khi còn kiện của đơn ngoài shop Shopee được giữ (TikTok + shop Shopee bị ngắt); `AICAM_DOWNGRADE_DETACH_FOREIGN_ORDERS=1` → chép (kiện, đơn) vào `phase3_archive.detached_packages`, `package.order_id = NULL` (J-06 join bỏ qua; J-05 chỉ lấy `verified = false` nên không tra); nâng cấp lại gắn lại nếu `order_id` vẫn `NULL` | Lùi là đường khẩn cấp, không được làm hỏng đồng bộ Shopee đang chạy. Loại: đặt cờ / trạng thái (J-06 Phase 2 không đọc cờ nào); chỉ cảnh báo (J-06 có thể kẹt âm thầm); xóa đơn TikTok (mất dữ liệu) | khanhtt (Architect, tự quyết theo ủy quyền user) | 2026-10-07 |
+| DEC-512 | Review G2 lượt 1 "Chưa đạt" (1 CRITICAL, 8 blocker, 5 major, 5 minor, 1 nit) | Sửa toàn bộ G2-1..G2-20 trong 01 v0.3, 02 v0.2, 02a v0.2, 02b-admin v0.2, 02b-station v0.2, ADR-010, ADR-011, system-map; chờ review lượt 2 | Quy trình G2 | khanhtt (Architect + BE + FE, tự quyết theo ủy quyền user) | 2026-10-07 |
+
+## Sửa theo review G2 lượt 1 (v0.2)
+
+| Finding | Sửa ở (02) | Spec con |
+|---|---|---|
+| G2-1 CRITICAL BR-39 phiên quét nhầm | §5.1 SESSION, §5.2 `cancel_reason`, §6.1 API-30 `return_dropped`, API-132, API-136; §6.2 API-32, API-131 / 132; §7 UC-22 | 02a §5 BR-39, J-26 N03, T-279; 02b-admin T-260, T-261 |
+| G2-2 tra theo mã | §3 dòng "Tra đơn / yêu cầu trả theo mã", §5.2 alert, §6.1 API-11, API-104, §6.2, §8 Đa sàn; DEC-492, 493 | 02a §5.1 bảng, T-271; 02b-station T-236 |
+| G2-3 yêu cầu hủy | §5.2 `session.flags`, §5.3 `CANCEL_REQUESTED` / `CANCELLED`, §6.2 cờ phiên | 02a §5 BR-01 / BR-21, T-278; 02b-station T-233 |
+| G2-4 đổi khóa | §5.1 BACKUP_*, §6.1 API-187, §6.2 API-180 / 186 / 187 | 02a T-272; 02b-admin T-263; ADR-010 |
+| G2-5 lease, `SOURCE_DELETED`, lệch băm | §5.2, §6.1 API-188, §6.2 API-185 / 188; DEC-496 | 02a §6, §7 J-22 / J-23, T-273 |
+| G2-6, G2-7 downgrade / backfill 0006 | §10 | 02a §3, T-275 |
+| G2-8 khôi phục | §5.1 CLIP, SETTING; §5.2; §6.2 API-180 / 181 / 186 (bí mật) | 02a T-274 |
+| G2-9 J-20 treo, 2 lượt lỗi | §5.2 `DB_FAILED_TWICE`, API-180 `consecutive_failures` | 02a J-20, T-273 |
+| G2-10 versioning / khóa | TL;DR, §8, §10 (d), §11 RK-28; DEC-501 | ADR-010; 02a §9 |
+| G2-11 TikTok hủy | §5.3 `CANCEL_REQUESTED` | 02a §7.1, T-277 |
+| G2-12, G2-13 queue | §8 NFR; §10 bước 3; DEC-503, 504 | 02a §7, §9, T-276; ADR-011 |
+| G2-14 ≥ 3 bản DB | — | 02a J-23 |
+| G2-15 W1 CSP / `share/` | §6.3; DEC-506 | 02a §7.4, T-225 |
+| G2-16 thứ tự khóa, J-12 | §8; DEC-507 | 02a §6, J-12 |
+| G2-17 helper trạng thái | §3, §8 | 02a §2, T-278 |
+| G2-18 test NFR-41 / 42, schema guard, chưa test | §8 Nâng cấp | 02a §11, T-280 |
+| G2-19 T-212 → T-204 | — | 02a §12 |
+| G2-20 system-map, runbook | §10 bước 0 | system-map; 02a T-230 |
+| Cần xác minh downgrade + đơn TikTok | §10 Rollback, §11; DEC-509 | 02a §3, T-275, T-230 |
+| Phản hồi Architect → PO | — | 01 v0.3 (DEC-490) |
 
 ## Chốt G2 (áp cho bộ 02 + 02a + 02b)
 - [ ] Mọi FR/BR/NFR trong phạm vi có chỗ trong spec (bảng FR coverage)

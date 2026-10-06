@@ -4,14 +4,14 @@
 |---|---|
 | Tác giả | khanhtt (FE, agent soạn, tự quyết theo ủy quyền user) |
 | Reviewer | khanhtt (tech lead, review ở bước 5) |
-| Trạng thái | **In review** · v0.1 |
-| Tổng quan & contract | [02-tech-spec.md](02-tech-spec.md) v0.1 §6 · Màn: [01-srs.md §10.5](01-srs.md) (D20–D23, `ShareLinkDialog`, `PlatformChip` mới; D2, D3, D4, D7, D8, D10, D13, D14, D15, D16, D17 mở rộng) · nền [item 02 02b-admin](../02-returns-reconciliation/02b-fe-spec-admin.md) · [Design system](../../../design-system/README.md) |
-| Last update | 2026-10-06 · FE |
+| Trạng thái | **In review** · v0.2 (sửa theo review G2 lượt 1 — DEC-512) |
+| Tổng quan & contract | [02-tech-spec.md](02-tech-spec.md) v0.2 §6 · Màn: [01-srs.md §10.5](01-srs.md) v0.3 (D20–D23, `ShareLinkDialog`, `PlatformChip` mới; D2, D3, D4, D7, D8, D10, D13, D14, D15, D16, D17 mở rộng) · nền [item 02 02b-admin](../02-returns-reconciliation/02b-fe-spec-admin.md) · [Design system](../../../design-system/README.md) |
+| Last update | 2026-10-07 · FE (v0.2: G2-1, G2-4, G2-5, G2-8, G2-9) |
 
 > **TL;DR** — 4 màn mới dưới `/admin`: D20 Báo cáo (`/admin/reports`, 3 tab, thẻ số + bảng + CSV), D21 Link chia sẻ (`/admin/shares`), D22 Thông báo (`/admin/settings/notifications`), D23 Sao lưu (`/admin/settings/backup`); D7 đổi thành "Kết nối sàn" (`/admin/settings/platforms`, đường cũ chuyển hướng) nhiều shop Shopee + TikTok. Thành phần mới `ShareLinkDialog` (D4 + D17, tiến độ qua WS + poll), `PlatformChip`, `RemoveEvidenceDialog` cho mọi bằng chứng (L15). Mở rộng 10 màn theo 01 §10.5 (L11, L13, L14, lọc sàn / shop).
 > Dữ liệu qua TanStack Query; WS-02 mới (`share.updated`, `backup.updated`, `shop.updated`) chỉ invalidate (DEC-20 item 01). Bộ lọc báo cáo / danh sách ghi URL. W1 (trang người nhận) **không** thuộc client này — BE sinh (DEC-428).
 > Điểm khó: ShareLinkDialog (chọn phiên theo giới hạn, tiến độ nền, lỗi mạng kho lưu), D23 (luồng xác nhận khóa theo dấu vân tay), D20 (3 tab, quyền theo tab, bấm số → màn chi tiết đã lọc).
-> 12 task T-251..T-262 (≈ 21,5 ngày công).
+> 13 task T-251..T-263 (≈ 23,5 ngày công).
 
 Không viết lại API — trỏ API-xx trong [02 §6](02-tech-spec.md#6-api-contract).
 
@@ -80,14 +80,15 @@ Guard: `/admin/reports`, `/admin/shares` — `RequireRole(DASHBOARD)`; tab Năng
 | `ShareLinkDialog` | NEW `features/shares/ShareLinkDialog.tsx` | `source: {type: "CLAIM", claimId} \| {type: "SESSION", sessionId}`, `open`, `onClose` | Bước chọn (API-164) → đang tạo (WS + poll API-162 2 giây) → xong / lỗi; đóng khi đang tạo → tiếp tục nền + Toast khi xong (hook toàn cục `useShareCompletionToast`) |
 | `SharesBlock` | NEW `features/shares/SharesBlock.tsx` | `shares`, `activeCount`, `sourceQuery` | D4 / D17: ≤ 3 dòng + "Xem tất cả" → D21 lọc nguồn |
 | `NotificationsPage` (D22) | NEW `features/notify/` | — | `ProviderAlerts`, `ChannelTable`, `ChannelDialog` (thêm / sửa), `TestSendButton`, `DeleteChannelDialog`, `QuietHoursCard` + `QuietHoursDialog`, `MessageLog` (lọc kênh / kết quả, phân trang) |
-| `BackupPage` (D23) | NEW `features/backup/` | — | `BackupStatusHeader` (chip `state`, kho lưu, dấu vân tay), `KeyBanner` (vàng chưa xác nhận / đỏ khóa đổi), `ConfirmKeyDialog`, `BackupCards` (DB / Bằng chứng / Trên cloud), `BackupHistoryTable`, `HashMismatchAlert` + `IssuesList`, `AllPackClipsSwitch`, `AdvancedSettings` (tốc độ tải lên — DEC-486) |
+| `BackupPage` (D23) | NEW `features/backup/` | — | `BackupStatusHeader` (chip `state`, kho lưu, dấu vân tay), `KeyBanner` (vàng chưa xác nhận / đỏ khóa đổi / vàng `RESTORE_PENDING`), `ConfirmKeyDialog`, `OldKeysAlert` + `ReuploadDialog` (API-187 — `key.old_keys[]`), `BackupCards` (DB đỏ khi `late` **hoặc** `consecutive_failures ≥ 2` / Bằng chứng / Trên cloud), `BackupHistoryTable` (cột dấu vân tay rút gọn), `HashMismatchAlert` + `IssuesList` (mỗi dòng [Vẫn sao lưu] [Bỏ qua] → `ResolveIssueDialog`, API-188), `AllPackClipsSwitch`, `AdvancedSettings` (tốc độ tải lên — DEC-486) |
 | `RemoveEvidenceDialog` | EXTEND từ Dialog bỏ bằng chứng trong `claims/EvidenceList.tsx:229` | `evidence`, `onConfirm(reason)` | Mọi loại bằng chứng; chữ "Clip và ảnh của phiên này được giữ tới {removal_keep_until} rồi tự xóa (trừ khi thuộc hồ sơ khác)." |
-| `PriorReturnAlert` | NEW `features/claims/PriorReturnAlert.tsx` | `prior_return_sessions` | Alert info D17 (BR-39) |
+| `PriorReturnAlert` | NEW `features/claims/PriorReturnAlert.tsx` | `prior_return_sessions`, `excluded_return_sessions` | Alert info D17 (BR-39) + Alert thứ hai "Kiện có {n} phiên mở hoàn bị hủy vì quét nhầm ({dd/mm HH:mm}) — không đưa vào bằng chứng. Video vẫn được giữ; thêm tay nếu cần." + link "Thêm vào bằng chứng" (mở dialog thêm bằng chứng sẵn có, chọn sẵn phiên) khi có phần tử `in_evidence = false` |
+| `EvidenceList` (dòng phiên) | EXTEND `claims/EvidenceList.tsx` | `evidence[].session.cancel_reason`, `primary` | Chip "Hủy: quét nhầm" / "Hủy: không phải hàng hoàn" theo `cancel_reason`; nhãn "Phiên chính" chỉ theo `primary` server (FE không tự tính) |
 | `RemovedEvidenceList` | NEW `features/claims/RemovedEvidenceList.tsx` | `removed_evidence` | Thu gọn "Bằng chứng đã bỏ ({n})": ai, lúc, lý do, giữ tới; nút "Thêm lại" (API-134) |
 | `DeadlineChip` | EXTEND `claims/Deadline.tsx` | `deadline_source` | `DEFAULT_PLATFORM_PASSED` → chip "Hạn sàn đã qua" |
 | `ApprovalCard` | EXTEND `approvals/ApprovalCard.tsx` | `return_summary` | "Đã có kết luận: Hộp rỗng · 3 ảnh · mở 4 phút"; Hủy phiên RETURN → ô "Lý do hủy*" 5–500 + chữ giữ video |
 | `AttentionList` | EXTEND `reports/AttentionList.tsx` | — | 4 kind mới + `SYNC_ERROR` có tên shop / sàn (02 §6.2 API-32) |
-| `DailyPage` | EXTEND | — | Thẻ "Phiên hoàn hủy / bỏ dở (7 ngày)" (`returns_dropped_7d`) → D3 |
+| `DailyPage` | EXTEND | — | Thẻ "Phiên hoàn hủy / bỏ dở (7 ngày)" (`returns_dropped_7d`) → D3 `session_type=RETURN&return_dropped=true&date_from=…` (cùng luật loại phiên quét nhầm — BR-39) |
 | `HealthPanel` | EXTEND `settings/HealthPanel.tsx` | `backup` | Dòng "Sao lưu cloud": OK / Trễ / Lỗi / Chưa cấu hình → link D23 (ADMIN) |
 | `StoragePage` | EXTEND | — | Công tắc "Bắt buộc tên người đóng gói" (mục Station); ô "Hạn mặc định Chỉ hoàn tiền (giờ)" ở nhóm ngưỡng (DEC-485) |
 | `SessionPanel` | EXTEND `orders/SessionPanel.tsx` | `session` | "Người đóng gói: …"; nút "Tạo link chia sẻ" (phiên có clip); sự kiện `AMBIGUOUS_SHOP` "Mã có ở 2 shop: …" trong dòng thời gian |
@@ -111,6 +112,8 @@ Guard: `/admin/reports`, `/admin/shares` — `RequireRole(DASHBOARD)`; tab Năng
 | Kênh thông báo | API-170 | Query `["notify", "channels"]` | Sau 171..174, 176 | ✗ |
 | Nhật ký gửi | API-175 | Query `["notify", "messages", filters]` | Poll 30 giây khi trang mở | ✗ |
 | Sao lưu | API-180, 185 | Query `["backup"]`, `["backup", "issues"]` | WS `backup.updated`; poll 15 giây khi `db.running` | ✗ |
+| Tải lại bằng khóa mới | API-187 | mutation → Toast "Đã xếp {queued} tệp vào hàng chờ." → invalidate `["backup"]` | — | ✗ |
+| Xử lý lệch mã băm | API-188 | mutation → invalidate `["backup"]`, `["backup", "issues"]`, `["daily"]` | — | ✗ |
 | Sức khỏe | API-81 | Query `["health"]` (sẵn có, 30 giây) | + WS `backup.updated` | ✗ |
 | Hồ sơ (bỏ / thêm lại bằng chứng) | API-134 | mutation `useClaimMutation` (sẵn có, `version`) | Như Phase 2 | ✗ (DEC-241) |
 | Tổng quan | API-32 | Query `["daily"]` (sẵn có) | Như cũ | ✗ |
@@ -133,6 +136,7 @@ WS (`features/shell/useDashboardSocket.ts`): `share.updated` → invalidate `["s
 | QuietHoursDialog | Từ, Đến | `HH:MM`, khác nhau; "Tắt giờ yên lặng" | `fields.start`, `fields.end` |
 | ConfirmKeyDialog | Checkbox "Tôi đã cất bản sao khóa…" | Phải tick mới bật nút | `409 BACKUP_KEY_MISMATCH` → Alert + tải lại |
 | D23 Nâng cao | Tốc độ tải lên (Mbit/s) | 1–1000 | `fields.upload_mbps` |
+| ResolveIssueDialog (D23) | Lý do* | 5–500 ("Nhập lý do (5–500 ký tự)."); tiêu đề theo hành động: "Vẫn sao lưu bản hiện có?" (chữ "Bản trên cloud sẽ ghi chú lệch mã băm.") / "Bỏ qua tệp này?" (chữ "Tệp này sẽ không có bản sao ngoài kho.") | `fields.note`; `409 BACKUP_ISSUE_RESOLVED` → Toast + refetch |
 | ReportFilters | Từ, Đến | `to ≥ from`; ≤ 366 ngày; `to ≤ hôm nay` (giờ VN) — khóa "Xem" | `fields.from` / `fields.to` |
 | RemoveEvidenceDialog | Lý do* | 5–500 ("Nhập lý do bỏ bằng chứng (5–500 ký tự).") | `fields.note` |
 | ApprovalCard (Hủy phiên RETURN) | Lý do hủy* | 5–500 ("Nhập lý do hủy (5–500 ký tự).") | `fields.note` |
@@ -147,7 +151,7 @@ WS (`features/shell/useDashboardSocket.ts`): `share.updated` → invalidate `["s
 | D21 | Skeleton bảng | "Chưa có link chia sẻ nào." + "Tạo link từ hồ sơ khiếu nại hoặc chi tiết đơn." | Alert + Thử lại | D12 | Chip trạng thái; "Đang thu hồi — chờ Internet" khi `revoke_pending` |
 | ShareLinkDialog | Skeleton danh sách phiên | Không phiên chọn được → "Chưa có phiên nào có clip." | Alert "Không tải được lên kho lưu cloud. Kiểm tra Internet rồi bấm Thử lại." / "Không dựng được video. Bấm Thử lại; nếu vẫn lỗi, báo Admin kèm mã hồ sơ." + Thử lại | Nút mở bị ẩn | "Link đã sẵn sàng" + ô link + Sao chép + hạn + gửi cho |
 | D22 | Skeleton | EmptyState "Chưa có kênh thông báo." + Thêm kênh | Alert + Thử lại | D12 | Toast "Đã gửi tin thử tới {tên}." / Alert lỗi dưới dòng |
-| D23 | Skeleton | `NOT_CONFIGURED` → EmptyState hướng dẫn IT | Alert + Thử lại | D12 | Chip "Đang bật"; banner theo `state`; Toast kiểm tra kết nối |
+| D23 | Skeleton | `NOT_CONFIGURED` → EmptyState hướng dẫn IT | Alert + Thử lại | D12 | Chip "Đang bật"; banner theo `state` (gồm `RESTORE_PENDING`); Alert khóa cũ + "Tải lại bằng chứng bằng khóa mới" → Toast "Đã xếp {n} tệp vào hàng chờ."; lệch mã băm → Toast "Đã ghi nhận."; Toast kiểm tra kết nối |
 | D2 / D3 / D4 / D8 / D10 / D13 / D14 / D15 / D16 / D17 | Như Phase 2 | Như Phase 2 | Như Phase 2 | Như Phase 2 | Theo §3 |
 
 ## 7. Phân quyền trên UI
@@ -182,6 +186,8 @@ WS (`features/shell/useDashboardSocket.ts`): `share.updated` → invalidate `["s
 | `BACKUP_KEY_UNCONFIRMED` (409) | Mở `ConfirmKeyDialog` | — |
 | `BACKUP_KEY_MISMATCH` (409) | Alert "Khóa trên máy chủ vừa đổi — kiểm lại dấu vân tay." | Refetch API-180 |
 | `BACKUP_RUNNING` (409) | Toast "Đang sao lưu, thử lại sau." | — |
+| `BACKUP_RESTORE_UNVERIFIED` (409) | Banner D23 "Hệ thống vừa được khôi phục. Sao lưu tạm dừng tới khi IT chạy lệnh kiểm khôi phục đạt." | Khóa công tắc bật / Sao lưu ngay / Tải lại |
+| `BACKUP_ISSUE_RESOLVED` (409) | Toast `message` | Refetch API-185 |
 | `CLOUD_AUTH_FAILED` (502), `CLOUD_ERROR` (502), `CLOUD_UNREACHABLE` (504) | Alert dưới nút "Kiểm tra kết nối" (`message`) | — |
 | `VERSION_CONFLICT` (409) API-134 | Như Phase 2 (tải lại, giữ Dialog đóng) | — |
 | `FORBIDDEN` (403) | D12 / Toast cho hành động | — |
@@ -195,10 +201,13 @@ Chữ lấy nguyên văn 01 §10.5 (D7, D20, ShareLinkDialog, D21, D22, D23, D2,
 |---|---|
 | `platform` | `SHOPEE` Shopee · `TIKTOK` TikTok Shop |
 | `share.status` | Đang tạo · Đang hoạt động · Lỗi · Đã thu hồi · Hết hạn |
-| `backup.state` | Đang bật · Chưa cấu hình · Chưa xác nhận khóa · Khóa đã đổi · Đã tắt |
+| `backup.state` | Đang bật · Chưa cấu hình · Chưa xác nhận khóa · Khóa đã đổi · Đã tắt · Chờ kiểm khôi phục |
+| `backup_object.status` (D23 danh sách) | Đang chờ · Đang tải · Đã sao lưu · Lỗi · Lệch mã băm · Tệp đã xóa tại kho · Bỏ qua · Đã xóa trên cloud |
+| `clip.status` (thêm) | `MISSING` Thiếu tệp (khôi phục) — D4 / D17 hiện chip xám thay nút xem |
+| `session.cancel_reason` (phiên RETURN) | `WRONG_SCAN` Hủy: quét nhầm · `NOT_A_RETURN` Hủy: không phải hàng hoàn · `SUPERVISOR` Quản lý hủy · `OTHER` Hủy: lý do khác |
 | `notify_message.status` | Đang chờ · Tạm giữ · Đã gửi · Lỗi · thử lại {n} · Bị bỏ · Trùng, bỏ qua |
 | N01..N10 | Theo API-170 `events[].label` (server) — không chép cứng |
-| API-92 action mới (D10) | `SHOP_DISCONNECT` Ngắt kết nối shop · `SHARE_CREATE` Tạo link chia sẻ · `SHARE_REVOKE` Thu hồi link · `SHARE_EXPIRE` Link hết hạn · `NOTIFY_CHANNEL_CREATE` Thêm kênh thông báo · `NOTIFY_CHANNEL_UPDATE` Sửa kênh thông báo · `NOTIFY_CHANNEL_DELETE` Xóa kênh thông báo · `NOTIFY_TEST` Gửi thử thông báo · `NOTIFY_SETTINGS_UPDATE` Đổi giờ yên lặng · `BACKUP_SETTINGS_UPDATE` Đổi cài đặt sao lưu · `BACKUP_KEY_CONFIRM` Xác nhận cất khóa sao lưu · `BACKUP_TEST` Kiểm tra kết nối kho lưu · `BACKUP_RUN_NOW` Sao lưu DB ngay · `REPORT_EXPORT` Xuất CSV báo cáo · `CLAIM_EVIDENCE_REMOVE` Bỏ bằng chứng |
+| API-92 action mới (D10) | `SHOP_DISCONNECT` Ngắt kết nối shop · `SHARE_CREATE` Tạo link chia sẻ · `SHARE_REVOKE` Thu hồi link · `SHARE_EXPIRE` Link hết hạn · `NOTIFY_CHANNEL_CREATE` Thêm kênh thông báo · `NOTIFY_CHANNEL_UPDATE` Sửa kênh thông báo · `NOTIFY_CHANNEL_DELETE` Xóa kênh thông báo · `NOTIFY_TEST` Gửi thử thông báo · `NOTIFY_SETTINGS_UPDATE` Đổi giờ yên lặng · `BACKUP_SETTINGS_UPDATE` Đổi cài đặt sao lưu · `BACKUP_KEY_CONFIRM` Xác nhận cất khóa sao lưu · `BACKUP_TEST` Kiểm tra kết nối kho lưu · `BACKUP_RUN_NOW` Sao lưu DB ngay · `REPORT_EXPORT` Xuất CSV báo cáo · `CLAIM_EVIDENCE_REMOVE` Bỏ bằng chứng · `BACKUP_REUPLOAD_OLD_KEY` Tải lại bằng chứng bằng khóa mới · `BACKUP_ISSUE_RESOLVE` Xử lý tệp lệch mã băm · `BACKUP_RESTORE_VERIFIED` Kiểm khôi phục đạt |
 | Công thức ⓘ (D20) | Câu BR-41, vd "Tỷ lệ hoàn = hồ sơ hàng hoàn có kiện về tạo trong kỳ ÷ kiện bàn giao trong kỳ" |
 
 Định dạng: số `1.000`, tỷ lệ `4,0%` (`Intl.NumberFormat("vi-VN")`), tiền `2.350.000 đ`, thời lượng giây → "1 phút 30 giây", giờ VN `dd/mm HH:mm`. a11y: bảng báo cáo có `<caption>` ẩn; ô số căn phải; ⓘ là `button` có `aria-describedby`; dialog bẫy focus (Dialog sẵn có); tiến độ `role="progressbar"` + `aria-valuenow`; "Sao chép link" báo `aria-live`. Responsive: D20 thẻ 2 cột ≤ 600 px, bảng cuộn ngang cột đầu cố định; D21 / D22 bảng → card ở ≤ 600 px; ShareLinkDialog toàn màn ở ≤ 600 px.
@@ -221,15 +230,15 @@ Theo đúng contract 02 §6, qua lớp `lib/api/client.ts` + MSW (`src/mocks/han
 | `reports.ts` (mở rộng) | API-150..152 với bộ số ví dụ BR-41 (4,0 %, 20,0 %, 75 %, 2.350.000 đ, TB 90 giây, "(Không ghi tên)"); API-153 trả CSV mẫu; 403 cho CSKH ở productivity |
 | `shares.ts` (mới) + `sharesDb.ts` | API-160..164; `CREATING` → `ACTIVE` sau 3 lần poll (phát WS `share.updated` qua `mocks/ws.ts`); `?fail=upload` → `FAILED UPLOAD_FAILED` |
 | `notify.ts` (mới) | API-170..176; `ZALO_OA` chưa cấu hình; "Gửi thử" Telegram lỗi khi `target` = `-1000000000000` (502) |
-| `backup.ts` (mới) | API-180..185; nút giả đổi `state` (`NOT_CONFIGURED` / `KEY_UNCONFIRMED` / `KEY_CHANGED` / `ON`) bằng query `?backupState=` |
+| `backup.ts` (mới) | API-180..188; nút giả đổi `state` (`NOT_CONFIGURED` / `KEY_UNCONFIRMED` / `KEY_CHANGED` / `RESTORE_PENDING` / `ON`) bằng query `?backupState=`; `?oldKeys=1` → `key.old_keys[]` 1 khóa cũ (812 tệp, 42 bản DB); `?dbFail=2` → `consecutive_failures = 2`; 2 tệp `HASH_MISMATCH` xử lý được |
 | `claims.ts`, `packages.ts`, `returns.ts`, `recon.ts`, `reports.ts` (API-32), `approvals.ts`, `settings.ts` | Trường mở rộng §6.1 "Mở rộng" |
 
 ## 13. Test FE
 
 | Mức | Phạm vi | Case chính (TC-xx — QA đánh số ở `04`) |
 |---|---|---|
-| Unit / component | `PlatformChip`, `DueCountdown` (biên 48 giờ, quá hạn), định dạng tỷ lệ "—", `ReportFilters` validate kỳ, `ShareLinkDialog` validate (0 / 5 phiên, 31 phút, gửi cho 2 ký tự), `ChannelDialog` validate, `ConfirmKeyDialog` (khóa nút tới khi tick), `RemoveEvidenceDialog` (mọi loại cần lý do) | FR-07.05, 06.04, 02.17, 08.09, 09.05 |
-| Integration (MSW) | D7 kết nối 2 shop TikTok (`?result=`), ngắt shop; D20 3 tab + quyền CSKH + bấm số → URL đích + CSV; ShareLinkDialog đủ vòng (tạo → tiến độ → sao chép → thu hồi) + lỗi upload; D21 lọc / thu hồi / "Đang thu hồi"; D22 thêm / sửa / gửi thử lỗi / giờ yên lặng; D23 4 trạng thái + xác nhận khóa + kiểm tra kết nối lỗi; D17 phiên trước + bỏ / thêm lại bằng chứng + chip hạn; D14 tab Chỉ hoàn tiền sắp hạn; D2 mục mới; D13 lý do hủy | AC-40, 45..47, 52, 55, 56..60, 62 |
+| Unit / component | `PlatformChip`, `DueCountdown` (biên 48 giờ, quá hạn), định dạng tỷ lệ "—", `ReportFilters` validate kỳ, `ShareLinkDialog` validate (0 / 5 phiên, 31 phút, gửi cho 2 ký tự), `ChannelDialog` validate, `ConfirmKeyDialog` (khóa nút tới khi tick), `RemoveEvidenceDialog` (mọi loại cần lý do), `ResolveIssueDialog` (lý do 5–500), `OldKeysAlert` (ẩn khi rỗng), `PriorReturnAlert` (Alert phiên bị loại), chip `cancel_reason` | FR-07.05, 06.04, 02.17, 08.09, 09.05, EX-K6, EX-K7, BR-39 |
+| Integration (MSW) | D7 kết nối 2 shop TikTok (`?result=`), ngắt shop; D20 3 tab + quyền CSKH + bấm số → URL đích + CSV; ShareLinkDialog đủ vòng (tạo → tiến độ → sao chép → thu hồi) + lỗi upload; D21 lọc / thu hồi / "Đang thu hồi"; D22 thêm / sửa / gửi thử lỗi / giờ yên lặng; D23 5 trạng thái + xác nhận khóa + khóa cũ → tải lại + lệch mã băm → vẫn sao lưu / bỏ qua + 2 lượt DB lỗi + kiểm tra kết nối lỗi; D17 phiên trước + phiên quét nhầm bị loại (Alert, thêm tay, không thành "Phiên chính") + bỏ / thêm lại bằng chứng + chip hạn; D2 thẻ phiên hủy → D3 `return_dropped=true`; D14 tab Chỉ hoàn tiền sắp hạn; D2 mục mới; D13 lý do hủy | AC-40, 45..47, 52, 55, 56..60, 62 |
 | E2E mock | `e2e/mock/{platforms,reports,shares,notify,backup}.spec.ts` | UC-10, 15, 16, 18, 20 |
 | E2E BE thật | `e2e/real/phase3.spec.ts` (stack dev: MinIO, mock TikTok, notify mock): kết nối TikTok mock → đơn xuất hiện D3 lọc TikTok; tạo link → mở W1 từ MinIO → thu hồi → link 404; báo cáo + CSV; thêm kênh mock + gửi thử | AC-40, 52, 55, 61 |
 
@@ -246,11 +255,12 @@ Theo đúng contract 02 §6, qua lớp `lib/api/client.ts` + MSW (`src/mocks/han
 | T-257 | D21 Link chia sẻ + `SharesBlock` ở D4 / D17 + thu hồi + sao chép | D21, D4, D17 / FR-07.08, 07.09 | API-161..163, API-31/132 `shares[]`; T-256 | 1,5 |
 | T-258 | D22 Thông báo: kênh, dialog, gửi thử, xóa, giờ yên lặng, nhật ký gửi | D22 / FR-06.04, 06.07..06.11 | API-170..176; T-252 | 2 |
 | T-259 | D23 Sao lưu (trạng thái, banner khóa, xác nhận khóa, kiểm tra kết nối, sao lưu ngay, lịch sử, lệch mã băm, tùy chọn C, nâng cao) + D8 dòng sức khỏe + công tắc người đóng gói + hạn Chỉ hoàn tiền | D23, D8 / FR-02.15, 02.17, 02.18, 03.16, 08.08 | API-180..185, 81, 80; T-252 | 1,5 |
-| T-260 | D17 L11 / L14 / L15 (Alert phiên trước, chip, `RemoveEvidenceDialog` mọi loại, `RemovedEvidenceList`, chip hạn) + nút Tạo link; D13 `return_summary` + lý do hủy | D17, D13 / FR-08.07, 08.09, 08.10, 04.14 | API-132, 134, 20, 21; T-256 | 1,5 |
+| T-260 | D17 L11 / L14 / L15 (Alert phiên trước + Alert phiên quét nhầm bị loại + chip `cancel_reason` + "Phiên chính" theo server, `RemoveEvidenceDialog` mọi loại, `RemovedEvidenceList`, chip hạn) + nút Tạo link; D13 `return_summary` + lý do hủy | D17, D13 / FR-08.07, 08.09, 08.10, 04.14; BR-39 v0.3 | API-132, 134, 20, 21; T-256 | 2 |
 | T-261 | D2 thẻ + attention mới; D14 tab Chỉ hoàn tiền (hạn, hồ sơ, `pending_only`, sắp); D3 / D14 / D15 / D16 lọc sàn / shop + chip; D4 người đóng gói + `AMBIGUOUS_SHOP`; D10 nhãn action | D2, D3, D4, D10, D14, D15, D16 / FR-09.01, 08.08, 07.01, 03.16, 10.03 | API-32, 30, 31, 110, 120, 130, 92; T-252 | 2 |
 | T-262 | Test component / integration + E2E mock 5 bộ + E2E BE thật Phase 3 | — | BE T-207, T-216, T-225, T-227, T-222 cho E2E thật | 2 |
+| T-263 | D23 v0.2: `OldKeysAlert` + `ReuploadDialog` (API-187), `IssuesList` hành động + `ResolveIssueDialog` (API-188), banner `RESTORE_PENDING` + khóa nút, thẻ DB "2 lần sao lưu DB gần nhất không thành công", cột dấu vân tay lịch sử; nhãn `clip.status MISSING`, `backup_object.status`, action D10 mới; mock `backup.ts`; test | D23, D4, D10 / FR-02.15..02.17, EX-K6..K8 | API-180, 185, 187, 188; T-259; BE T-272..T-274 cho E2E thật | 1,5 |
 
-Tổng ≈ 21,5 ngày công.
+Tổng ≈ 23,5 ngày công.
 
 ## Phương án đã cân nhắc
 
@@ -282,3 +292,4 @@ Tổng ≈ 21,5 ngày công.
 | DEC-487 | Tiến độ ShareLinkDialog | WS `share.updated` + poll API-162 2 giây khi `CREATING`; đóng dialog → hook toàn cục giữ id, Toast khi xong | Như `EvidencePackDialog` (Phase 2) | khanhtt (FE, tự quyết theo ủy quyền user) |
 | DEC-488 | URL đích khi bấm số D20 / mục D2 | Dùng tham số đã có của D3 / D14 / D16 (`session_type`, `session_status` nhiều giá trị, `tab=NO_PARCEL`, `pending_only`, `due=overdue`, `platform`, `shop`, `date_from` / `date_to`) | Không thêm màn; khớp 02 §6.2 | khanhtt (FE, tự quyết theo ủy quyền user) |
 | DEC-489 | Hiện link trong D21 | Không hiện chuỗi URL trong bảng; chỉ nút "Sao chép" (và ô `readonly` trong dialog) | URL dài, chứa chữ ký — giảm lộ khi chụp màn hình | khanhtt (FE, tự quyết theo ủy quyền user) |
+| DEC-511 | (v0.2) D23 đổi khóa / lệch mã băm / khôi phục (G2-4, 5, 8, 9) và D17 phiên quét nhầm (G2-1) | D23: Alert khóa cũ + Dialog tải lại (số tệp, GB), hành động từng tệp lệch băm có lý do, banner `RESTORE_PENDING` khóa mọi nút ghi; D17: Alert thứ hai + link thêm tay, "Phiên chính" chỉ theo `primary` server | Một nguồn luật (server); thao tác rủi ro luôn có xác nhận + lý do. Loại: trang "Sự cố sao lưu" riêng (thêm route cho ≤ vài tệp); FE tự tính phiên chính (lệch với zip / link) | khanhtt (FE, tự quyết theo ủy quyền user) |

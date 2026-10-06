@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| Trạng thái | Proposed (2026-10-06, item 03 bước 3 — chờ G2). Bổ sung (không thay) [ADR-007](ADR-007-platform-adapter-polling.md) |
+| Trạng thái | Proposed (2026-10-06, item 03 bước 3 — chờ G2) · **Sửa 2026-10-07** theo review G2 lượt 1 (DEC-492..494, 503, 507, 508). Bổ sung (không thay) [ADR-007](ADR-007-platform-adapter-polling.md) |
 | Tác giả | khanhtt (Architect, agent soạn) |
 | Reviewer | khanhtt (review bước 5) |
 | Người chốt | khanhtt (tự quyết theo ủy quyền user — DEC-429..436 trong [02 item 03](../../items/03-expansion-tiktok/02-tech-spec.md)) |
@@ -46,12 +46,12 @@
 
 Chọn **A**:
 
-1. **Nhóm trạng thái đơn** (`platform_status_group`): `UNPAID` · `AWAITING_SHIPMENT` · `SHIPPED` (đã giao ĐVVC) · `DELIVERED` · `CANCEL_REQUESTED` · `CANCELLED` · `RETURNING` (hoàn về người bán) · `UNKNOWN`. Mỗi adapter có `mapping.py` riêng (bảng 01 §7.2). Chữ lạ → `UNKNOWN`, log cảnh báo, không đổi trạng thái kho (BR-30).
+1. **Nhóm trạng thái đơn** (`platform_status_group`): `UNPAID` · `AWAITING_SHIPMENT` · `SHIPPED` (đã giao ĐVVC) · `DELIVERED` · `CANCEL_REQUESTED` · `CANCELLED` · `RETURNING` (hoàn về người bán) · `UNKNOWN`. Mỗi adapter có `mapping.py` riêng (bảng 01 §7.2). Chữ lạ → `UNKNOWN`, log cảnh báo, không đổi trạng thái kho (BR-30). Chữ gốc + nhóm chỉ ghi qua **một** helper (`orders.set_platform_status`, `returns.set_platform_status` — DEC-508). `CANCEL_REQUESTED` chỉ chặn mở phiên + cờ cảnh báo khi đang đóng; **chỉ** `CANCELLED` gọi luật hủy kiện (DEC-494 — Shopee `IN_CANCEL` cùng luật).
 2. **Nhóm yêu cầu trả** (`return_case.platform_status_group`): `REQUESTED` (mở, chưa chấp nhận — đồng hồ BR-12 chưa chạy) · `ACCEPTED` · `CANCELLED` · `DONE` (đã hoàn tiền) · `CLOSED`. Thay `"OPEN"` + `AWAITING_ACCEPT_STATUSES` của Phase 2.
 3. **Shop**: `shop.platform ∈ {SHOPEE, TIKTOK}`, nhiều shop `CONNECTED` cùng lúc; `shop.grant_ref` gom các shop chung một lần ủy quyền (TikTok) — làm mới token dưới khóa Redis `grant:{platform}:{grant_ref}` và ghi cho mọi shop cùng grant (refresh token có thể dùng một lần).
-4. **Mã đơn**: unique `(shop_id, platform_order_sn)`; đơn từ file (không shop) unique `platform_order_sn` trong nhóm `shop_id IS NULL`; shop đầu tiên đồng bộ thấy mã của đơn file thì nhận đơn đó (BR-29, DEC-426). Khóa advisory vẫn `order:{sn}` (không kèm shop) — tuần tự hóa mọi shop cùng mã, giữ thứ tự khóa DEC-266.
+4. **Mã đơn**: unique `(shop_id, platform_order_sn)`; đơn từ file (không shop) unique `platform_order_sn` trong nhóm `shop_id IS NULL`; shop đầu tiên đồng bộ thấy mã của đơn file thì nhận đơn đó (BR-29, DEC-426). Khóa advisory vẫn `order:{sn}` (không kèm shop, không theo id — khóa lấy trước khi có dòng; DEC-493) — tuần tự hóa mọi shop cùng mã, giữ thứ tự khóa DEC-266. **Tra theo mã** (DEC-492): nơi biết shop (J-04, J-06, J-13, upsert) luôn tra `(shop_id, mã)`; nơi không biết shop (bàn hoàn, ô tìm, API-104) nhận **danh sách** — bàn hoàn ≥ 2 đơn → alert `RETURN_MULTIPLE_ORDERS` để người dùng chọn; file nhập chỉ so trong `shop_id IS NULL`. Bảng điểm tra: 02a item 03 §5.1.
 5. **Mã vận đơn** vẫn unique toàn hệ thống; mã đã thuộc đơn của **shop khác** → không ghi đè, ghi `shop.sync_warnings` (EX-T2).
-6. **Job**: beat chạy task "phân phối" → mỗi shop `CONNECTED` của sàn đang bật một task Celery riêng trên queue `sync` (concurrency 4), mỗi task có ngân sách thời gian (J-04 120 giây, J-06 / J-13 300 giây) và khóa theo shop như Phase 2.
+6. **Job**: beat chạy task "phân phối" → mỗi shop `CONNECTED` của sàn đang bật một task Celery riêng, mỗi task có ngân sách thời gian (J-04 120 giây, J-06 / J-13 300 giây) và khóa theo shop như Phase 2. Hai queue (DEC-503): `sync_fast` (J-04, J-05, J-12 — `worker-sync -c 3`) và `sync` (J-06, J-13 — `worker-sync-long -c 2`), prefetch 1 — shop luôn timeout ở job dài không chiếm slot của J-04. Thứ tự khóa (DEC-507): `sync:{shop}` (không chờ) → `grant:{platform}:{ref}` (chờ ≤ 10 giây); J-12 chỉ lấy `grant:`, bỏ qua shop `DISCONNECTED`.
 7. **Tra mã khi quét**: đọc danh sách shop + token trước, rồi `asyncio.gather` mọi shop, mỗi lời gọi cắt 2 giây (BR-32); 1 shop thấy → gắn; ≥ 2 → kiện chưa xác minh + cờ `AMBIGUOUS_SHOP`.
 8. **Cờ**: `SHOPEE_ENABLED` / `SHOPEE_RETURNS_ENABLED` (giữ), thêm `TIKTOK_ENABLED`, `TIKTOK_RETURNS_ENABLED`, `TIKTOK_ADAPTER = mock | tiktok` (`PLATFORM_ADAPTER` giữ nghĩa cho Shopee).
 

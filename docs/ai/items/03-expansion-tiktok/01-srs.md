@@ -4,12 +4,12 @@
 
 | | |
 |---|---|
-| Phiên bản | 0.2 |
-| Trạng thái | Approved — G1 ✅ 2026-10-06 (DEC-427) |
+| Phiên bản | 0.3 |
+| Trạng thái | Approved — G1 ✅ 2026-10-06 (DEC-427); v0.3 = change request sau review G2 lượt 1 (DEC-490), không đổi phạm vi |
 | Owner (PO) | khanhtt (nghiệp vụ do chủ shop xác nhận) |
 | Reviewer | khanhtt (solo) |
 | Nguồn | [SRS hệ thống](../../system/SRS.md) §13.2 giai đoạn 3, FR-02.08, FR-06.04, FR-07.05, FR-09.02..04 · quyết định user 2026-10-05 (chỉ TikTok Shop, không Lazada) · [06-business-qa Phase 2](../02-returns-reconciliation/06-business-qa.md) L11, L13, L14, L15 · hệ thống đang chạy sau Phase 2 ([system-map](../../system/system-map.md), [01 item 02](../02-returns-reconciliation/01-srs.md), [ADR-007](../../system/decisions/ADR-007-platform-adapter-polling.md), [ADR-009](../../system/decisions/ADR-009-claim-based-evidence-retention.md)) |
-| Last update | 2026-10-06 · PO + UX (v0.1 SRS §1–§9, §11–§13; v0.2 §10 màn hình) |
+| Last update | 2026-10-07 · PO + UX (v0.1 SRS §1–§9, §11–§13; v0.2 §10 màn hình; v0.3 change request G2 lượt 1) |
 
 > **TL;DR** — Sau Phase 2, kiện TikTok vẫn là "chưa xác minh", hệ thống chỉ nhận **một** shop Shopee, bằng chứng chỉ nằm trên một máy ở kho, cảnh báo chỉ thấy khi mở dashboard, và còn 4 kẽ hở làm mất tiền khiếu nại (L11, L13, L14, L15).
 > Phase 3: adapter TikTok Shop (đơn, mã vận đơn, hủy, trả hàng / hoàn tiền) chạy song song nhiều shop nhiều sàn; báo cáo năng suất / hàng hoàn / khiếu nại; sao lưu **mã hóa** DB + **chỉ bằng chứng cần giữ** lên kho lưu S3-compatible; link chia sẻ ≤ 7 ngày, thu hồi ≤ 60 giây; thông báo Telegram / Zalo có chống spam; vá L11, L13, L15 + phần rẻ của L14.
@@ -17,6 +17,21 @@
 > Chặn go-live (không chặn G1): tài khoản đối tác TikTok Shop (Q18, Q19), nhà cung cấp cloud + nơi đặt dữ liệu theo NĐ 13 (Q20), kênh chat dùng được tại kho (Q21), Q13 + L14 (hạn khiếu nại thật).
 
 SRS item này **chỉ ghi phần thay đổi / chi tiết hóa cho Phase 3**. ID giữ theo SRS hệ thống, item 01, item 02. Mục ghi "Không đổi" thì đọc ở đó. ID mới: P7+, FR nối tiếp theo module, UC-15+, BR-29+, NFR-37+, AC-40+, EX-P14, EX-R17+, EX-T / B / K / S / N (mới), Q18+, RK-16+, AS-12+, DEC-402+, màn D20+, W1.
+
+**Change request v0.3 (DEC-490 — sau review G2 lượt 1, không thêm FR, không đổi phạm vi):**
+
+| # | Thay đổi | Mục | DEC |
+|:-:|---|---|---|
+| 1 | Phiên mở hoàn hủy vì **quét nhầm / không phải hàng hoàn** vẫn được giữ clip nhưng không tự vào bằng chứng, không bao giờ là phiên chính, không tính N03 / D2 | BR-39, FR-08.07, §7.5 N03, §10.5 D2, D17, AC-56 | DEC-491 |
+| 2 | Mã đơn trùng giữa shop: bàn hoàn quét mã đơn / mã yêu cầu trả thấy ≥ 2 đơn → chọn đơn (chip shop); file nhập chỉ so với đơn chưa gắn shop | BR-29, EX-R20, §10.4 R3 | DEC-492 |
+| 3 | "Đang yêu cầu hủy" chỉ chặn mở phiên + cảnh báo vàng khi đang đóng; **không** hủy kiện; sàn từ chối yêu cầu → đóng gói tiếp | §7.2, BR-01, BR-21 (làm rõ), EX-T4, FR-05.17, AC-41 | DEC-494 |
+| 4 | Đổi khóa sao lưu: D23 nêu số tệp / bản DB dùng khóa cũ + "Tải lại bằng chứng bằng khóa mới"; khôi phục nhận nhiều khóa | FR-02.17, EX-K7, §10.5 D23, §1 | DEC-495 |
+| 5 | Lệch mã băm: Admin "Vẫn sao lưu bản hiện có" hoặc "Bỏ qua" kèm lý do | EX-K6, §10.5 D23 | DEC-496 |
+| 6 | Khôi phục: clip thiếu tệp → "Thiếu tệp (khôi phục)", không xóa bản cloud; sao lưu tắt tới khi kiểm khôi phục đạt; runbook liệt kê mọi bí mật phải cất | FR-02.16, EX-K8, AC-50 | DEC-499 |
+| 7 | 2 lượt sao lưu DB liền không thành công → D2 + N08 (ngoài ngưỡng 26 giờ); luôn giữ ≥ 3 bản DB mới nhất | FR-02.14, FR-02.15, AC-51 | DEC-500, DEC-505 |
+| 8 | Kho lưu: bucket sao lưu bật phiên bản + tự xóa phiên bản cũ ≤ 7 ngày, khóa ứng dụng không xóa vĩnh viễn được; bucket link riêng, không phiên bản | FR-02.14, Q20, RK-28 | DEC-501 |
+| 9 | Phản hồi Architect: EX-S7 thu hồi khi mất Internet; N01 "giờ làm việc" = ngoài giờ yên lặng; token Zalo OA ngoại lệ DEC-408; Q18 redirect `x.local` (RK-26); Q20 phục vụ `text/html` + URL ký 7 ngày (RK-27) | EX-S7, §7.5, §11, §12 | DEC-442, 444, 445 (xác nhận ở DEC-490) |
+| 10 | Phản hồi FE → UX: ô "Hạn mặc định Chỉ hoàn tiền (giờ)" ở D8, "Giới hạn tốc độ tải lên" ở D23 "Nâng cao" | §10.5 D8, D23 | DEC-485, 486 (xác nhận ở DEC-490) |
 
 ---
 
@@ -34,7 +49,7 @@ SRS item này **chỉ ghi phần thay đổi / chi tiết hóa cho Phase 3**. ID
 | M06 thông báo Telegram / Zalo OA, chống spam (FR-06.04, 06.07..11) | Thông báo email, SMS, ZNS tính phí (FR-06.04 gốc có email — DEC-412) |
 | Hardening Phase 2: L11 (FR-04.14, 08.07, 09.01), L13 (FR-08.08), L15 (FR-08.09), phần rẻ L14 (FR-08.10) | L12 trả một phần đơn nhiều kiện, L16..L23 (backlog — DEC-420); phần L14 "nghĩa trường hạn của sàn" (chờ T-3 / Q19) |
 | Tên người đứng bàn đóng gói (tùy chọn) cho báo cáo theo người (FR-03.16) | Tài khoản cá nhân / PIN cho người đóng gói (giữ DEC-1 item 01) |
-| | Webhook sàn (giữ polling — ADR-007) · đổi khóa mã hóa sao lưu (backlog) |
+| | Webhook sàn (giữ polling — ADR-007) · mã hóa lại bản sao cũ bằng khóa sao lưu mới (backlog — đổi khóa chỉ hỗ trợ: báo số bản dùng khóa cũ, tải lại bằng chứng bằng khóa mới, khôi phục nhiều khóa — FR-02.17, DEC-495) |
 
 **Thuật ngữ:** Không đổi — SRS hệ thống §1.3, item 01 §1, item 02 §1. Bổ sung:
 
@@ -135,7 +150,7 @@ flowchart TD
 | EX-T1 | TikTok tắt trong cấu hình máy chủ / chưa có khóa ứng dụng | D7 hiện "Chưa cấu hình TikTok Shop", nút kết nối khóa; job TikTok không chạy; quét không tra TikTok; Shopee chạy bình thường |
 | EX-T2 | Một mã vận đơn đã thuộc kiện của shop khác | Không ghi đè; lỗi đồng bộ của shop "Mã vận đơn SPX… đã thuộc đơn của shop Áo Đẹp (Shopee)"; kiện giữ nguyên |
 | EX-T3 | Một kiện TikTok chứa nhiều đơn (cùng mã vận đơn) | S2 hiện đủ sản phẩm của mọi đơn + cảnh báo vàng "Kiện gộp 2 đơn: 5761…01, 5761…02 — kiểm đủ hàng của cả hai" (FR-05.22, cần xác minh TikTok VN có gộp kiện — Q19) |
-| EX-T4 | Đơn có yêu cầu hủy đang chờ người bán | Như `IN_CANCEL`: chặn mở phiên "ĐƠN ĐANG YÊU CẦU HỦY"; đang đóng → cảnh báo đỏ S2 (BR-21) |
+| EX-T4 | Đơn có yêu cầu hủy đang chờ người bán | Như `IN_CANCEL` của Shopee: chặn mở phiên "ĐƠN ĐANG YÊU CẦU HỦY"; đang đóng → banner vàng S2 "Người mua đang xin hủy đơn này. Đóng gói xong để riêng, chưa bàn giao." (BR-21 làm rõ), kiện **không** bị hủy; sàn từ chối / người mua rút yêu cầu → đóng gói, bàn giao bình thường; sàn chấp nhận → "Đã hủy" (kiện đã đóng → `CANCELLED_AFTER_PACK`, BR-11) |
 | EX-T5 | Đơn do kho TikTok xử lý (không phải shop tự đóng gói) | Không đồng bộ vào danh sách đóng gói (AS-13) |
 | EX-T6 | Cùng mã đơn sàn ở hai shop khác nhau | Hai đơn khác nhau (BR-29); tìm thủ công theo mã đơn ở bàn hoàn trả cả hai để chọn |
 | EX-T7 | Shop bị ngắt kết nối | Ngừng đồng bộ shop đó; đơn / kiện / hồ sơ cũ giữ nguyên, vẫn đóng gói / nhận hoàn được, kiện mới của shop đó thành "chưa xác minh" |
@@ -181,7 +196,9 @@ flowchart LR
 | EX-K3 | Mất Internet | Hàng chờ giữ nguyên; tự tải khi có mạng lại; quét / đóng gói không bị ảnh hưởng (NFR-09, NFR-44) |
 | EX-K4 | Kho lưu từ chối (sai khóa truy cập, đầy, hết tiền) | Ghi lỗi; D23 hiện lỗi gần nhất; quá ngưỡng K5 → N08 |
 | EX-K5 | Khôi phục mà sai / mất khóa sao lưu | Không mở được bản sao — **không có đường cứu**; vì vậy K1 bắt xác nhận cất khóa (RK-19) |
-| EX-K6 | Clip bị sửa / hỏng tại kho trước khi tải (SHA-256 lệch giá trị đã lưu) | Không tải bản hỏng; đánh dấu "Lệch mã băm", D23 + nhật ký; D2 "Cần xử lý" |
+| EX-K6 | Clip bị sửa / hỏng tại kho trước khi tải (SHA-256 lệch giá trị đã lưu) | Không tự tải bản lệch; đánh dấu "Lệch mã băm", D23 + nhật ký; D2 "Cần xử lý". Admin xem từng tệp và chọn: "Vẫn sao lưu bản hiện có" (tải lên kèm ghi chú lệch — có còn hơn không) hoặc "Bỏ qua" (không sao lưu tệp này); cả hai bắt lý do 5–500 ký tự + audit; xử lý xong → rời D2 (DEC-496) |
+| EX-K7 | IT đổi khóa sao lưu trên máy chủ | Dấu vân tay đổi → sao lưu dừng tới khi Admin xác nhận khóa mới (FR-02.17). Sau xác nhận, D23 hiện "{N} tệp bằng chứng và {M} bản DB mã hóa bằng khóa {dấu vân tay cũ} — giữ khóa cũ để khôi phục được các bản này." + nút "Tải lại bằng chứng bằng khóa mới" (chỉ tệp còn ở kho; bản DB cũ không mã hóa lại — hết hạn theo FR-02.14). Khôi phục nhận nhiều khóa (DEC-495) |
+| EX-K8 | Khôi phục: DB có clip mà không tìm thấy tệp (không ở cloud, không ở đĩa) | Clip thành "Thiếu tệp (khôi phục)" — **không** coi là đã xóa, không xóa bản cloud nào; công cụ kiểm in danh sách; sao lưu tự động tắt tới khi công cụ kiểm khôi phục chạy đạt rồi Admin bật lại ở D23 (DEC-499) |
 
 ### 4.4 Chia sẻ link bằng chứng
 
@@ -220,6 +237,7 @@ sequenceDiagram
 | EX-S4 | Người nhận mở link đã hết hạn / bị thu hồi | Kho lưu trả trang lỗi của nhà cung cấp (không tùy biến được — DEC-409); người nhận xin link mới |
 | EX-S5 | Hồ sơ khiếu nại đóng khi link còn hạn | Link giữ tới hạn (sàn có thể đang xem); D17 vẫn hiện link, vẫn thu hồi được |
 | EX-S6 | Retention xóa clip gốc khi link còn hạn | Link vẫn chạy (là bản riêng đã dựng), hết hạn theo BR-34 |
+| EX-S7 | Thu hồi khi kho mất Internet | Link chuyển "Đã thu hồi" ngay trong hệ thống nhưng **vẫn mở được trên cloud** tới khi kho có mạng lại (hệ thống thử xóa mỗi phút) hoặc tới hạn link; D21 / D4 / D17 hiện "Đang thu hồi — chờ Internet". FR-07.08 "≤ 60 giây" chỉ áp khi kho có Internet (DEC-442) |
 
 ### 4.5 Thông báo Zalo / Telegram
 
@@ -243,7 +261,7 @@ Không đổi bước R1..R8 (item 02 §4.2) và UC-04. Thay đổi:
 | Bước | Thay đổi Phase 3 |
 |---|---|
 | R2–R5 (L11) | Người đứng bàn tự "Hủy phiên" hoàn chỉ trong 60 giây đầu **và** khi chưa lưu kết luận / chưa chụp ảnh (BR-37). Sau đó nút "Hủy phiên" đổi thành "Muốn hủy phiên? Bấm Gọi quản lý" → Supervisor quyết trên D13 (lý do bắt buộc) |
-| R7 (L11) | Hồ sơ khiếu nại (tự / tay) tự thêm mọi phiên mở hoàn **trước đó** của kiện / hồ sơ hàng hoàn đã bị hủy / bỏ dở mà có clip; phiên có video sớm nhất là phiên chính (BR-39) |
+| R7 (L11) | Hồ sơ khiếu nại (tự / tay) tự thêm mọi phiên mở hoàn **trước đó** của kiện / hồ sơ hàng hoàn đã bị hủy / bỏ dở mà có clip — **trừ** phiên station tự hủy với lý do "Quét nhầm" / "Không phải hàng hoàn"; phiên có video sớm nhất (trừ các phiên đó) là phiên chính (BR-39) |
 | D2 (L11) | Đếm phiên mở hoàn bị hủy / bỏ dở trong 7 ngày — không tự hết khi kiện có phiên sau hoàn tất |
 | R1 Chỉ hoàn tiền (L13) | Hồ sơ "Chỉ hoàn tiền" chưa có hồ sơ khiếu nại → D2 "Cần xử lý", D14 cột hạn phản hồi (đỏ ≤ 48 giờ), thông báo N04 khi mới và khi còn ≤ 12 giờ (BR-40) |
 | UC-04 bước 1 (L15) | Bỏ **mọi** bằng chứng khỏi hồ sơ cần lý do 5–500 ký tự + hộp xác nhận nêu ngày xóa; bằng chứng bị bỏ được giữ tiếp như khi đóng hồ sơ (BR-38) |
@@ -254,6 +272,7 @@ Không đổi bước R1..R8 (item 02 §4.2) và UC-04. Thay đổi:
 | EX-R17 | Người đứng bàn muốn hủy phiên hoàn sau 60 giây / sau khi đã kết luận hoặc chụp ảnh | Chỉ qua "Gọi quản lý"; Supervisor "Hủy phiên" (lý do ≥ 5 ký tự). Clip vẫn được giữ (BR-09 b) và vào hồ sơ khiếu nại sau này (BR-39) |
 | EX-R18 | Phiên hoàn đầu bị bỏ dở (mất điện, J-07 45 phút), phiên sau kết luận "Hộp rỗng" | Hồ sơ KN gồm phiên đóng gói + phiên đầu (chính) + phiên sau; D17 Alert "Kiện có 1 phiên mở hoàn trước (bỏ dở 05/10 08:51) — đã đưa vào bằng chứng." |
 | EX-R19 | Chỉ hoàn tiền tới hạn mà chưa ai xử lý | D2 mục đỏ "Quá hạn phản hồi"; sàn có thể đã tự hoàn tiền — CSKH vẫn tạo hồ sơ khiếu nại được |
+| EX-R20 | Bàn hoàn quét / nhập mã đơn sàn (hoặc mã yêu cầu trả) mà ≥ 2 shop có đơn mang mã đó (BR-29) | Không tự chọn; Alert vàng "Mã {mã} có ở {n} đơn của các shop khác nhau. Chọn đúng đơn." → mở R3 "Tìm kiện hoàn" với mã đã điền, mỗi dòng có chip sàn · shop; người kiểm chọn kiện đang cầm (DEC-492) |
 
 ## 5. Yêu cầu chức năng
 
@@ -265,10 +284,10 @@ Không đổi — FR của SRS hệ thống §5, item 01 §5, item 02 §5 cho ID
 |---|---|:---:|---|---|
 | FR-02.08 | Hệ thống phải sao lưu ra kho lưu cloud S3-compatible: (a) DB + file nhập đơn gốc mỗi 6 giờ; (b) clip + ảnh thuộc "bằng chứng cần giữ" (BR-33) trong ≤ 1 giờ kể từ khi chúng thành bằng chứng cần giữ, khi có Internet. Video thô và clip không thuộc BR-33 **không** được tải lên | M | P9, K2, K3 | Sửa: S → M; chỉ bằng chứng cần giữ, không mọi clip (DEC-406) |
 | FR-02.13 | Hệ thống phải mã hóa mọi bản sao lưu tại kho trước khi tải lên; kho lưu cloud chỉ giữ bản mã; khóa sao lưu không nằm trong DB và không bao giờ được tải lên cloud | M | P9 | Mới (DEC-407) |
-| FR-02.14 | Hệ thống phải giữ trên cloud bản DB của 30 ngày gần nhất + bản 01:00 ngày 1 mỗi tháng trong 12 tháng; bản cloud của clip / ảnh bị xóa ≤ 24 giờ sau khi bản tại kho bị retention xóa | M | P9, K4, NFR-21 | Mới |
-| FR-02.15 | Admin xem trên D23: bật / tắt, lần sao lưu DB thành công gần nhất + kích thước, số tệp bằng chứng đã sao lưu / đang chờ, dung lượng trên cloud, lỗi gần nhất, lịch sử 14 ngày; sức khỏe hệ thống (D8, API-81) có dòng "Sao lưu cloud". DB không thành công > 26 giờ hoặc bằng chứng chờ > 24 giờ → D2 "Cần xử lý" + thông báo N08 | M | P9, K5 | Mới |
-| FR-02.16 | Ops khôi phục DB và bằng chứng từ cloud sang máy mới bằng một lệnh có trong tài liệu vận hành; công cụ kiểm SHA-256 từng clip / ảnh khôi phục và in số khớp / lệch / thiếu; khôi phục bằng chứng của hồ sơ khiếu nại chưa đóng trước | M | P9, K6 | Mới |
-| FR-02.17 | Admin bấm "Kiểm tra kết nối" (ghi / đọc / xóa một tệp nhỏ, kết quả ≤ 10 giây); sao lưu chỉ chạy sau khi Admin xác nhận "Đã cất bản sao khóa giải mã" (D23 hiện dấu vân tay khóa, không hiện khóa); khóa trên máy chủ đổi → dấu vân tay đổi → phải xác nhận lại | M | P9, EX-K2, RK-19 | Mới |
+| FR-02.14 | Hệ thống phải giữ trên cloud bản DB của 30 ngày gần nhất + bản 01:00 ngày 1 mỗi tháng trong 12 tháng, và **luôn giữ ≥ 3 bản DB thành công mới nhất** bất kể tuổi; bản cloud của clip / ảnh bị xóa ≤ 24 giờ sau khi bản tại kho bị **retention** xóa (chỉ retention — clip thiếu tệp khi khôi phục không tính). "Xóa" = không còn đọc được bằng khóa ứng dụng; nhà cung cấp tự xóa hẳn phiên bản cũ ≤ 7 ngày sau (chống mất sao lưu khi máy kho bị chiếm quyền — DEC-501) | M | P9, K4, NFR-21 | Mới (v0.3: ≥ 3 bản, phiên bản) |
+| FR-02.15 | Admin xem trên D23: bật / tắt, lần sao lưu DB thành công gần nhất + kích thước, số tệp bằng chứng đã sao lưu / đang chờ, dung lượng trên cloud, lỗi gần nhất, lịch sử 14 ngày; sức khỏe hệ thống (D8, API-81) có dòng "Sao lưu cloud". DB không thành công > 26 giờ **hoặc 2 lượt DB liền không thành công**, hoặc bằng chứng chờ > 24 giờ → D2 "Cần xử lý" + thông báo N08 | M | P9, K5 | Mới (v0.3: 2 lượt liền — DEC-500) |
+| FR-02.16 | Ops khôi phục DB và bằng chứng từ cloud sang máy mới bằng một lệnh có trong tài liệu vận hành; lệnh nhận nhiều khóa sao lưu (khóa hiện tại + khóa cũ); công cụ kiểm SHA-256 từng clip / ảnh khôi phục và in số khớp / lệch / thiếu; khôi phục bằng chứng của hồ sơ khiếu nại chưa đóng trước; clip có trong DB mà không có tệp → "Thiếu tệp (khôi phục)" (EX-K8); sao lưu tắt tới khi kiểm đạt. Tài liệu vận hành liệt kê **mọi** bí mật phải cất ngoài máy (khóa sao lưu hiện tại + cũ, khóa mã hóa token, khóa kho lưu, khóa ký JWT / media, mật khẩu DB, khóa ứng dụng sàn / bot) | M | P9, K6 | Mới (v0.3: nhiều khóa, thiếu tệp — DEC-499) |
+| FR-02.17 | Admin bấm "Kiểm tra kết nối" (ghi / đọc / xóa một tệp nhỏ, kết quả ≤ 10 giây); sao lưu chỉ chạy sau khi Admin xác nhận "Đã cất bản sao khóa giải mã" (D23 hiện dấu vân tay khóa, không hiện khóa); khóa trên máy chủ đổi → dấu vân tay đổi → phải xác nhận lại; sau khi xác nhận khóa mới, D23 hiện số tệp / bản DB còn mã hóa bằng khóa cũ + "Tải lại bằng chứng bằng khóa mới" (EX-K7) | M | P9, EX-K2, EX-K7, RK-19 | Mới (v0.3: đổi khóa — DEC-495) |
 | FR-02.18 | Tùy chọn (mặc định tắt) sao lưu thêm mọi clip phiên đóng gói; bật → D23 hiện ước tính dung lượng tăng thêm / tháng | C | P9 | Mới |
 
 ### 5.2 M03 — Station
@@ -294,7 +313,7 @@ Không đổi — FR của SRS hệ thống §5, item 01 §5, item 02 §5 cho ID
 | FR-05.14 | Hệ thống chạy đồng thời nhiều shop của nhiều sàn: mỗi shop đồng bộ độc lập, lỗi / hết hạn của một shop không dừng shop khác; mọi đơn, kiện, hồ sơ hàng hoàn, hồ sơ khiếu nại mang sàn + shop. Bỏ giới hạn một shop (DEC-12 item 01) cho cả Shopee | M | P7, T2 | Mới (DEC-402) |
 | FR-05.15 | TikTok: đồng bộ đơn mới / đổi mỗi 5 phút: mã đơn, trạng thái, sản phẩm (tên, phân loại, SKU, số lượng, ảnh), ghi chú người mua, mã vận đơn của từng kiện | M | P7, T2 | Mới |
 | FR-05.16 | TikTok: đồng bộ trạng thái đơn + vận chuyển mỗi 15 phút và chuyển trạng thái kho theo bảng §7.2 (đã giao ĐVVC → `HANDED_OVER`, giao thành công → `DELIVERED`, giao thất bại / trả về người bán → `RETURN_EXPECTED` + hồ sơ "Giao thất bại") | M | P7, T3 | Mới |
-| FR-05.17 | TikTok: đơn đã hủy hoặc có yêu cầu hủy đang chờ → chặn mở phiên (BR-01, EX-T4); đơn bị hủy khi kiện đang đóng → cảnh báo station (BR-21); hủy sau khi đóng → `CANCELLED_AFTER_PACK` + BR-11 | M | P7, T3 | Mới |
+| FR-05.17 | TikTok: đơn đã hủy hoặc có yêu cầu hủy đang chờ → chặn mở phiên (BR-01, EX-T4); đơn bị hủy khi kiện đang đóng → cảnh báo station (BR-21); đơn có yêu cầu hủy khi kiện đang đóng → cảnh báo vàng, kiện **không** đổi trạng thái (BR-21 làm rõ); hủy sau khi đóng → `CANCELLED_AFTER_PACK` + BR-11. Áp cùng luật cho Shopee `IN_CANCEL` | M | P7, T3 | Mới (v0.3: tách yêu cầu hủy — DEC-494) |
 | FR-05.18 | TikTok: đồng bộ yêu cầu trả hàng / hoàn tiền mỗi 15 phút (mã yêu cầu, đơn, loại, trạng thái, lý do, sản phẩm + số lượng, mã vận đơn chiều về, hạn người bán) và tạo / cập nhật hồ sơ hàng hoàn theo đúng luật Shopee (FR-05.05, 05.11, 05.12, DEC-248, BR-12 v0.6) với ánh xạ BR-31 | M | P7, T4 | Mới |
 | FR-05.19 | Quét mã chưa có trong hệ thống → tra song song mọi shop đang kết nối của mọi sàn đang bật, tổng ≤ 2 giây (BR-32); không shop nào trả lời kịp → kiện chưa xác minh như Phase 1 | M | EX-P3, T5 | Sửa FR-05.06: nhiều shop |
 | FR-05.20 | Cờ bật / tắt TikTok trong cấu hình máy chủ, riêng cho đơn và cho trả hàng (như `SHOPEE_ENABLED`, `SHOPEE_RETURNS_ENABLED`); tắt → D7 "Chưa cấu hình TikTok Shop", job TikTok không chạy, quét không tra TikTok; Shopee không bị ảnh hưởng | M | EX-T1 | Mới |
@@ -326,7 +345,7 @@ Không đổi — FR của SRS hệ thống §5, item 01 §5, item 02 §5 cho ID
 
 | ID | Yêu cầu | Ưu tiên | Nguồn | Thay đổi |
 |---|---|:---:|---|---|
-| FR-08.07 | (L11) Tạo hồ sơ khiếu nại (tự / tay) thì bằng chứng tự chọn có thêm mọi phiên mở hoàn trước đó của kiện / hồ sơ hàng hoàn đã hủy / bỏ dở có ≥ 1 clip, nhãn "Phiên mở hoàn trước"; phiên mở hoàn có video sớm nhất là phiên chính trong gói bằng chứng và link chia sẻ; D17 hiện Alert khi có phiên trước (BR-39) | M | P12, L11 | Mới (DEC-416) |
+| FR-08.07 | (L11) Tạo hồ sơ khiếu nại (tự / tay) thì bằng chứng tự chọn có thêm mọi phiên mở hoàn trước đó của kiện / hồ sơ hàng hoàn đã hủy / bỏ dở có ≥ 1 clip, nhãn "Phiên mở hoàn trước" — trừ phiên hủy vì "Quét nhầm" / "Không phải hàng hoàn" (nhãn "Hủy: quét nhầm" / "Hủy: không phải hàng hoàn", vẫn giữ clip, thêm tay được); phiên mở hoàn có video sớm nhất (trừ các phiên đó) là phiên chính trong gói bằng chứng và link chia sẻ; D17 hiện Alert khi có phiên trước và Alert riêng khi có phiên bị loại (BR-39) | M | P12, L11 | Mới (DEC-416; v0.3 DEC-491) |
 | FR-08.08 | (L13) Hồ sơ hàng hoàn "Chỉ hoàn tiền" chưa có hồ sơ khiếu nại và sàn còn mở: D14 tab "Chỉ hoàn tiền" có cột "Hạn phản hồi" (đếm ngược, đỏ khi ≤ 48 giờ, "Quá hạn"), sắp theo hạn tăng dần; D2 "Cần xử lý" hiện số + hạn gần nhất; thông báo N04 khi mới và khi còn ≤ 12 giờ (BR-40) | M | P12, L13 | Mới (DEC-417) |
 | FR-08.09 | (L15) Bỏ **mọi** bằng chứng (tự chọn, thêm tay, "Chuyển từ cờ giữ") khỏi hồ sơ cần lý do 5–500 ký tự và hộp xác nhận nêu ngày clip sẽ bị xóa; bằng chứng bị bỏ được giữ tới max(lúc kết thúc clip, lúc bỏ) + số ngày giữ clip (BR-38) | M | P12, L15 | Mới (DEC-418) |
 | FR-08.10 | (L14 phần rẻ) Hồ sơ tạo khi hạn sàn đã qua → hạn = lúc tạo + hạn mặc định, ghi chú hệ thống nêu hạn sàn đã qua; D2 đếm "Hồ sơ quá hạn chưa gửi" (trạng thái Mới, hạn < bây giờ) + "Cần xử lý"; thông báo N05 (BR-42) | M | P12, L14 | Mới (DEC-419) |
@@ -506,7 +525,7 @@ stateDiagram-v2
 | Chờ giao | READY_TO_SHIP, PROCESSED, RETRY_SHIP | AWAITING_SHIPMENT, PARTIALLY_SHIPPING, AWAITING_COLLECTION | `NEW` / `PACKED` |
 | Đã giao ĐVVC | SHIPPED | IN_TRANSIT | `HANDED_OVER` (kho chưa `PACKED` → BR-10) |
 | Đã giao | TO_CONFIRM_RECEIVE, COMPLETED | DELIVERED, COMPLETED | `DELIVERED` |
-| Đang yêu cầu hủy | IN_CANCEL | Đơn có yêu cầu hủy chờ người bán (nhóm Cancellation) | Chặn mở phiên (BR-01) |
+| Đang yêu cầu hủy | IN_CANCEL | Đơn có yêu cầu hủy chờ người bán (nhóm Cancellation) | Chặn mở phiên (BR-01); đang đóng → cảnh báo vàng, **trạng thái kho không đổi** (BR-21 làm rõ); yêu cầu bị từ chối / rút → về nhóm theo trạng thái đơn, đóng gói tiếp |
 | Đã hủy | CANCELLED | CANCELLED | `CANCELLED` / `CANCELLED_AFTER_PACK` (BR-11) |
 | Hoàn về người bán | TO_RETURN; vận chuyển giao thất bại / COD từ chối | Vận chuyển giao thất bại / trả về người bán | `RETURN_EXPECTED` + hồ sơ "Giao thất bại" |
 
@@ -532,9 +551,9 @@ stateDiagram-v2
 
 | Mã | Sự kiện | Mức | Kênh gợi ý |
 |---|---|:---:|---|
-| N01 | Camera mất tín hiệu > 60 giây trong giờ làm việc | Cao | Kho |
+| N01 | Camera mất tín hiệu > 60 giây trong giờ làm việc (= ngoài giờ yên lặng; tắt giờ yên lặng → mọi lúc — DEC-444, xác nhận ở Q22) | Cao | Kho |
 | N02 | Cảnh báo lệch mức Cao mới (BR-10, BR-12, BR-19) | Cao | Kho |
-| N03 | Phiên mở hoàn bị hủy / bỏ dở; kiện hoàn chưa xác định mới | Trung bình | Kho |
+| N03 | Phiên mở hoàn bị hủy / bỏ dở (trừ hủy vì "Quét nhầm" / "Không phải hàng hoàn" — BR-39); kiện hoàn chưa xác định mới | Trung bình | Kho |
 | N04 | Yêu cầu "Chỉ hoàn tiền" mới; nhắc khi còn ≤ 12 giờ tới hạn mà chưa có hồ sơ | Cao | CSKH |
 | N05 | Hồ sơ khiếu nại sắp hết hạn (≤ 48 giờ, chưa gửi) / đã quá hạn chưa gửi | Cao | CSKH |
 | N06 | Shop hết hạn ủy quyền / đồng bộ lỗi liên tục > 30 phút | Cao | Quản trị |
@@ -548,7 +567,8 @@ stateDiagram-v2
 | ID | Quy tắc | Ví dụ |
 |---|---|---|
 | BR-01 | Không đổi; áp theo **nhóm** "Đang yêu cầu hủy" / "Đã hủy" cho mọi sàn | Đơn TikTok có yêu cầu hủy chờ người bán → quét → S4 "ĐƠN ĐANG YÊU CẦU HỦY", không mở phiên |
-| BR-29 | Mã đơn sàn duy nhất **trong một shop** (hai shop có thể trùng mã). Mã vận đơn duy nhất toàn hệ thống: mã đã thuộc kiện của shop khác → không ghi đè, ghi lỗi đồng bộ (EX-T2). Đơn từ file (không shop) được gắn vào shop đầu tiên đồng bộ thấy cùng mã đơn (BR-17) | Shop Shopee A và TikTok B cùng có đơn "2410ABCDEF" → 2 đơn; J&T "812345678901" đã của đơn shop A, shop B trả cùng mã → lỗi của shop B |
+| BR-21 (làm rõ v0.3) | Đơn chuyển "Đã hủy" khi kiện đang đóng → cảnh báo đỏ S2 như Phase 1 (kiện theo luật hủy). Đơn chuyển "Đang yêu cầu hủy" khi kiện đang đóng → chỉ cảnh báo vàng S2, **không** đổi trạng thái kho; chỉ khi sàn chuyển "Đã hủy" mới hủy kiện (`NEW` → Đã hủy, đã đóng → Hủy sau đóng gói). Áp cho mọi sàn (Shopee `IN_CANCEL` cùng luật) | 09:00 đang đóng, đơn TikTok có yêu cầu hủy → banner vàng; 09:02 đóng xong → kiện "Đã đóng gói"; 10:00 người bán từ chối → bàn giao bình thường. Nếu 10:00 sàn chấp nhận → "Hủy sau đóng gói" + BR-11 |
+| BR-29 | Mã đơn sàn duy nhất **trong một shop** (hai shop có thể trùng mã). Mã vận đơn duy nhất toàn hệ thống: mã đã thuộc kiện của shop khác → không ghi đè, ghi lỗi đồng bộ (EX-T2). Đơn từ file (không shop) được gắn vào shop đầu tiên đồng bộ thấy cùng mã đơn (BR-17). File nhập chỉ so khớp với đơn **chưa gắn shop** (đơn của shop đã đồng bộ cùng mã không bị file ghi / bỏ qua). Mọi chỗ tra theo mã đơn / mã yêu cầu trả: biết shop → tra (shop, mã); không biết shop (bàn hoàn, tra cứu) → có thể ra ≥ 2 đơn → người dùng chọn (EX-R20) | Shop Shopee A và TikTok B cùng có đơn "2410ABCDEF" → 2 đơn; J&T "812345678901" đã của đơn shop A, shop B trả cùng mã → lỗi của shop B; bàn hoàn quét "2410ABCDEF" → R3 liệt kê 2 kiện có chip "Shopee · A" / "TikTok · B" |
 | BR-30 | Mỗi đơn lưu trạng thái sàn nguyên văn + nhóm chung (§7.2). Chặn hủy, đối soát, báo cáo chỉ đọc nhóm. Trạng thái lạ chưa có trong bảng → nhóm "Không rõ", không đổi trạng thái kho, log cảnh báo | TikTok `IN_TRANSIT` → "Đã giao ĐVVC" → kiện `PACKED` thành `HANDED_OVER`; trạng thái mới `XYZ` → "Không rõ", kiện giữ nguyên |
 | BR-31 | Yêu cầu trả TikTok: chỉ hoàn tiền → hồ sơ "Chỉ hoàn tiền"; trả hàng + hoàn tiền → "Khách trả hàng"; đổi hàng → "Khách trả hàng" (lý do ghi "Đổi hàng"; đơn giao hàng thay thế đồng bộ như đơn mới — AS-14). Nhóm trạng thái yêu cầu: chờ người bán duyệt = mở nhưng **chưa chấp nhận** (đồng hồ BR-12 chưa chạy); đã chấp nhận / chờ khách gửi / khách đã gửi = mở, đã chấp nhận; từ chối / người mua hủy = Đã hủy; hoàn tiền xong = Đã hoàn tiền (BR-19) | Yêu cầu 01/10 chờ duyệt, người bán đồng ý 03/10 → kiện "Hoàn quá hạn" sau 10/10 (N = 7) |
 | BR-32 | Quét mã chưa có → tra mọi shop `Đã kết nối` của sàn đang bật cùng lúc; mỗi lời gọi bị cắt ở 2 giây; tổng chờ ≤ 2 giây. Đúng 1 shop thấy → gắn shop đó; 0 → kiện chưa xác minh; ≥ 2 → chưa xác minh + ghi chú (EX-P14) | 3 shop: shop TikTok trả 0,8 giây có đơn, Shopee A trả 1,1 giây không có, Shopee B quá 2 giây → mở phiên lúc ~2 giây gắn shop TikTok |
@@ -558,7 +578,7 @@ stateDiagram-v2
 | BR-36 | Thông báo: (1) bỏ trùng theo (sự kiện, đối tượng, đợt) — cảnh báo lệch mở 1 lần chỉ báo 1 lần; (2) cùng sự kiện, cùng kênh trong 2 phút → 1 tin, tối đa 10 dòng + "và N mục khác"; (3) trần 30 tin / giờ / kênh, vượt → giữ, gửi 1 tin tóm tắt ở cuối giờ; (4) giờ yên lặng (mặc định 22:00–07:00): chỉ mức Cao gửi ngay, còn lại gom 1 tin lúc 07:00 | 8 camera rớt 14:00:05–14:00:40 → 1 tin "8 camera mất tín hiệu". 23:10 N03 (TB) → gửi trong tin tóm tắt 07:00 |
 | BR-37 | (L11) Station tự hủy phiên mở hoàn chỉ khi: đã mở ≤ 60 giây **và** chưa lưu kết luận **và** chưa có ảnh chụp tay. Ngược lại phải Gọi quản lý; Supervisor hủy phải ghi lý do 5–500 ký tự | Mở 09:00:00, 09:00:45 hủy được; 09:01:10 nút hủy ẩn; 09:00:30 đã chụp 1 ảnh → nút hủy ẩn |
 | BR-38 | (L15) Bỏ một bằng chứng khỏi hồ sơ (mọi loại) cần lý do 5–500 ký tự + xác nhận. Clip / ảnh bị bỏ được giữ tới max(lúc kết thúc clip, lúc bỏ) + số ngày giữ clip (không thấp hơn sàn 60), trừ khi còn được bảo vệ vì lý do khác | Clip 01/05, giữ 90 ngày, bỏ 06/10 → giữ tới 04/01/2027; Dialog "Clip này được giữ tới 04/01/2027 rồi tự xóa (trừ khi thuộc hồ sơ khác)." |
-| BR-39 | (L11) Khi tạo hồ sơ khiếu nại (tự / tay), bằng chứng tự chọn = phiên đóng gói hiệu lực + **mọi** phiên mở hoàn của kiện / hồ sơ hàng hoàn (kể cả `CANCELLED`, `ABANDONED` có ≥ 1 clip) + ảnh. Phiên mở hoàn có clip sớm nhất là phiên chính (video ghép có chữ trong gói zip và link) | 08:51 phiên A bỏ dở (mất điện), 10:15 phiên B "Hộp rỗng" → KN gồm đóng gói + A (chính) + B |
+| BR-39 | (L11) Khi tạo hồ sơ khiếu nại (tự / tay), bằng chứng tự chọn = phiên đóng gói hiệu lực + **mọi** phiên mở hoàn của kiện / hồ sơ hàng hoàn (kể cả `CANCELLED`, `ABANDONED` có ≥ 1 clip) + ảnh, **trừ** phiên `CANCELLED` có lý do hủy "Quét nhầm" / "Không phải hàng hoàn" (station tự hủy ≤ 60 giây — BR-37). Phiên bị trừ: clip vẫn được bảo vệ như mọi phiên mở hoàn (BR-09 b), gắn nhãn "Hủy: quét nhầm" / "Hủy: không phải hàng hoàn", D17 hiện Alert, CSKH thêm tay được; **không bao giờ là phiên chính** kể cả khi thêm tay. Phiên chính = phiên mở hoàn có clip sớm nhất trong bằng chứng, trừ các phiên trên; không có → phiên đóng gói hiệu lực. Cùng luật trừ cho N03 và thẻ D2 "Phiên hoàn hủy / bỏ dở (7 ngày)" | 08:51 phiên A bỏ dở (mất điện), 10:15 phiên B "Hộp rỗng" → KN gồm đóng gói + A (chính) + B. 09:00:10 phiên C hủy "Quét nhầm" (25 giây), 09:01 phiên D "Hộp rỗng" → KN gồm đóng gói + D (chính); D17 Alert "1 phiên mở hoàn bị hủy vì quét nhầm (06/10 09:00) — không đưa vào bằng chứng. Thêm tay nếu cần." |
 | BR-40 | (L13) "Chỉ hoàn tiền chưa xử lý" = hồ sơ "Chỉ hoàn tiền", yêu cầu sàn còn mở, đơn chưa có hồ sơ khiếu nại chưa đóng. Hạn phản hồi = hạn người bán của sàn; không có → lúc sàn báo + 48 giờ (cấu hình, đề xuất — Q13). Đỏ khi ≤ 48 giờ; N04 khi mới và một lần khi còn ≤ 12 giờ | Sàn báo 06/10 09:00, hạn 08/10 09:00 → N04 lúc 09:00 06/10 và 21:00 07/10; CSKH tạo KN 07/10 → rời D2 |
 | BR-41 | Công thức báo cáo (giờ VN, theo kỳ): **Đóng gói** — số kiện = phiên đóng gói hoàn tất có giờ đóng trong kỳ (đóng gói lại tính riêng); thời gian TB = trung bình (đóng − mở − thời gian chờ duyệt). **Bàn hoàn** — số kiện kiểm = phiên hoàn hoàn tất; tỷ lệ có vấn đề = kết luận ≠ Nguyên vẹn / số kiện kiểm. **Tỷ lệ hoàn** = hồ sơ hàng hoàn có kiện về (Khách trả hàng + Giao thất bại + Về trước khi sàn báo) tạo trong kỳ / kiện chuyển "Đã bàn giao" trong kỳ; Chỉ hoàn tiền hiện riêng. **Tỷ lệ hoàn có vấn đề** = hồ sơ "Đã nhận – có vấn đề" / hồ sơ đã nhận, theo giờ nhận. **Tỷ lệ thắng** = Thắng / (Thắng + Thua), theo giờ có kết quả. **Giá trị thu hồi** = tổng số tiền thu hồi của hồ sơ Thắng. **Gửi trước hạn** = hồ sơ chuyển "Đã gửi" trước hạn / hồ sơ đã gửi. Người đứng bàn gộp theo tên (bỏ khoảng trắng thừa, không phân biệt hoa thường); không có tên → "(Không ghi tên)". Mẫu số 0 → "—" | 3 phiên 60, 90, 150 giây (phiên 150 có 30 giây chờ duyệt) → TB 90 giây. 1.000 kiện bàn giao, 25 Khách trả + 15 Giao thất bại → 4,0%. 12 Thắng, 4 Thua → 75%, thu hồi 2.350.000 đ |
 | BR-42 | (L14 phần rẻ) Tạo hồ sơ khi hạn sàn < lúc tạo → hạn = lúc tạo + hạn mặc định (7 ngày), ghi chú hệ thống "Hạn sàn (05/10 17:00) đã qua khi tạo hồ sơ — dùng hạn mặc định. Kiểm hạn thật trên sàn." "Quá hạn chưa gửi" = trạng thái Mới và hạn < bây giờ | Hồ sơ tạo 06/10 09:00, hạn sàn 05/10 → hạn 13/10 09:00 + ghi chú; 13/10 09:01 còn Mới → D2 "1 hồ sơ quá hạn chưa gửi" + N05 |
@@ -775,6 +795,8 @@ Chung: như item 01 §10.4, item 02 §10.4 (chữ lớn, âm, màu nền).
 
 Chip sàn: "Shopee · {shop}" / "TikTok · {shop}" / "Chưa rõ sàn" (kiện chưa xác minh). Kiện gộp chỉ hiện khi FR-05.22 có dữ liệu.
 
+Đơn chuyển "Đang yêu cầu hủy" khi đang đóng (v0.3, BR-21 làm rõ): banner vàng đầu S2 "⚠ Người mua đang xin hủy đơn này. Đóng gói xong để riêng, chưa bàn giao." + 2 bíp; nút "Đóng gói xong" vẫn dùng được. Đơn chuyển "Đã hủy" khi đang đóng: như Phase 1 (cảnh báo đỏ).
+
 **S4 (EXTEND, FR-05.17):** thêm mã cảnh báo "ĐƠN ĐANG YÊU CẦU HỦY" — "Người mua đang xin hủy đơn này. Chờ xử lý trên sàn, chưa đóng gói." (nền vàng, 2 bíp, như "ĐƠN ĐÃ HỦY").
 
 **R2 — Đang kiểm hàng hoàn (EXTEND, FR-04.14)**
@@ -785,6 +807,8 @@ Chip sàn: "Shopee · {shop}" / "TikTok · {shop}" / "Chưa rõ sàn" (kiện ch
 | Còn lại | Không có "Hủy phiên"; dòng chữ "Muốn hủy phiên? Bấm Gọi quản lý." + [ Gọi quản lý ] |
 
 Nút đổi đúng lúc giây thứ 61 theo đồng hồ máy chủ, không cần tải lại. Bấm "Hủy phiên" đúng lúc hết 60 giây mà server từ chối → Toast "Phiên đã quá 60 giây. Bấm Gọi quản lý để hủy." Chip sàn / shop cạnh mã kiện.
+
+**R1 / R3 — Quét / Tìm kiện hoàn (EXTEND v0.3, BR-29, EX-R20):** quét mã đơn sàn / mã yêu cầu trả có ở ≥ 2 shop → Alert vàng "Mã {mã} có ở {n} đơn của các shop khác nhau. Chọn đúng đơn." (2 bíp) → mở R3 với mã đã điền. R3: mỗi dòng thêm `PlatformChip` "Shopee · Áo Đẹp" / "TikTok · Áo Đẹp Official" cạnh mã đơn (chữ ≥ 20 px); kiện chưa gắn shop → "Chưa rõ sàn".
 
 ### 10.5 Đặc tả màn dashboard
 
@@ -902,7 +926,7 @@ Chung: như item 01 §10.5 (loading skeleton, empty + một hành động, error
 | Trạng thái / mục | Nội dung |
 |---|---|
 | Cột | Tạo lúc, người tạo, gửi cho, nguồn (mã hồ sơ / mã kiện, link tới D17 / D4), số phiên, hết hạn (đỏ khi ≤ 24 giờ), trạng thái (chip: Đang tạo / Đang hoạt động / Đã thu hồi — người, lúc / Hết hạn / Lỗi) |
-| Thu hồi | Dialog "Thu hồi link?" · "Người nhận sẽ không mở được link này nữa (trong vòng 1 phút). Không hoàn tác được." · [Thu hồi link] (error) [Hủy] → Toast "Đã thu hồi link." CSKH chỉ thấy nút ở link mình tạo |
+| Thu hồi | Dialog "Thu hồi link?" · "Người nhận sẽ không mở được link này nữa (trong vòng 1 phút). Không hoàn tác được." · [Thu hồi link] (error) [Hủy] → Toast "Đã thu hồi link." CSKH chỉ thấy nút ở link mình tạo. Kho mất Internet (EX-S7): chip "Đang thu hồi — chờ Internet" + ⓘ "Link vẫn mở được trên cloud tới khi kho có mạng lại hoặc hết hạn." |
 | Sao chép | Chỉ khi Đang hoạt động |
 | empty | "Chưa có link chia sẻ nào." + "Tạo link từ hồ sơ khiếu nại hoặc chi tiết đơn." |
 | loading / error | Skeleton bảng / Alert + "Thử lại" |
@@ -994,17 +1018,21 @@ Xem: https://x.local/admin/recon?severity=HIGH
 | Chưa cấu hình | EmptyState "Chưa cấu hình kho lưu cloud." + "IT điền thông tin kho lưu và khóa sao lưu trong cấu hình máy chủ (xem tài liệu vận hành, mục Sao lưu cloud)." |
 | Chưa xác nhận khóa | Banner vàng "Sao lưu chưa bật: xác nhận đã cất khóa giải mã." + [Xác nhận] → Dialog "Đã cất khóa giải mã?" · "Nếu máy chủ hỏng mà không có khóa này, bản sao lưu trên cloud **không mở được**. Chép khóa trong cấu hình máy chủ ra nơi an toàn ngoài máy (két, trình quản lý mật khẩu). Dấu vân tay: 7F3A-91C2-0B5E-44D1." · checkbox "Tôi đã cất bản sao khóa ở nơi an toàn ngoài máy chủ" · [Bật sao lưu] (khóa tới khi tick) |
 | Dấu vân tay đổi | Banner đỏ "Khóa sao lưu trên máy chủ đã đổi. Sao lưu tạm dừng tới khi xác nhận đã cất khóa mới." |
+| Còn bản dùng khóa cũ (v0.3, EX-K7) | Sau khi xác nhận khóa mới: Alert vàng "{N} tệp bằng chứng và {M} bản DB mã hóa bằng khóa 7F3A-91C2-0B5E-44D1 (cũ) — giữ khóa cũ để khôi phục được các bản này." + nút "Tải lại bằng chứng bằng khóa mới" → Dialog "Tải lại {K} tệp còn ở kho bằng khóa mới? Khoảng {x} GB, chạy nền theo giới hạn tốc độ." [Tải lại] [Hủy] → Toast "Đã xếp {K} tệp vào hàng chờ." (tệp đã bị xóa tại kho không tải lại được — vẫn cần khóa cũ) |
+| Chờ kiểm khôi phục (v0.3, EX-K8) | Banner vàng "Hệ thống vừa được khôi phục. Sao lưu tạm dừng tới khi IT chạy lệnh kiểm khôi phục đạt (tài liệu vận hành, mục Khôi phục)." — công tắc bật bị khóa |
+| 2 lượt DB liền lỗi (v0.3) | Thẻ DB đỏ "2 lần sao lưu DB gần nhất không thành công" (kể cả khi chưa quá 26 giờ) |
 | Kiểm tra kết nối | ≤ 10 giây → Toast "Kết nối kho lưu tốt (ghi, đọc, xóa thử thành công)." / Alert "Kho lưu từ chối: sai khóa truy cập." / "Không kết nối được kho lưu. Kiểm tra Internet." |
 | Trễ | Thẻ DB đỏ "Chưa sao lưu được 27 giờ" khi > 26 giờ; thẻ Bằng chứng đỏ "12 tệp chờ quá 24 giờ" |
-| Lệch mã băm | Alert đỏ "2 clip có mã băm khác lúc tạo — không được sao lưu. Xem danh sách." → danh sách mã kiện + link D4 |
+| Lệch mã băm | Alert đỏ "2 clip có mã băm khác lúc tạo — không được sao lưu. Xem danh sách." → danh sách mã kiện + link D4; mỗi dòng [Vẫn sao lưu] [Bỏ qua] → Dialog ô "Lý do*" (5–500) → Toast "Đã ghi nhận." (v0.3, EX-K6); tệp đã xử lý rời Alert / D2 |
 | Tùy chọn (C) | Công tắc "Sao lưu thêm mọi clip đóng gói" + chú thích "Ước tính thêm ≈ 30 GB / ngày tải lên." |
+| Nâng cao (thu gọn, v0.3 — xác nhận DEC-486) | Ô "Giới hạn tốc độ tải lên (Mbit/s)" 1–1000, mặc định 10; chú thích "Giảm khi Internet kho yếu để quét và xem camera không bị chậm." |
 | loading / error / forbidden | Skeleton / Alert + "Thử lại" / D12 |
 
 **D2 — Tổng quan (EXTEND)**
 
 | Mục | Nội dung |
 |---|---|
-| Thẻ mới | "Phiên hoàn hủy / bỏ dở (7 ngày) 3" → D3 lọc loại phiên Mở hoàn + trạng thái Hủy / Bỏ dở + 7 ngày |
+| Thẻ mới | "Phiên hoàn hủy / bỏ dở (7 ngày) 3" → D3 lọc loại phiên Mở hoàn + trạng thái Hủy / Bỏ dở + 7 ngày (không tính phiên hủy vì "Quét nhầm" / "Không phải hàng hoàn" — BR-39; D3 lọc cùng luật) |
 | Cần xử lý mới | `REFUND_ONLY_PENDING` "⏱ 2 yêu cầu Chỉ hoàn tiền chưa xử lý · hạn gần nhất 07/10 21:00 [Xem]" → D14 Chỉ hoàn tiền · `CLAIM_OVERDUE` "⚠ 1 hồ sơ quá hạn chưa gửi [Xem]" → D16 `due=overdue` · `RETURN_SESSION_DROPPED` "⚠ 3 phiên mở hoàn bị hủy / bỏ dở trong 7 ngày [Xem]" · `BACKUP_STALE` "⚠ Sao lưu cloud trễ 27 giờ [Xem]" → D23 (chỉ Admin thấy) · `SHOP_ERROR` "⚠ Shop Áo Đẹp Outlet (TikTok) hết hạn ủy quyền [Xem]" → D7 (chỉ Admin thấy) |
 
 **D4 — Chi tiết đơn (EXTEND):** tiêu đề thêm `PlatformChip`; dòng phiên đóng gói thêm "Người đóng gói: Minh" (nếu có); mỗi phiên có clip thêm nút "Tạo link chia sẻ" (mở `ShareLinkDialog` với phiên đó); khối "Link chia sẻ" (như D21 rút gọn).
@@ -1018,11 +1046,12 @@ Xem: https://x.local/admin/recon?severity=HIGH
 | Mục | Nội dung |
 |---|---|
 | Phiên trước (BR-39) | Alert info đầu khối Bằng chứng: "Kiện có 1 phiên mở hoàn trước (bỏ dở 05/10 08:51) — đã đưa vào bằng chứng, là phiên chính." Dòng bằng chứng có chip "Phiên mở hoàn trước · Bỏ dở" / "· Đã hủy" |
+| Phiên bị loại (v0.3, BR-39) | Alert info thứ hai: "Kiện có 1 phiên mở hoàn bị hủy vì quét nhầm (06/10 09:00) — không đưa vào bằng chứng. Video vẫn được giữ; thêm tay nếu cần." + link "Thêm vào bằng chứng" (mở dialog thêm bằng chứng có sẵn). Phiên này khi thêm tay có chip "Hủy: quét nhầm" / "Hủy: không phải hàng hoàn" và không bao giờ là phiên chính |
 | Bỏ bằng chứng (BR-38) | Mọi dòng "Bỏ" mở Dialog "Bỏ bằng chứng?" · ô "Lý do*" (5–500) · chữ "Clip và ảnh của phiên này được giữ tới 04/01/2027 rồi tự xóa (trừ khi thuộc hồ sơ khác)." · [Bỏ bằng chứng] (error) [Hủy]. Lý do thiếu → "Nhập lý do bỏ bằng chứng (5–500 ký tự)." |
 | Hạn (BR-42) | Hạn đã qua lúc tạo → chip "Hạn sàn đã qua" cạnh hạn + ghi chú hệ thống trong dòng thời gian |
 | Tạo link chia sẻ | Nút cạnh "Xuất gói bằng chứng"; hồ sơ đã Đóng vẫn tạo link được (như "Xuất gói bằng chứng" — sàn có thể mở lại vụ việc). Khối "Link chia sẻ" dưới Bằng chứng |
 
-**D8 — Lưu trữ (EXTEND):** `HealthPanel` thêm dòng "Sao lưu cloud": OK "DB 13:00 · 3 tệp chờ" / Trễ (vàng) / Lỗi (đỏ) / "Chưa cấu hình" (xám) → link D23 (Admin). Mục "Station" thêm công tắc "Bắt buộc tên người đóng gói" (Admin).
+**D8 — Lưu trữ (EXTEND):** `HealthPanel` thêm dòng "Sao lưu cloud": OK "DB 13:00 · 3 tệp chờ" / Trễ (vàng) / Lỗi (đỏ) / "Chưa cấu hình" (xám) → link D23 (Admin). Mục "Station" thêm công tắc "Bắt buộc tên người đóng gói" (Admin). Nhóm ngưỡng thêm ô "Hạn mặc định Chỉ hoàn tiền (giờ)" 1–168, mặc định 48, chú thích "Dùng khi sàn không trả hạn phản hồi (BR-40)." (v0.3 — xác nhận DEC-485).
 
 **D3, D15, D16 (EXTEND):** bộ lọc "Sàn" + "Shop" ghi vào URL; cột / chip sàn. **D10 (EXTEND):** bộ lọc hành động thêm các mã của FR-10.03 với nhãn tiếng Việt ("Tạo link chia sẻ", "Thu hồi link", "Ngắt kết nối shop", "Bỏ bằng chứng", …).
 
@@ -1055,7 +1084,7 @@ Không còn FR có UI mà không có màn.
 | Shopee Open Platform | Không đổi; nay nhiều shop | Như item 01, 02 | Như cũ (T-3) |
 | Kho lưu cloud S3-compatible (nhà cung cấp chốt ở Q20; dev / test dùng MinIO local) | Sao lưu mã hóa; file của link chia sẻ | Ra: bản mã DB, clip, ảnh; video + trang của link. Vào: kiểm tra, khôi phục | Chỉ gọi ra ngoài (không mở cổng vào kho — ADR-001); ký link tối đa 7 ngày; xóa đối tượng để thu hồi; giới hạn tốc độ tải lên (NFR-44); nơi đặt dữ liệu theo NĐ 13 (Q20) |
 | Telegram Bot API | Gửi thông báo | Ra: tin văn bản tới chat ID | Bot token ở cấu hình máy chủ; giới hạn của Telegram (khoảng 20 tin / phút / nhóm) cao hơn trần BR-36; **có thể bị chặn ở mạng VN** (RK-22, Q21) |
-| Zalo Official Account API | Gửi thông báo | Ra: tin tư vấn tới user ID đã quan tâm OA | Cần OA đã xác thực + ứng dụng; token OA có hạn, làm mới; chính sách / phí tin ngoài khung tương tác cần xác minh (Q21). **Chưa test** |
+| Zalo Official Account API | Gửi thông báo | Ra: tin tư vấn tới user ID đã quan tâm OA | Cần OA đã xác thực + ứng dụng; token OA có hạn, làm mới (refresh token xoay vòng mỗi lần làm mới → token đang dùng lưu DB đã mã hóa, **ngoại lệ có chủ đích của DEC-408**, khởi tạo từ cấu hình máy chủ — DEC-445); chính sách / phí tin ngoài khung tương tác cần xác minh (Q21). **Chưa test** |
 
 ## 12. Giả định · ràng buộc · rủi ro · câu hỏi mở
 
@@ -1089,15 +1118,18 @@ Không đổi — AS-01..11, CO-01..04, RK-01..15. Bổ sung:
 | RK-23 | Sao lưu chiếm băng thông làm chậm quét / live view | Trung bình | Giới hạn tốc độ (NFR-44); chỉ bằng chứng cần giữ (DEC-406) |
 | RK-24 | Báo cáo theo người sai vì station dùng tài khoản chung, tên nhập tay | Thấp | Ghi rõ "(Không ghi tên)"; bật bắt buộc tên; báo cáo theo station luôn đúng |
 | RK-25 | Chi phí / pháp lý kho lưu nước ngoài (NĐ 13) | Trung bình | DEC-425: ưu tiên nhà cung cấp VN; Q20 chặn go-live sao lưu + link |
+| RK-26 | TikTok chỉ nhận địa chỉ quay về (redirect) HTTPS công khai, không nhận `https://x.local/…` của server kho | Cao | Hỏi khi đăng ký ứng dụng (Q18); dự phòng: trang tĩnh trên kho lưu cloud chỉ chuyển `code` + `state` về `x.local` trong trình duyệt Admin (không mở cổng vào kho) — cần ADR mới nếu dùng |
+| RK-27 | Nhà cung cấp kho lưu VN không phục vụ trang `text/html` mở thẳng trong trình duyệt hoặc không ký link 7 ngày | Trung bình | Kiểm khi chốt Q20; dự phòng: bucket link riêng (đã có — DEC-501) với cấu hình phục vụ trang |
+| RK-28 | Máy kho bị chiếm quyền → kẻ tấn công dùng khóa kho lưu xóa sạch bản sao | Cao | Bucket sao lưu bật phiên bản + tự xóa phiên bản cũ sau 7 ngày; khóa ứng dụng không có quyền xóa phiên bản / tắt phiên bản (DEC-501); N08 khi sao lưu lỗi; nhà cung cấp không hỗ trợ phiên bản → ghi nhận rủi ro ở Q20 |
 
 | # | Câu hỏi mở | Hỏi ai | Ảnh hưởng tới | Chặn G1? |
 |---|---|---|---|:---:|
 | Q13 | Không đổi (hạn khiếu nại thật) — mở rộng cho TikTok Shop: hạn từng loại (hàng hoàn hỏng, Chỉ hoàn tiền, thất lạc), gộp L14 | Chủ shop | BR-27, BR-40, BR-42, retention | Không — **chặn go-live** |
-| Q18 | Shop đã có / sẽ đăng ký ứng dụng đối tác TikTok Shop (Partner Center) với quyền Order, Fulfillment, Return & Refund, Cancellation chưa? Ai giữ app key / secret? | Chủ shop, IT | FR-05.13..18 | Không — **chặn go-live TikTok** |
+| Q18 | Shop đã có / sẽ đăng ký ứng dụng đối tác TikTok Shop (Partner Center) với quyền Order, Fulfillment, Return & Refund, Cancellation chưa? Ai giữ app key / secret? TikTok có nhận địa chỉ quay về `https://x.local/api/v1/shops/tiktok/callback` (tên miền nội bộ, chứng chỉ tự ký) không (RK-26)? | Chủ shop, IT | FR-05.13..18 | Không — **chặn go-live TikTok** |
 | Q19 | Xác minh với TikTok thật: tên trạng thái đơn / vận chuyển / yêu cầu hủy; loại + trạng thái yêu cầu trả; trường hạn người bán; mã vận đơn chiều về; TikTok VN có gộp nhiều đơn vào một kiện không; nhận biết đơn kho TikTok xử lý | T-3 TikTok (sau Q18) | §7.2, BR-31, FR-05.22, AS-12..14, L14 | Không — **chặn go-live TikTok** |
-| Q20 | Nhà cung cấp kho lưu S3-compatible nào (đề xuất đặt tại VN — DEC-425), ngân sách / tháng, ai trả tiền; có cần hồ sơ đánh giá chuyển dữ liệu ra nước ngoài không | Chủ shop | FR-02.08, FR-07.05, CO-06 | Không — **chặn go-live sao lưu + link** |
+| Q20 | Nhà cung cấp kho lưu S3-compatible nào (đề xuất đặt tại VN — DEC-425), ngân sách / tháng, ai trả tiền; có cần hồ sơ đánh giá chuyển dữ liệu ra nước ngoài không. Nhà cung cấp phải: (a) ký link SigV4 hạn 7 ngày và phục vụ `index.html` với `Content-Type: text/html` mở thẳng trong trình duyệt (RK-27); (b) cho 2 bucket; (c) bucket sao lưu bật được phiên bản (versioning) + quy tắc tự xóa phiên bản cũ (lifecycle) + khóa truy cập giới hạn quyền (không xóa phiên bản) — có object lock càng tốt (RK-28, DEC-501) | Chủ shop, IT | FR-02.08, FR-02.14, FR-07.05, CO-06 | Không — **chặn go-live sao lưu + link** |
 | Q21 | Shop dùng Telegram hay Zalo cho nhóm quản lý / CSKH? Telegram có vào được từ mạng kho không? Có Zalo OA đã xác thực không, chấp nhận phí tin không? | Chủ shop, IT | FR-06.04, RK-22 | Không — chặn go-live thông báo (ít nhất một kênh chạy được) |
-| Q22 | Danh sách kênh và người nhận mặc định (Kho / CSKH / Quản trị / Chủ shop, §7.5) có đúng tổ chức của shop? Giờ yên lặng 22:00–07:00? | Chủ shop | FR-06.07, BR-36 | Không (cấu hình được) |
+| Q22 | Danh sách kênh và người nhận mặc định (Kho / CSKH / Quản trị / Chủ shop, §7.5) có đúng tổ chức của shop? Giờ yên lặng 22:00–07:00? "Giờ làm việc" của N01 = ngoài giờ yên lặng (DEC-444) có đúng ca kho không? | Chủ shop | FR-06.07, BR-36 | Không (cấu hình được) |
 | Q23 | Có muốn báo cáo năng suất theo người đóng gói (phải nhập tên mỗi ca) không? Có vấn đề với nhân viên / quy định nội bộ không? | Chủ shop | FR-03.16, FR-09.02 | Không (mặc định tắt bắt buộc) |
 | Q24 | Hạn link mặc định 7 ngày có đủ cho quy trình khiếu nại của Shopee / TikTok / ĐVVC? Họ có nhận link hay bắt tải file lên? | Chủ shop, CSKH | BR-34 | Không |
 | Q25 | Số shop thực tế mỗi sàn, đơn / ngày mỗi shop; băng thông tải lên ở kho | Chủ shop, IT | AS-17, AS-18, NFR-38 | Không |
@@ -1106,8 +1138,8 @@ Không đổi — AS-01..11, CO-01..04, RK-01..15. Bổ sung:
 
 | ID | Tiêu chí nghiệm thu | Cách kiểm | FR |
 |---|---|---|---|
-| AC-40 | Adapter mock: kết nối 2 shop TikTok + 2 shop Shopee cùng lúc; mỗi shop đồng bộ đơn, kiện, mã vận đơn; kết nối shop thứ hai **không** ngắt shop đầu; ngắt 1 shop → shop khác vẫn chạy, dữ liệu shop bị ngắt giữ nguyên; mọi đơn / kiện / hồ sơ có sàn + shop đúng | Fixture mock 4 shop + chạy job | FR-05.13, 05.14, 05.15, EX-T7 |
-| AC-41 | Mỗi trạng thái TikTok trong §7.2 (fixture) → đúng nhóm + đúng trạng thái kho; trạng thái lạ → "Không rõ", kiện không đổi; đơn có yêu cầu hủy / đã hủy → quét bị chặn ("ĐƠN ĐANG YÊU CẦU HỦY" / "ĐƠN ĐÃ HỦY"); hủy khi đang đóng → S2 đỏ ≤ 5 giây sau đồng bộ; BR-10 / BR-11 bắn cho kiện TikTok như Shopee | Fixture 9 trạng thái + 3 kịch bản đối soát | FR-05.16, 05.17, 05.21, BR-01, BR-30 |
+| AC-40 | Adapter mock: kết nối 2 shop TikTok + 2 shop Shopee cùng lúc; mỗi shop đồng bộ đơn, kiện, mã vận đơn; kết nối shop thứ hai **không** ngắt shop đầu; ngắt 1 shop → shop khác vẫn chạy, dữ liệu shop bị ngắt giữ nguyên; mọi đơn / kiện / hồ sơ có sàn + shop đúng; (v0.3) mã đơn trùng giữa 2 shop: đồng bộ, yêu cầu trả, nhập file, bàn hoàn, tra cứu đều ra đúng đơn / cho chọn (EX-R20) | Fixture mock 4 shop (1 mã đơn trùng) + chạy job | FR-05.13, 05.14, 05.15, EX-T7, BR-29 |
+| AC-41 | Mỗi trạng thái TikTok trong §7.2 (fixture) → đúng nhóm + đúng trạng thái kho; trạng thái lạ → "Không rõ", kiện không đổi; đơn có yêu cầu hủy / đã hủy → quét bị chặn ("ĐƠN ĐANG YÊU CẦU HỦY" / "ĐƠN ĐÃ HỦY"); hủy khi đang đóng → S2 đỏ ≤ 5 giây sau đồng bộ; yêu cầu hủy khi đang đóng → S2 vàng, kiện vẫn đóng gói được; yêu cầu hủy bị từ chối / rút (fixture) → kiện đóng gói, bàn giao bình thường, không thành Đã hủy (v0.3, Shopee `IN_CANCEL` cùng kịch bản); BR-10 / BR-11 bắn cho kiện TikTok như Shopee | Fixture 9 trạng thái + 3 kịch bản đối soát | FR-05.16, 05.17, 05.21, BR-01, BR-30 |
 | AC-42 | Yêu cầu trả TikTok (mock): chỉ hoàn tiền → tab Chỉ hoàn tiền, kho không đổi; trả hàng + hoàn tiền / đổi hàng → kiện "Hoàn đang về", bàn hoàn quét mã chiều về mở đúng phiên; chờ người bán duyệt 3 ngày → không "Hoàn quá hạn" khi tính từ lúc yêu cầu; người mua hủy → hồ sơ Đã hủy; hoàn tiền xong mà kho chưa nhận → BR-19 | Fixture 6 kịch bản + đồng hồ giả | FR-05.18, BR-31 |
 | AC-43 | Quét mã lạ với 3 shop (1 shop chậm 5 giây, 1 shop có đơn) → mở phiên gắn đúng shop ≤ 3 giây p95; mã có ở 2 shop → phiên chưa xác minh + ghi chú; adapter trả lỗi tạm (quá tần suất) → thử lại giãn cách, mỗi lần gọi có log; 1 shop lỗi suốt 1 giờ → chu kỳ shop khác không trễ quá 1 chu kỳ | 100 lần quét + đo 1 giờ | FR-05.19, FR-05.08, BR-32, NFR-01, NFR-39 |
 | AC-44 | Tắt cờ TikTok: D7 hiện "Chưa cấu hình TikTok Shop", nút khóa, job TikTok không gọi adapter, quét không tra TikTok, Shopee chạy bình thường; tắt riêng cờ trả hàng → đơn vẫn đồng bộ, yêu cầu trả không; tìm chuỗi trạng thái TikTok ngoài adapter = 0 | Đổi cấu hình + log adapter + lệnh tìm | FR-05.20, FR-05.07, NFR-28 |
@@ -1115,14 +1147,14 @@ Không đổi — AS-01..11, CO-01..04, RK-01..15. Bổ sung:
 | AC-46 | Báo cáo Hàng hoàn: 1.000 kiện bàn giao, 25 Khách trả, 15 Giao thất bại, 6 Chỉ hoàn tiền, 30 đã nhận (6 có vấn đề) → tỷ lệ hoàn 4,0%, Chỉ hoàn tiền 0,6%, có vấn đề 20,0%; bảng lý do × kết luận và top sản phẩm khớp dữ liệu; lọc sàn / shop đúng; kỳ không có kiện → "—" | Dữ liệu mẫu cố định | FR-09.03, 09.05, BR-41, EX-B2 |
 | AC-47 | Báo cáo Khiếu nại: 12 Thắng (tổng 2.350.000 đ), 4 Thua, 5 đang chờ → 75%, 2.350.000 đ; gửi trước hạn và quá hạn chưa gửi đúng; bấm số mở D16 lọc đúng; CSV mở bằng Excel đúng tiếng Việt, số khớp màn; audit `REPORT_EXPORT` | Dữ liệu mẫu + mở CSV | FR-09.04, 09.05, 09.06 |
 | AC-48 | Báo cáo kỳ 92 ngày ≤ 3 giây p95, 366 ngày ≤ 10 giây trên dữ liệu 180.000 kiện | Dữ liệu sinh, 20 lần mỗi tab | NFR-37 |
-| AC-49 | Sao lưu với MinIO local: DB tải lên đúng lịch 6 giờ; bằng chứng mới cần giữ lên cloud ≤ 1 giờ; video thô và clip không thuộc BR-33 **không** có trên cloud; tải 5 tệp từ bucket → không mở được khi không có khóa; khóa không có trong dump / log; chưa xác nhận cất khóa → không có tệp nào được tải | MinIO + đồng hồ giả + kiểm bucket | FR-02.08, 02.13, 02.17, BR-33, NFR-41 |
-| AC-50 | Diễn tập khôi phục: máy trống + khóa → DB + bằng chứng khôi phục; công cụ báo 100% SHA-256 khớp; DB sẵn sàng ≤ 60 phút; hồ sơ khiếu nại chưa đóng có clip trước phần còn lại; khóa sai → báo lỗi rõ, không ghi đè dữ liệu | Diễn tập trên máy dev / VM | FR-02.16, NFR-40 |
-| AC-51 | Rút mạng 2 giờ → hàng chờ tăng, D23 "đang chờ", quét / live view bình thường; có mạng lại → tự tải hết; đồng hồ giả > 26 giờ không sao lưu DB → D2 "Cần xử lý" + N08; retention xóa clip tại kho → bản cloud mất ≤ 24 giờ; bản DB cũ hơn chính sách bị xóa | Rút mạng + đồng hồ giả | FR-02.14, 02.15, NFR-44 |
+| AC-49 | Sao lưu với MinIO local: DB tải lên đúng lịch 6 giờ; bằng chứng mới cần giữ lên cloud ≤ 1 giờ; video thô và clip không thuộc BR-33 **không** có trên cloud; tải 5 tệp từ bucket → không mở được khi không có khóa; khóa không có trong dump / log; chưa xác nhận cất khóa → không có tệp nào được tải; đổi khóa → D23 đếm đúng tệp / bản DB khóa cũ, "Tải lại bằng chứng bằng khóa mới" tải lại đúng tệp còn ở kho (v0.3) | MinIO + đồng hồ giả + kiểm bucket | FR-02.08, 02.13, 02.17, BR-33, NFR-41 |
+| AC-50 | Diễn tập khôi phục: máy trống + khóa → DB + bằng chứng khôi phục; công cụ báo 100% SHA-256 khớp; DB sẵn sàng ≤ 60 phút; hồ sơ khiếu nại chưa đóng có clip trước phần còn lại; khóa sai → báo lỗi rõ, không ghi đè dữ liệu; bản mã hóa bằng 2 khóa (trước / sau đổi khóa) khôi phục được khi đưa cả 2 khóa; xóa 1 clip trên cloud trước khi khôi phục → clip "Thiếu tệp (khôi phục)", bản cloud khác không bị xóa; sao lưu tắt tới khi lệnh kiểm đạt (v0.3) | Diễn tập trên máy dev / VM | FR-02.16, NFR-40 |
+| AC-51 | Rút mạng 2 giờ → hàng chờ tăng, D23 "đang chờ", quét / live view bình thường; có mạng lại → tự tải hết; đồng hồ giả > 26 giờ không sao lưu DB → D2 "Cần xử lý" + N08; retention xóa clip tại kho → bản cloud mất ≤ 24 giờ; bản DB cũ hơn chính sách bị xóa nhưng luôn còn ≥ 3 bản thành công mới nhất; 2 lượt DB liền lỗi → D2 + N08 dù chưa quá 26 giờ (v0.3) | Rút mạng + đồng hồ giả | FR-02.14, 02.15, NFR-44 |
 | AC-52 | Tạo link từ D17 (3 phiên, ghép, kèm ảnh, hạn 3 ngày) ≤ 3 phút; mở link trên điện thoại **ngoài mạng kho** → W1 đúng nội dung, phát / tải được video; thu hồi → không mở được ≤ 60 giây; đồng hồ giả qua hạn → không mở được, file mất ≤ 1 giờ; audit tạo / thu hồi / hết hạn; CSKH không thu hồi được link người khác | MinIO công khai qua mạng thử + điện thoại (với cloud thật: chưa test tới khi có Q20) | FR-07.05, 07.07, 07.08, 07.09, BR-34, NFR-42, NFR-46 |
 | AC-53 | Link không lộ: đổi 1 ký tự → không mở; liệt kê bucket bằng địa chỉ link → bị từ chối; trang W1 không chứa ghi chú nội bộ, người phụ trách, số tiền, "gửi cho", dữ liệu kiện khác; chọn 5 phiên hoặc phiên chưa có clip → không tạo được | Thử tay + kiểm HTML | FR-07.07, BR-35, NFR-42, NFR-45 |
 | AC-54 | Thông báo (server Telegram / Zalo giả): mỗi N01..N09 sinh tin đúng kênh đã đăng ký, đúng mẫu, không có dữ liệu người mua; cảnh báo lệch mở chạy lại job 3 lần → 1 tin; 8 camera rớt trong 40 giây → 1 tin; 40 sự kiện / giờ → ≤ 30 tin + 1 tin tóm tắt; 23:10 sự kiện TB → gom lúc 07:00, sự kiện Cao gửi ngay; rút mạng 2 giờ → gửi bù, không mất | Server giả + đồng hồ giả | FR-06.04, 06.07, 06.08, 06.09, BR-36, NFR-43, NFR-45 |
 | AC-55 | Gửi thử Telegram / Zalo trả kết quả ≤ 10 giây; nhật ký 30 ngày có thành công / lỗi / bị bỏ; lỗi 24 giờ → "Bị bỏ"; tóm tắt ngày 18:00 đúng số D2 | Server giả + đồng hồ giả (bot thật: chưa test tới khi có Q21) | FR-06.10, 06.11 |
-| AC-56 | (L11) Phiên hoàn A bỏ dở có clip, phiên B cùng kiện "Hộp rỗng" → hồ sơ KN có đóng gói + A + B, A là phiên chính trong zip và link; D17 có Alert phiên trước; station không hủy được sau 60 giây / sau khi có kết luận / ảnh (nút ẩn, API từ chối); Supervisor hủy có lý do; D2 đếm phiên hủy / bỏ dở 7 ngày kể cả khi kiện đã có phiên sau hoàn tất | Đồng hồ giả + camera giả, 4 kịch bản | FR-04.14, FR-08.07, FR-09.01, BR-37, BR-39 |
+| AC-56 | (L11) Phiên hoàn A bỏ dở có clip, phiên B cùng kiện "Hộp rỗng" → hồ sơ KN có đóng gói + A + B, A là phiên chính trong zip và link; D17 có Alert phiên trước; station không hủy được sau 60 giây / sau khi có kết luận / ảnh (nút ẩn, API từ chối); Supervisor hủy có lý do; D2 đếm phiên hủy / bỏ dở 7 ngày kể cả khi kiện đã có phiên sau hoàn tất; (v0.3) phiên hủy "Quét nhầm" 25 giây rồi phiên sau "Hộp rỗng" → hồ sơ KN không tự có phiên quét nhầm, phiên sau là chính, D17 Alert phiên bị loại, thêm tay vẫn không thành phiên chính, D2 / N03 không đếm, clip phiên quét nhầm vẫn còn sau J-02 | Đồng hồ giả + camera giả, 5 kịch bản | FR-04.14, FR-08.07, FR-09.01, BR-37, BR-39 |
 | AC-57 | (L13) Chỉ hoàn tiền hạn 36 giờ → D2 "Cần xử lý" + D14 hạn đỏ, sắp đầu bảng + N04 khi mới; còn 12 giờ → N04 nhắc 1 lần; tạo hồ sơ khiếu nại → rời D2; sàn không trả hạn → hạn = lúc báo + 48 giờ có ⓘ | Đồng hồ giả, 3 kịch bản | FR-08.08, BR-40 |
 | AC-58 | (L15) Bỏ bằng chứng thêm tay / "Chuyển từ cờ giữ" không lý do → bị chặn; có lý do → Dialog nêu đúng ngày xóa; clip đã quá hạn giữ bị bỏ khỏi hồ sơ **không** bị xóa ở lần dọn 02:00 kế tiếp; bị xóa đúng sau max(kết thúc, lúc bỏ) + số ngày giữ; audit có lý do | Đồng hồ giả + chạy retention | FR-08.09, BR-38 |
 | AC-59 | (L14) Hồ sơ tạo khi hạn sàn đã qua → hạn mặc định + ghi chú hệ thống + chip "Hạn sàn đã qua"; hồ sơ Mới quá hạn → D2 "quá hạn chưa gửi" + N05; gửi đi → hết đếm | Đồng hồ giả | FR-08.10, BR-42 |
@@ -1187,11 +1219,20 @@ Mọi DEC dưới đây: **tự quyết theo ủy quyền user** (user 2026-10-0
 | DEC-424 | (UX) L11 hủy phiên hoàn cần quản lý | Dùng lại "Gọi quản lý" + quyết định "Hủy phiên" (D13) có sẵn, thêm thông tin kết luận / ảnh trên thẻ | Không thêm loại yêu cầu duyệt, station không học thao tác mới. Loại: loại yêu cầu "Xin hủy" riêng (thêm API, thêm nhánh UI) | khanhtt (UX, tự quyết theo ủy quyền user) | 2026-10-06 |
 | DEC-425 | Nơi đặt kho lưu cloud (NĐ 13/2023 về chuyển dữ liệu cá nhân ra nước ngoài) | Ưu tiên nhà cung cấp S3-compatible đặt tại Việt Nam; dùng nước ngoài chỉ khi chủ shop chấp nhận lập hồ sơ đánh giá (**đề xuất, cần xác nhận Q20**) | Tránh nghĩa vụ pháp lý thêm; độ trễ thấp. Loại: chọn sẵn nhà cung cấp quốc tế rẻ nhất (rủi ro pháp lý — RK-25) | khanhtt (tự quyết theo ủy quyền user) | 2026-10-06 |
 | DEC-426 | Đơn từ file (CSV) khi có nhiều shop | Giữ nguyên: đơn file không gắn shop; shop đầu tiên đồng bộ thấy cùng mã đơn nhận đơn đó (BR-29, BR-17) | Không đổi mẫu file đang dùng. Loại: thêm cột "Sàn / Shop" bắt buộc (đổi mẫu, phá file cũ) | khanhtt (tự quyết theo ủy quyền user) | 2026-10-06 |
+| DEC-490 | Review G2 lượt 1 "Chưa đạt" chạm SRS đã Approved; Phản hồi Architect → PO và FE → UX còn Mở | **Change request v0.3** (bảng đầu tài liệu): BR-39 loại phiên quét nhầm, BR-21 làm rõ yêu cầu hủy, BR-29 tra theo mã, EX-K6..K8, EX-S7, EX-R20, FR-02.14..17, FR-05.17, FR-08.07, N01 / N03, Q18 / Q20 / Q22, RK-26..28, §10 D2 / D8 / D17 / D21 / D23 / R3 / S2, AC-40, 41, 49..51, 56; xác nhận DEC-442, 444, 445, 485, 486. Không thêm FR, không đổi phạm vi, G1 giữ | Lỗi logic do review chỉ ra phải sửa ở nguồn yêu cầu trước spec. Loại: chỉ sửa spec (SRS lệch spec, QA viết test theo SRS sai) | khanhtt (PO, tự quyết theo ủy quyền user) | 2026-10-07 |
+| DEC-491 | Phiên mở hoàn station tự hủy vì quét nhầm (≤ 60 giây) có clip — theo BR-39 v0.2 sẽ thành bằng chứng, thậm chí phiên chính (video kiện khác / chưa mở hộp) | Lý do hủy `WRONG_SCAN` / `NOT_A_RETURN`: vẫn bảo vệ clip, nhãn "Hủy: quét nhầm" / "Hủy: không phải hàng hoàn", **không** tự chọn, **không bao giờ** phiên chính, D17 Alert, không tính N03 / D2; `SUPERVISOR` / `OTHER` / `ABANDONED` vẫn vào | Video quét nhầm không chứng minh gì cho kiện, làm phiên chính sai là mất khiếu nại. Loại: loại khỏi bảo vệ (mất video nếu lý do chọn sai); bắt Supervisor duyệt mọi hủy (chậm bàn hoàn) | khanhtt (PO, tự quyết theo ủy quyền user) | 2026-10-07 |
+| DEC-492 | Bỏ unique mã đơn toàn cục: bàn hoàn / file nhập tra theo mã có thể ra ≥ 2 đơn | Bàn hoàn ≥ 2 đơn → Alert + R3 chọn có chip shop; file nhập chỉ so đơn chưa gắn shop; nơi biết shop luôn tra (shop, mã) | Không đoán shop thay người dùng. Loại: chọn đơn mới nhất (sai shop → mở nhầm hồ sơ) | khanhtt (PO, tự quyết theo ủy quyền user) | 2026-10-07 |
+| DEC-494 | "Đang yêu cầu hủy" theo spec v0.1 gọi luật hủy kiện như "Đã hủy" (code Phase 2 coi `IN_CANCEL` là hủy) | Chỉ chặn mở phiên + cảnh báo vàng khi đang đóng; chỉ "Đã hủy" mới hủy kiện; áp mọi sàn | Người bán có thể từ chối yêu cầu hủy — hủy kiện sớm làm kiện đã đóng nằm sai trạng thái, đơn bị bỏ sót bàn giao. Loại: giữ hành vi Phase 2 | khanhtt (PO, tự quyết theo ủy quyền user) | 2026-10-07 |
+| DEC-495 | Đổi khóa sao lưu (v0.2 để backlog) làm bản cũ không mở được bằng khóa mới mà không ai biết | Hỗ trợ tối thiểu: ghi dấu vân tay theo từng bản, D23 đếm bản dùng khóa cũ + "Tải lại bằng chứng bằng khóa mới", khôi phục nhận nhiều khóa; không mã hóa lại bản DB cũ | Đổi khóa là thao tác ops có thật (lộ khóa); không có cảnh báo thì mất khả năng khôi phục. Loại: mã hóa lại toàn bộ trên cloud (tải về + tải lên lại, băng thông lớn) | khanhtt (PO, tự quyết theo ủy quyền user) | 2026-10-07 |
+| DEC-499 | Khôi phục khi DB có clip mà cloud / đĩa không có tệp | "Thiếu tệp (khôi phục)", không coi là xóa (không kéo theo xóa bản cloud); sao lưu tắt tới khi kiểm khôi phục đạt; runbook liệt kê mọi bí mật | Tránh máy mới tự xóa bản cloud còn lại; không có bí mật thì bản khôi phục vô dụng một phần. Loại: đánh "Đã xóa" (J-23 sẽ xóa bản cloud khớp) | khanhtt (PO, tự quyết theo ủy quyền user) | 2026-10-07 |
+| DEC-500 | Sao lưu DB lỗi liên tiếp mà chưa quá 26 giờ không ai biết | Cảnh báo thêm khi 2 lượt liền không thành công (≈ 6–12 giờ) | Phát hiện sớm hơn 1 chu kỳ ngày. Loại: cảnh báo mỗi lượt lỗi (nhiễu khi mạng chập chờn) | khanhtt (PO, tự quyết theo ủy quyền user) | 2026-10-07 |
+| DEC-501 | Khóa kho lưu nằm trên máy kho — máy bị chiếm quyền thì bản sao lưu bị xóa theo | Bucket sao lưu bật phiên bản + tự xóa phiên bản cũ sau 7 ngày, khóa ứng dụng không xóa được phiên bản; bucket link riêng không phiên bản (thu hồi xóa thật) | Sao lưu phải sống sót khi máy kho mất (mục đích của P9). Loại: một bucket (phiên bản làm thu hồi link không xóa thật); khóa không quyền xóa + lifecycle theo tag (kẻ tấn công gắn tag được) | khanhtt (PO + Architect, tự quyết theo ủy quyền user) | 2026-10-07 |
+| DEC-505 | Chính sách xóa bản DB có thể xóa hết khi sao lưu hỏng lâu | Luôn giữ ≥ 3 bản DB thành công mới nhất bất kể tuổi | Không bao giờ còn 0 bản khôi phục được | khanhtt (PO, tự quyết theo ủy quyền user) | 2026-10-07 |
 
 ## Chốt G1
 - [x] Mọi vấn đề P7..P12 có FR giải quyết; mọi FR mức M có ≥ 1 AC (FR-05.07, 05.08 kiểm qua AC-40, AC-44; FR-02.14 qua AC-51; FR-02.16 qua AC-50)
 - [x] Phạm vi trong / ngoài rõ (Lazada, AI, email, đếm lượt xem, L12, L16..L23 ngoài); ma trận quyền đủ 4 vai + người nhận link cho chức năng mới
-- [x] Quy trình chính có ngoại lệ (EX-T1..T7, EX-P14, EX-B1..B2, EX-K1..K6, EX-S1..S6, EX-N1..N4, EX-R17..R19); BR-29..42 có ví dụ số
+- [x] Quy trình chính có ngoại lệ (EX-T1..T7, EX-P14, EX-B1..B2, EX-K1..K8, EX-S1..S7, EX-N1..N4, EX-R17..R20); BR-29..42 (+ BR-21 làm rõ) có ví dụ số — v0.3 kiểm lại sau change request DEC-490
 - [x] NFR có con số + cách kiểm (NFR-37..46, NFR-01, NFR-28 chi tiết hóa); không còn từ mơ hồ
 - [x] Câu hỏi chặn G1 = 0 (Q13, Q18..Q21 chặn go-live, không chặn G1; Q22..Q25 không chặn)
 - [x] §10: 4 màn dashboard mới (D20–D23) + W1 + 2 thành phần mới, 13 màn mở rộng; có phác thảo, chữ thật, đủ trạng thái; mọi FR có UI tới được màn (§10.6)
