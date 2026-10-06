@@ -38,17 +38,17 @@ Owner tất cả: khanhtt (profile §7). Ticket: chưa tạo (tracker `none` cho
 | T-131 | API client station mở rộng, `shared/returns/inspection.ts`, copy, MSW `StationSim` RETURN + `returnsDb.ts` | fe | nền R1–R5 | 02b-st §14 | 02 §6 (mock) | 1,5 | M6 | | ✅ `fe 580bcde` |
 | T-151 | API client admin (`returns`, `recon`, `claims`, mở rộng), `shared/returns/labels.ts`, MSW handlers | fe | nền D14–D17 | 02b-ad §14 | 02 §6 (mock) | 2 | M6 | | ✅ `fe 3c8c7e0` |
 | T-152 | Route + drawer + `NavBadge` + `useDashboardSocket` 4 sự kiện | fe | FR-10.02 | 02b-ad §14 | T-151 | 1 | M6 | | ✅ `fe dbb6497` |
-| T-104 | Module `returns` lõi: `attach_or_create`, `resolve_code`, `merge_unidentified_by_code`, `recompute`, API-110, 111 | be | FR-04.08, 05.05, 05.11, 05.12; API-110, 111 | 02a §12 | T-102, T-103 | 2 | M7 | | ⬜ |
-| T-107 | Phiên RETURN mở: API-11 nhánh RETURN, API-104, `init_lines`, `build_state()` | be | FR-04.01, 04.02, 04.09; API-10, 11, 104 | 02a §12 | T-104, T-106 | 2 | M7 | | ⬜ |
-| T-108 | Phiên RETURN đóng / hủy: API-102, đóng API-11 (BR-07, 23, 24), API-12, `camera_clock`, API-15 | be | FR-04.03, 04.05, 04.08; API-11, 12, 15, 102 | 02a §12 | T-107 | 2 | M7 | | ⬜ |
-| T-117 | J-07 RETURN (tự hoàn tất / bỏ dở, WS `SESSION_AUTO_CLOSED`), ASSIST, bỏ qua khay cho RETURN, PACK chặn kiện `RETURN_*`, `closed_session` PACK, BR-21 + `flag_order_cancelled` | be | FR-03.14, 03.15, EX-R15, R16 (L4, L9) | 02a §12 | T-108 | 1,5 | M7 | | ⬜ |
-| T-109 | Ảnh: `snapshot`, API-103, 106, J-17 ảnh lúc đóng gói (L8), `pack_reference`, API-40 luật STATION | be | FR-04.04, 04.12, 02.11 | 02a §12 | T-108 | 1,5 | M7 | | ⬜ |
-| T-132 | `selectPanel`, thanh trạng thái, R1, R5, đổi chế độ S1 / R1 | fe | R1, R5, S1 / FR-01.07, 04.10 | 02b-st §14 | T-131 (BE thật: T-106) | 1 | M7 | | ⬜ |
-| T-133 | R2 `InspectingPanel` (bảng dòng, kết luận, nháp + flush, hủy, quá giờ, `SESSION_AUTO_CLOSED`) | fe | R2 / FR-04.02, 04.03, 04.05, 04.09 | 02b-st §14 | T-131 (BE thật: T-108, T-117) | 2 | M7 | | ⬜ |
-| T-134 | R2 ảnh F2 + `SnapshotStrip` (shared) + `PackReferenceCard` | fe | R2 / FR-04.04, 04.12 | 02b-st §14 | T-133 (BE thật: T-109) | 1,5 | M7 | | ⬜ |
-| T-135 | R3 tìm thủ công, R4 mã RETURN, `force_new`, `captureInInputs` | fe | R3, R4 / FR-04.07, 04.13 | 02b-st §14 | T-133 (BE thật: T-107, T-119) | 1,5 | M7 | | ⬜ |
-| T-136 | Hardening station: S3 chữ (L3), `ClosedNotice` (L4), banner đơn hủy (L9) | fe | S1, S2, S3 / FR-03.13..15 | 02b-st §14 | T-131 (BE thật: T-117) | 1 | M7 | | ⬜ |
-| T-137 | Test FE station + E2E mock + E2E BE thật UC-02 | fe | — | 02b-st §14 | T-132..T-136, BE T-101..T-110 | 1,5 | M7 | | ⬜ |
+| T-104 | Module `returns` lõi: `attach_or_create`, `resolve_code`, `merge_unidentified_by_code`, `recompute`, API-110, 111 | be | FR-04.08, 05.05, 05.11, 05.12; API-110, 111 | 02a §12 | T-102, T-103 | 2 | M7 | | ✅ `be d4dca36` |
+| T-107 | Phiên RETURN mở: API-11 nhánh RETURN, API-104, `init_lines`, `build_state()` | be | FR-04.01, 04.02, 04.09; API-10, 11, 104 | 02a §12 | T-104, T-106 | 2 | M7 | | ✅ `be 8ca367b` |
+| T-108 | Phiên RETURN đóng / hủy: API-102, đóng API-11 (BR-07, 23, 24), API-12, `camera_clock`, API-15 | be | FR-04.03, 04.05, 04.08; API-11, 12, 15, 102 | 02a §12 | T-107 | 2 | M7 | | ✅ `be 1397352` |
+| T-117 | J-07 RETURN (tự hoàn tất / bỏ dở, WS `SESSION_AUTO_CLOSED`), ASSIST, bỏ qua khay cho RETURN, PACK chặn kiện `RETURN_*`, `closed_session` PACK, BR-21 + `flag_order_cancelled` | be | FR-03.14, 03.15, EX-R15, R16 (L4, L9) | 02a §12 | T-108 | 1,5 | M7 | | ✅ `be bd0d371` |
+| T-109 | Ảnh: `snapshot`, API-103, 106, J-17 ảnh lúc đóng gói (L8), `pack_reference`, API-40 luật STATION | be | FR-04.04, 04.12, 02.11 | 02a §12 | T-108 | 1,5 | M7 | | ✅ `be 6850d73` |
+| T-132 | `selectPanel`, thanh trạng thái, R1, R5, đổi chế độ S1 / R1 | fe | R1, R5, S1 / FR-01.07, 04.10 | 02b-st §14 | T-131 (BE thật: T-106) | 1 | M7 | | ✅ `fe c88fb6d` |
+| T-133 | R2 `InspectingPanel` (bảng dòng, kết luận, nháp + flush, hủy, quá giờ, `SESSION_AUTO_CLOSED`) | fe | R2 / FR-04.02, 04.03, 04.05, 04.09 | 02b-st §14 | T-131 (BE thật: T-108, T-117) | 2 | M7 | | ✅ `fe ca19eaf` |
+| T-134 | R2 ảnh F2 + `SnapshotStrip` (shared) + `PackReferenceCard` | fe | R2 / FR-04.04, 04.12 | 02b-st §14 | T-133 (BE thật: T-109) | 1,5 | M7 | | ✅ `fe 524881c` |
+| T-135 | R3 tìm thủ công, R4 mã RETURN, `force_new`, `captureInInputs` | fe | R3, R4 / FR-04.07, 04.13 | 02b-st §14 | T-133 (BE thật: T-107, T-119) | 1,5 | M7 | | ✅ `fe 0a6ffb0` |
+| T-136 | Hardening station: S3 chữ (L3), `ClosedNotice` (L4), banner đơn hủy (L9) | fe | S1, S2, S3 / FR-03.13..15 | 02b-st §14 | T-131 (BE thật: T-117) | 1 | M7 | | ✅ `fe d9d408e` |
+| T-137 | Test FE station + E2E mock + E2E BE thật UC-02 | fe | — | 02b-st §14 | T-132..T-136, BE T-101..T-110 | 1,5 | M7 | | ✅ `fe 6ffcf9d` |
 | T-110 | Module `claims` (auto từ phiên hoàn, tay, bằng chứng tự chọn, version, J-15), API-130..135 | be | FR-08.01..04, 08.06, 04.06 | 02a §12 | T-108, T-109 | 2 | M8 | | ⬜ |
 | T-111 | ADR-009: `protected_sessions_sql`, J-02, API-42 chỉ ADMIN, API-31 `protection`; migration 0004 + downgrade (L7) | be | FR-02.06, 02.09 | 02a §12 | T-110 | 2 | M8 | | ⬜ |
 | T-119 | API-112 gộp, API-105 (`force_new`, kiện tạm `TAM-`), `is_placeholder` | be | FR-04.07, 04.13 | 02a §12 | T-111 | 1,5 | M8 | | ⬜ |
@@ -98,7 +98,7 @@ Ngày mục tiêu tính tuần tự 1 dev, 5 ngày / tuần, bắt đầu 2026-1
 | Milestone | Gồm task | Công | Ngày mục tiêu | Demo được gì |
 |---|---|---|---|---|
 | **M6** Nền tảng (xong 2026-10-06; E2E BE thật 43/43) | T-101, 102, 103, 106, 131, 151, 152 | 10 | 2026-10-19 | `alembic upgrade head` trên dữ liệu Phase 1 (retention nâng lên sàn); Admin đặt loại station (API); adapter mock trả 4 loại yêu cầu trả; FE `pnpm dev:mock` hiện R1–R5 và drawer mới; API-122 điều chỉnh tay (L6) |
-| **M7** Nhận hàng hoàn tại station + hardening station | T-104, 107, 108, 117, 109, 132..137 | 17,5 | 2026-11-11 | UC-02 trên camera giả: quét mã chiều về → R2 → kết luận + ảnh F2 → quét mã gốc đóng; tự hoàn tất quá giờ; S3 chữ mới (L3), S1 thông báo cờ (L4), S2 đơn hủy (L9), ảnh lúc đóng gói (L8); E2E BE thật UC-02 |
+| **M7** Nhận hàng hoàn tại station + hardening station (xong 2026-10-06; E2E BE thật 44/44) | T-104, 107, 108, 117, 109, 132..137 | 17,5 | 2026-11-11 | UC-02 trên camera giả: quét mã chiều về → R2 → kết luận + ảnh F2 → quét mã gốc đóng; tự hoàn tất quá giờ; S3 chữ mới (L3), S1 thông báo cờ (L4), S2 đơn hủy (L9), ảnh lúc đóng gói (L8); E2E BE thật UC-02 |
 | **M8** Hồ sơ khiếu nại + bảo vệ bằng chứng | T-110, 111, 119, 112, 154, 155, 157, 158, 159 | 15 | 2026-12-02 | Phiên hoàn "Hộp rỗng" → KN tự tạo có 2 phiên → D17 đổi trạng thái → gói zip (SHA-256 khớp); migration 0004 chuyển clip giữ → hồ sơ (L7); D4 chip "Đang được giữ"; gắn đơn kiện chưa xác định; `info.json` L5 |
 | **M9** Đồng bộ hoàn + đối soát | T-105, 113, 114, 115, 153, 156, 160, 161 | 11,5 | 2026-12-17 | J-13 mock → D14 "Đang về"; J-14 → kiện quá 7 ngày → D15 + D2; xử lý cảnh báo; D8 sàn 60 ngày + xác nhận hạ (L2); D2 / D3 số mới |
 | **M10** Hoàn thiện | T-120, 116, 118, 162 | 6,5 | 2026-12-29 | Up → down → up không mất dữ liệu; contract test xanh; QA live + locust; E2E BE thật hồ sơ + đối soát → sẵn sàng G3 |

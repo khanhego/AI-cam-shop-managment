@@ -63,6 +63,7 @@ Số item: 02 (`docs/ai/items/` chỉ có 01; remote 3 repo có `main`, `feat/01
 ## Lịch sử
 | Ngày | Role | Việc |
 |---|---|---|
+| 2026-10-06 | BE, FE | M7 xong: BE T-104/107/108/117/109 (825 pytest, QA live 111 + 2 skip), FE T-132..137 (468 vitest, E2E mock 11); E2E BE thật 44/44 (UC-02). E2E helper `scan` → `hidScan` (mã bị cụt khi máy thiếu RAM). Còn mock: API-105 (T-119), `claim_code` (T-110) |
 | 2026-10-06 | BE, FE | M6 Nền tảng xong: BE T-101 (migration 0003), T-102, T-103, T-106 (727 pytest, QA live 101 + 2 skip); FE T-131, T-151, T-152 (384 vitest); E2E BE thật 43/43. Sự cố máy hết RAM / ngủ → chạy tuần tự, `caffeinate` |
 | 2026-10-05 | ai-flow-route | Mở item 02-returns-reconciliation, lane feature, quy mô M, component be + fe (station, admin); CP1 tự quyết theo ủy quyền user (DEC-201) |
 | 2026-10-05 | PO | Viết 01-srs.md v0.1: 43 FR (M 38 / S 5), 8 UC, BR-07..14 + BR-19..28, EX-R1..R13 + EX-P12, P13, NFR-32..36, AC-06, 07, 22..38; hardening L2–L9; Q6 tự quyết DEC-202 (đề xuất, cần xác nhận); camera bàn hoàn DEC-203; tài khoản bàn hoàn DEC-204 (giữ tài khoản chung + tên người kiểm); DEC-205..214 — tự quyết theo ủy quyền user |

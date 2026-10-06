@@ -138,7 +138,11 @@ Kiến trúc: [architecture.md](architecture.md).
 | API mới (M6) | API-100 `PUT /station/work-mode`, API-101 `PUT /station/operator`, API-122 `POST /packages/{id}/warehouse-status`; API-60 thêm `kind` | `ai-cam-be/openapi.json` |
 | Adapter | Shopee returns (`list_returns`, `get_return`) — mock, chưa test thật (T-3) | `modules/platforms/` |
 | Config | `RETENTION_CLIP_MIN_DAYS`, `SHOPEE_RETURNS_PAGE_SIZE`, `SHOPEE_RETURNS_WINDOW_DAYS` | `core/settings.py` |
-| FE | Client `lib/api/{returns,recon,claims}.ts`, `shared/returns/*`, `NavBadge`; màn R1–R5 / D14–D17 từ M7 | `ai-cam-fe/src/` |
+| API mới (M7) | API-102 lưu kết luận, API-103 chụp ảnh, API-104 tìm thủ công, API-106 tải ảnh ký, API-110/111 `/returns`; API-10/11/12/15/20/21/40 mở rộng (nhánh RETURN, 8 mã alert, `closed_session`) | `ai-cam-be/openapi.json` |
+| Job / WS (M7) | J-07 xử lý phiên RETURN (tự hoàn tất / bỏ dở); task `sessions.flag_order_cancelled` (BR-21); J-17 `media.capture_pack_snapshot` (queue video); WS-01 `SESSION_AUTO_CLOSED`, `ORDER_CANCELLED_DURING_SESSION`, `SESSION_WARN`; WS-02 `return.updated`; thư mục `/data/video/snapshots` | `modules/sessions`, `modules/media` |
+| Config (M7) | `ORDER_SN_REGEX`, `RETURN_LOOKUP_PREFIX_MIN`, `SNAPSHOT_*` | `core/settings.py` |
+| FE station (M7) | `/station` chọn panel R1/R2/S1–S5 (`selectPanel`); `features/station/returns/*` (ReturnReadyPanel, InspectingPanel, InspectionTable, ConclusionPicker, PackReferenceCard, ReturnLookupDialog, OperatorDialog, ForceNewDialog), `ClosedNotice`, `RecentSessions`, `shared/media/SnapshotStrip`; `useScanListener({captureInInputs})` | `ai-cam-fe/src/features/station/` |
+| FE dùng chung | Client `lib/api/{returns,recon,claims}.ts`, `shared/returns/*`, `NavBadge`; màn D14–D17 từ M8–M9 | `ai-cam-fe/src/` |
 
 ## Tích hợp ngoài
 | Hệ thống | Mục đích | Cách gọi | Config |
