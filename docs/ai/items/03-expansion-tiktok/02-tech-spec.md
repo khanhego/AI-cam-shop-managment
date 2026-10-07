@@ -596,6 +596,8 @@ Quyền ADMIN, SUPERVISOR, CSKH (`claims.manage` sẵn có — `users/permission
 
 Công thức theo BR-41 (giờ VN): `return_rate` = hồ sơ `BUYER_RETURN` + `FAILED_DELIVERY` + `UNANNOUNCED` có `created_at` trong kỳ ÷ kiện có chuyển → `HANDED_OVER` (`status_history`) trong kỳ; `refund_only` riêng. `issue_rate` = hồ sơ `RECEIVED_ISSUE` ÷ hồ sơ `RECEIVED_*` theo `received_at` trong kỳ. `share` của `by_kind` chỉ tính 2 loại có tín hiệu sàn (`UNANNOUNCED`, `UNIDENTIFIED` → `null`). `top_products` ≤ 20, sắp theo `return_requests` giảm dần; không có SKU → gộp theo tên + phân loại. Mẫu số 0 → `value = null` (FE hiện "—"). `series_granularity`: kỳ ≤ 31 ngày `day`, ≤ 180 `week`, còn lại `month` (FR-09.07, C).
 
+*Làm rõ khi implement (T-216, DEC-571 trong 02a):* hồ sơ `CANCELLED` (hủy / đã gộp) không tính; `UNANNOUNCED` có trong tử số (ví dụ JSON trên chỉ minh họa); `by_kind` chỉ loại có số > 0, `REFUND_ONLY` có dòng (`share = null`); lý do `null` → `reason_label` "Không có lý do"; `top_products` gán theo dòng hàng của **đơn**, `shipped` = số đơn có kiện bàn giao trong kỳ; `by_shop` có dòng `shop_id = null` cho đơn không shop; `from` / `to` không gửi → 30 ngày tới hôm nay.
+
 | HTTP | Mã lỗi | Khi nào | FE xử lý |
 |---|---|---|---|
 | 422 | VALIDATION_ERROR | `to < from` → `fields.to = "Ngày đến phải sau ngày từ."`; quá 366 ngày → `fields.from = "Chọn tối đa 366 ngày."`; `to` sau hôm nay → `fields.to = "Không chọn ngày trong tương lai."` | Lỗi dưới ô ngày, khóa "Xem" |
@@ -625,6 +627,8 @@ Công thức theo BR-41 (giờ VN): `return_rate` = hồ sơ `BUYER_RETURN` + `F
 ```
 
 `created`, `by_status`, `by_type_result`, `by_counterparty`, `by_shop` theo `created_at` trong kỳ (trạng thái hiện tại). `win_rate` = `WON` ÷ (`WON` + `LOST`) theo `result_at` trong kỳ; `recovered_amount` = tổng `recovered_amount` hồ sơ `WON` theo `result_at`. `submitted_before_deadline` = hồ sơ có `submitted_at` trong kỳ và `submitted_at ≤ deadline_at` ÷ hồ sơ có `submitted_at` trong kỳ. `overdue_unsent_now` = hiện tại (BR-42). Hồ sơ `LEGACY_HOLD` không tính. Lỗi như API-150.
+
+*Làm rõ (T-216, DEC-572):* hồ sơ đóng sau khi Thắng / Thua vẫn tính kết quả đó (lấy từ audit); `pending` = `NEW` / `SUBMITTED` / `WAITING`; hồ sơ không có hạn tính "trước hạn".
 </details>
 
 <details><summary><b>API-152</b> — GET /reports/productivity?from&to&platform&shop_id&station_id</summary>
