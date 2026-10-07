@@ -54,3 +54,72 @@
 [10:26:58Z] Đối tượng bằng chứng còn trên kho sau diễn tập: 20 (không đối tượng nào bị xóa thêm)
 [10:26:58Z] KẾT QUẢ phase full: ĐẠT
 
+
+## Phase full mở rộng (T-284: lệch đã chấp nhận, sửa 1 byte, quên khóa cũ → --evidence-only --key-file, verify --accept) — 2026-10-07T10:33Z
+[10:32:34Z] Diễn tập khôi phục AC-50 — phase full, 2000 kiện, thư mục <tmp>
+[10:32:34Z] Kho S3 tạm: http://localhost:59100 bucket aicam-test-backup (MinIO container riêng)
+[10:32:35Z] DB nguồn drill_src: migrate head xong
+[10:32:39Z] Dữ liệu nguồn: {'package': 2000, 'session': 2000, 'clip': 16, 'snapshot': 8, 'claim': 6, 'claim_evidence': 6, 'backup_object': 0}
+[10:32:40Z] J-20 sao lưu DB: {'status': 'SUCCESS', 'run_id': '01a115ec-2526-74a1-bc75-e6828031e7f6', 'size': 286743} (0.7 giây)
+[10:32:41Z] Bằng chứng khóa 1: J-21 {'clips': 12, 'snapshots': 6}; J-22 {'lease_expired': 0, 'UPLOADED': 17, 'HASH_MISMATCH': 1} (0.5 giây)
+[10:32:41Z] Clip 01a115ec-164c-7707-9261-2adb9f1e85d2 sau J-22: HASH_MISMATCH
+[10:32:41Z] API-188 UPLOAD_ANYWAY → PENDING
+[10:32:41Z] — Đổi khóa: 54F8-6045-55E8-CCE6 → 1B5C-091B-E756-E5E8 (khóa cũ giữ trong BACKUP_OLD_KEYS) —
+[10:32:41Z] API-180 sau đổi khóa: state ON, old_keys [{'fingerprint': '54F8-6045-55E8-CCE6', 'evidence_objects': 17, 'db_runs': 1, 'reuploadable': 17, 'reuploadable_bytes': 3007146}]
+[10:32:41Z] Bằng chứng mới sau đổi khóa (khóa 2): J-21 {'clips': 2, 'snapshots': 1}; J-22 {'lease_expired': 0, 'UPLOADED': 4} (0.1 giây)
+[10:32:42Z] J-20 lượt 2 (khóa 2): {'status': 'SUCCESS', 'run_id': '01a115ec-2c3e-72d8-8272-54b6e3eeac0d', 'size': 289971}
+[10:32:42Z] Đối tượng bằng chứng trên kho theo khóa: {'54F8-6045-55E8-CCE6': 17, '1B5C-091B-E756-E5E8': 4}
+[10:32:42Z] Xóa 1 đối tượng clip trên kho trước khi khôi phục: 01a115ec-1632-7361-84f0-61ec424bb1e9 (clips/2026/10/06/01a115ec-161f-76c4-8680-5a93f90e899e-CAM1.mp4)
+[10:32:42Z] Sửa 1 byte đối tượng backup/evidence/snapshots/01a115ec-1636-775a-9c76-da5f9b322b33.enc
+[10:32:42Z] — Máy mới: DB trống + thư mục video trống, CHỈ có khóa 2 (quên khóa cũ) —
+[10:32:43Z]   Đã khôi phục DB từ backup/db/2026/10/07/aicam-20261007T103241Z.dump.enc (khóa 1B5C-091B-E756-E5E8, 289,919 byte, pg_restore 0.9 giây).
+[10:32:43Z]   Đã khôi phục 1 file nhập vào <tmp>/dst-imports.
+[10:32:43Z]   Sao lưu tự động đã TẮT (Chờ kiểm khôi phục) tới khi `aicam backup-verify` đạt.
+[10:32:43Z]   Bằng chứng: tải 4 / thiếu (MISSING) 20 / ngoài DB 0 / giải mã lỗi 0 / thiếu khóa 16 (đã có trên đĩa 0, nguồn đã xóa theo lưu trữ 0, về lại bình thường 0) — 0.3 giây.
+[10:32:43Z]     lỗi UNKNOWN_KEY: CLIP 01a115ec-1632-7362-affb-d3d815f71f01 (backup/evidence/clips/01a115ec-1632-7362-affb-d3d815f71f01.enc, khóa 54F8-6045-55E8-CCE6)
+[10:32:43Z]     lỗi UNKNOWN_KEY: CLIP 01a115ec-164c-7706-8bd5-7c821e6093b2 (backup/evidence/clips/01a115ec-164c-7706-8bd5-7c821e6093b2.enc, khóa 54F8-6045-55E8-CCE6)
+[10:32:43Z]     lỗi UNKNOWN_KEY: CLIP 01a115ec-1659-774d-8c3f-88dbada84214 (backup/evidence/clips/01a115ec-1659-774d-8c3f-88dbada84214.enc, khóa 54F8-6045-55E8-CCE6)
+[10:32:43Z]     lỗi UNKNOWN_KEY: CLIP 01a115ec-1659-774e-8eb0-80c7a23e1c99 (backup/evidence/clips/01a115ec-1659-774e-8eb0-80c7a23e1c99.enc, khóa 54F8-6045-55E8-CCE6)
+[10:32:43Z]     lỗi UNKNOWN_KEY: SNAPSHOT 01a115ec-1636-775a-9c76-da5f9b322b33 (backup/evidence/snapshots/01a115ec-1636-775a-9c76-da5f9b322b33.enc, khóa 54F8-6045-55E8-CCE6)
+[10:32:43Z]     lỗi UNKNOWN_KEY: SNAPSHOT 01a115ec-164d-7730-956c-009b683a63a8 (backup/evidence/snapshots/01a115ec-164d-7730-956c-009b683a63a8.enc, khóa 54F8-6045-55E8-CCE6)
+[10:32:43Z]     lỗi UNKNOWN_KEY: SNAPSHOT 01a115ec-165a-76e7-80ca-04ba82477d17 (backup/evidence/snapshots/01a115ec-165a-76e7-80ca-04ba82477d17.enc, khóa 54F8-6045-55E8-CCE6)
+[10:32:43Z]     lỗi UNKNOWN_KEY: CLIP 01a115ec-1664-749c-a9e3-bee52b68bc83 (backup/evidence/clips/01a115ec-1664-749c-a9e3-bee52b68bc83.enc, khóa 54F8-6045-55E8-CCE6)
+[10:32:43Z]     lỗi UNKNOWN_KEY: CLIP 01a115ec-1664-749d-a47d-3a59aaff3d9c (backup/evidence/clips/01a115ec-1664-749d-a47d-3a59aaff3d9c.enc, khóa 54F8-6045-55E8-CCE6)
+[10:32:43Z]     lỗi UNKNOWN_KEY: CLIP 01a115ec-166f-7453-8b24-b73fbb864eb6 (backup/evidence/clips/01a115ec-166f-7453-8b24-b73fbb864eb6.enc, khóa 54F8-6045-55E8-CCE6)
+[10:32:43Z]     lỗi UNKNOWN_KEY: CLIP 01a115ec-166f-7454-ac9a-8f7479406c63 (backup/evidence/clips/01a115ec-166f-7454-ac9a-8f7479406c63.enc, khóa 54F8-6045-55E8-CCE6)
+[10:32:43Z]     lỗi UNKNOWN_KEY: CLIP 01a115ec-167d-7650-8ff0-27ee284c2648 (backup/evidence/clips/01a115ec-167d-7650-8ff0-27ee284c2648.enc, khóa 54F8-6045-55E8-CCE6)
+[10:32:43Z]     lỗi UNKNOWN_KEY: CLIP 01a115ec-167d-7651-8107-47d1dd4e5ff8 (backup/evidence/clips/01a115ec-167d-7651-8107-47d1dd4e5ff8.enc, khóa 54F8-6045-55E8-CCE6)
+[10:32:43Z]     lỗi UNKNOWN_KEY: SNAPSHOT 01a115ec-1665-7456-8fac-154cad75faf0 (backup/evidence/snapshots/01a115ec-1665-7456-8fac-154cad75faf0.enc, khóa 54F8-6045-55E8-CCE6)
+[10:32:43Z]     lỗi UNKNOWN_KEY: SNAPSHOT 01a115ec-1671-7174-bfff-55ca20381e77 (backup/evidence/snapshots/01a115ec-1671-7174-bfff-55ca20381e77.enc, khóa 54F8-6045-55E8-CCE6)
+[10:32:43Z]     lỗi UNKNOWN_KEY: SNAPSHOT 01a115ec-167e-77f7-bfd4-c9ed3bf8cab4 (backup/evidence/snapshots/01a115ec-167e-77f7-bfd4-c9ed3bf8cab4.enc, khóa 54F8-6045-55E8-CCE6)
+[10:32:43Z]   Có 16 đối tượng lỗi — danh sách: <tmp>/dst-video/restore-reports/restore-failures-20261007T103243Z.csv. Tìm lại khóa cũ rồi chạy `aicam backup-restore --evidence-only --key-file …`.
+[10:32:43Z]   Xong sau 1.3 giây.
+[10:32:43Z] backup-restore --evidence mã 3, tổng 1.3 giây
+[10:32:43Z] CSV lỗi: restore-failures-20261007T103243Z.csv
+[10:32:43Z]   csv: kind,id,object_key,reason,key_fp
+[10:32:43Z]   csv: CLIP,01a115ec-1632-7362-affb-d3d815f71f01,backup/evidence/clips/01a115ec-1632-7362-affb-d3d815f71f01.enc,UNKNOWN_KEY,54F8-6045-55E8-CCE6
+[10:32:43Z]   csv: CLIP,01a115ec-164c-7706-8bd5-7c821e6093b2,backup/evidence/clips/01a115ec-164c-7706-8bd5-7c821e6093b2.enc,UNKNOWN_KEY,54F8-6045-55E8-CCE6
+[10:32:43Z]   csv: CLIP,01a115ec-1659-774d-8c3f-88dbada84214,backup/evidence/clips/01a115ec-1659-774d-8c3f-88dbada84214.enc,UNKNOWN_KEY,54F8-6045-55E8-CCE6
+[10:32:43Z] Tệp dở (.part) trên đĩa: 0
+[10:32:43Z] — Tìm lại khóa cũ: backup-restore --evidence-only --key-file khoa-cu.txt —
+[10:32:44Z]   Bằng chứng: tải 15 / thiếu (MISSING) 0 / ngoài DB 0 / giải mã lỗi 1 / thiếu khóa 0 (đã có trên đĩa 0, nguồn đã xóa theo lưu trữ 0, về lại bình thường 15) — 0.2 giây.
+[10:32:44Z]     lỗi DECRYPT_FAILED: SNAPSHOT 01a115ec-1636-775a-9c76-da5f9b322b33 (backup/evidence/snapshots/01a115ec-1636-775a-9c76-da5f9b322b33.enc, khóa 54F8-6045-55E8-CCE6)
+[10:32:44Z]   Có 1 đối tượng lỗi — danh sách: <tmp>/dst-video/restore-reports/restore-failures-20261007T103244Z.csv. Tìm lại khóa cũ rồi chạy `aicam backup-restore --evidence-only --key-file …`.
+[10:32:44Z]   Xong sau 0.2 giây.
+[10:32:44Z] backup-restore --evidence-only mã 3 (còn đối tượng ảnh bị sửa → vẫn mã 3)
+[10:32:44Z] Trạng thái clip đích: {'MISSING': 3, 'READY': 13}
+[10:32:44Z] Setting đích: backup_enabled=False, restore_pending=True
+[10:32:44Z] J-23 trên máy mới khi chờ kiểm: {'skipped': 'RESTORE_PENDING'} (không xóa gì)
+[10:32:44Z]   verify: khớp 17 / lệch đã chấp nhận 1 / lệch 1 / thiếu đã ghi nhận 5 / thiếu 0
+[10:32:44Z]   verify:   lệch: CLIP 01a115ec-1632-7362-affb-d3d815f71f01 (clips/2026/10/06/01a115ec-161f-76c4-8680-5a93f90e899e-CAM2.mp4)
+[10:32:44Z]   verify: KHÔNG ĐẠT — danh sách đủ: <tmp>/dst-video/restore-reports/verify-20261007T103244Z.csv. Lối ra: docs/ops.md §6.2 (--accept <id…> --reason …).
+[10:32:44Z]   verify --accept (thiếu --reason) mã 2: --accept cần --reason (5–500 ký tự) — không ghi gì.
+[10:32:44Z]   verify --accept: Trước khi chấp nhận: khớp 17 / lệch đã chấp nhận 1 / lệch 1 / thiếu đã ghi nhận 5 / thiếu 0
+[10:32:44Z]   verify --accept:   đã chấp nhận MISMATCH CLIP 01a115ec-1632-7362-affb-d3d815f71f01
+[10:32:44Z]   verify --accept: khớp 17 / lệch đã chấp nhận 2 / lệch 0 / thiếu đã ghi nhận 5 / thiếu 0
+[10:32:44Z]   verify --accept: ĐẠT — đã gỡ 'Chờ kiểm khôi phục'. Admin bật lại sao lưu ở Dashboard → Sao lưu cloud.
+[10:32:44Z] Audit BACKUP_VERIFY_ACCEPT: 1
+[10:32:44Z] Sau verify: restore_pending=False
+[10:32:44Z] Đối tượng bằng chứng còn trên kho sau diễn tập: 20 (không đối tượng nào bị xóa thêm)
+[10:32:44Z] KẾT QUẢ phase full: ĐẠT
+
