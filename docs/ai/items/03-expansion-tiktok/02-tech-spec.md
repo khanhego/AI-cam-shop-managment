@@ -765,6 +765,8 @@ API-170 `GET /notify/channels`:
 
 `severity`: `HIGH` / `MEDIUM` / `INFO` (N07: `MEDIUM` ở 80 %, `HIGH` ở 90 % — gửi theo mức thực của sự kiện).
 
+`items[].last_error` (v0.5 — chốt theo phản hồi FE DEC-763 / BE DEC-730): `null` hoặc object `{code: "NOTIFY_SEND_FAILED" | "NOTIFY_TIMEOUT", message (tiếng Việt, như 502 / 504 dưới), at: "…Z", provider_code (mã của nhà cung cấp, có thể null)}` — không bao giờ là chuỗi. `events[].label` là nhãn ngắn một dòng (01 §7.5), FE hiển thị nguyên văn. API-171 / 172 **không** có trường bí mật (bot token, khóa OA) — bí mật chỉ ở cấu hình máy chủ (DEC-408); token Zalo OA lưu DB (DEC-445) là token xoay vòng do server tự làm mới, không nhập qua UI.
+
 API-171 `POST /notify/channels` `{name, type, target, events, enabled}` → `201` item. API-172 `PATCH /notify/channels/{id}` (trường tùy chọn như POST) → `200` item. API-173 `DELETE` → `204` (tin `QUEUED` / `HELD` / `RETRYING` của kênh → `DROPPED`). API-174 `POST /notify/channels/{id}/test` → `200 {"ok": true, "sent_at": "…Z"}` (tin "Tin thử từ Hệ thống X — kênh {tên}. Bạn sẽ nhận: {danh sách sự kiện}."). API-175 `GET /notify/messages?channel_id&status&page&page_size` → `{items: [{id, channel: {id, name}, event_code, event_label, item_count, text, status, attempts, last_error, created_at, sent_at, next_attempt_at}], page, page_size, total}` (30 ngày, mới nhất trước). API-176 `PUT /notify/quiet-hours` `{enabled, start: "HH:MM", end: "HH:MM"}` → `200 quiet_hours`.
 
 | HTTP | Mã lỗi | Khi nào | FE xử lý |
