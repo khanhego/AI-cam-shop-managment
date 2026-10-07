@@ -455,10 +455,11 @@ Item thêm:
 ```json
 "shares_active_count": 1,
 "shares": [ { "id": "…", "status": "ACTIVE", "recipient": "CSKH Shopee – phiếu 98765",
-              "expires_at": "…Z", "session_count": 1, "url": "https://…", "can_revoke": true } ]
+              "expires_at": "…Z", "session_count": 1, "url": "https://…", "can_revoke": true,
+              "revoke_pending": false, "created_at": "…Z" } ]
 ```
 
-`shares` = ≤ 3 link mới nhất (mọi trạng thái trừ `FAILED`) có phiên của kiện; `url` chỉ khi `ACTIVE`. (M16 — DEC-666, chỉ thêm) item có thêm `revoke_pending`, `created_at`; API-132 `shares` = link tạo từ hồ sơ (`claim_id`); `shares_active_count` = `CREATING` + `ACTIVE` còn hạn. Sự kiện phiên có `AMBIGUOUS_SHOP` thêm `{shops: [{platform, name}]}` trong dòng thời gian — chốt T-206 (DEC-561, khớp FE DEC-603): một dòng `timeline[]` riêng `{at, source: "WAREHOUSE", from_status: null, to_status: "PACKING", actor: <station>, shops: [{platform, name}]}`; dòng trạng thái thường `shops = null`.
+`shares` = ≤ 3 link mới nhất (mọi trạng thái trừ `FAILED`) có phiên của kiện; `url` chỉ khi `ACTIVE`. (M16 — DEC-666, chỉ thêm) item có thêm `revoke_pending` (EX-S7 "Đang thu hồi — chờ Internet" ở D4 / D17 — FE DEC-702, BE DEC-678), `created_at`; API-132 `shares` = link tạo từ hồ sơ (`claim_id`); `shares_active_count` = `CREATING` + `ACTIVE` còn hạn. Sự kiện phiên có `AMBIGUOUS_SHOP` thêm `{shops: [{platform, name}]}` trong dòng thời gian — chốt T-206 (DEC-561, khớp FE DEC-603): một dòng `timeline[]` riêng `{at, source: "WAREHOUSE", from_status: null, to_status: "PACKING", actor: <station>, shops: [{platform, name}]}`; dòng trạng thái thường `shops = null`.
 </details>
 
 <details><summary><b>API-32 mở rộng</b> — Tổng quan D2</summary>
