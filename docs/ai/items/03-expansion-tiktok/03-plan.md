@@ -79,7 +79,7 @@ Owner tất cả: khanhtt (profile §7). Ticket: chưa tạo (tracker `none` cho
 | T-288 | §5.1 #15: `resolve_code` mã chiều về mơ hồ → `MULTIPLE_ORDERS`; không tự gộp hồ sơ chưa xác định + log | be | BR-29, EX-R20 | 02a | T-271 | 0,5 | M13 | | ⬜ |
 | T-253 | D7 Kết nối sàn: nhóm theo sàn, thẻ shop, kết nối theo sàn, `?result=`, ngắt, shop đã ngắt, cảnh báo đồng bộ | fe | D7 / FR-05.13, 05.14, 05.20 | 02b-ad | T-252 (BE thật: T-207) | 2 | M13 | | ✅ `fe 6ef1e51` (MSW; BE thật chờ T-207 — DEC-607) |
 | T-233 | S2 `PlatformChip` + `MergedOrdersBanner` + `CancelRequestedBanner` + đơn từng dòng; R2 chip; S4 `ORDER_CANCEL_REQUESTED` | fe | S2, R2, S4 / FR-03.03, 05.17, 05.22 | 02b-st | T-231, T-252 (BE thật: T-212, T-278) | 1,5 | M13 | | ✅ `fe 71bc453` (MSW; BE thật chờ T-212, T-278 — DEC-608) |
-| T-236 | Bàn hoàn mã trùng nhiều shop: `RETURN_MULTIPLE_ORDERS` → R3 với `data.code`, chip sàn · shop, mock `2410DUP00001` + `RTTST-DUP-1` | fe | R1, R3 / BR-29, EX-R20 | 02b-st | T-231, T-233 (BE thật: T-271, T-288) | 1 | M13 | | ⬜ |
+| T-236 | Bàn hoàn mã trùng nhiều shop: `RETURN_MULTIPLE_ORDERS` → R3 với `data.code`, chip sàn · shop, mock `2410DUP00001` + `RTTST-DUP-1` | fe | R1, R3 / BR-29, EX-R20 | 02b-st | T-231, T-233 (BE thật: T-271, T-288) | 1 | M13 | | ✅ `fe 3d64b91` (MSW; BE thật chờ T-271, T-288 — DEC-609) |
 | T-235 | Test component / integration + E2E mock station; E2E BE thật station Phase 3 | fe | — | 02b-st | T-232..T-234, T-236; BE T-212, T-213 | 1 | M13 | | ⬜ |
 | T-216 | Báo cáo API-150..152 (BR-41) + cache + `statement_timeout` + test công thức | be | FR-09.02..05 | 02a | T-201 | 2 | M14 | | ⬜ |
 | T-217 | API-153 CSV + `series` (C) + `perf_reports.py` đo NFR-37 | be | FR-09.06, 09.07; NFR-37 | 02a | T-216 | 1,5 | M14 | | ⬜ |
