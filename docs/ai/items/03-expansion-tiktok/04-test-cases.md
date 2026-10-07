@@ -77,7 +77,7 @@ Cột **Cách**: `UNIT` · `API` · `INT` · `MIG` · `CLI` · `E2E` · `MAN` ·
 | Khóa sao lưu | **K1** (PRE-15), **K2** (tạo ở TC-02.90 bằng `aicam backup-keygen`); dấu vân tay đọc từ lệnh, dạng `XXXX-XXXX-XXXX-XXXX` |
 
 **Tua giờ:** chạy ở `INT` (`clock.advance`), hoặc trên stack thật sửa cột thời gian bằng psql như item 01 04 §1 (ghi rõ trong bằng chứng).
-**Dọn:** `ai-cam-be/scripts/qa-reset.sh` (Phase 3 thêm: `mc rm --recursive --force --versions` hai bucket MinIO, xóa `notify:mock:*`, `BACKUP_TMP_DIR`) — **cần xác nhận khi T-229 xong**.
+**Dọn:** `ai-cam-be/scripts/qa-reset.sh` (Phase 3 thêm khi `AICAM_RESET_PHASE3=1`: `mc rm --recursive --force --versions` hai bucket MinIO bằng tài khoản root, xóa `notify:*` / `backup:*` / `share:*` / `sync*:*` trong Redis; `BACKUP_TMP_DIR` là `/tmp` của container worker-backup, mất khi tạo lại container) — đã xác nhận ở T-229 (DEC-820). Stack QA riêng song song stack dev: `docker compose -p aicam-qa -f docker/compose.dev.yml -f docker/compose.qa.yml …` + `. docker/qa.env`.
 **Vào:** G2 ✅ (DEC-533), build milestone tương ứng deploy được trên stack dev, `seed-demo` Phase 3 có dữ liệu trên. **Ra (G4):** mọi AC + FR mức M có TC ✅ có bằng chứng hoặc ⛔ "chưa test — thiếu tài nguyên" có DEC; bug Critical / High = 0; hồi quy Phase 1 / 2 ✅; ma trận quyền 4 vai ✅.
 
 ## 2. Test cases
