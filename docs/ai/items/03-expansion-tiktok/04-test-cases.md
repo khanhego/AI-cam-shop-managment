@@ -60,16 +60,16 @@ Cột **Cách**: `UNIT` · `API` · `INT` · `MIG` · `CLI` · `E2E` · `MAN` ·
 
 | Dữ liệu | Giá trị sau reset |
 |---|---|
-| Shop Shopee `990001` | "TST Shop A" — mọi dữ liệu Phase 1 / 2 |
+| Shop Shopee `990001` | "TST Shop (mock)" (tên adapter mock giữ từ Phase 1 — T-211, DEC-566; FE mock dùng "TST Shop A") — mọi dữ liệu Phase 1 / 2 |
 | Shop Shopee `990002` | "TST B" — kiện `SPXTSTB000000001..20`, đơn `2410TSTB0001..20`; đơn **`2410DUP00001`** (kiện `SPXTSTB000000021`); `SPXTSTB000000015` lần đồng bộ 1 `IN_CANCEL`, lần 2 `READY_TO_SHIP` (từ chối hủy) |
 | Shop TikTok `TTMOCKA` | "TST TikTok A (mock)" — cùng grant với B (một lần ủy quyền `MOCK-TT-CODE`); đơn **`2410DUP00001`** (kiện `TTTST0000000021`) |
 | Shop TikTok `TTMOCKB` | "TST TikTok B (mock)" |
-| TikTok 9 trạng thái + 1 lạ | Kiện `TTTST0000000011..19` lần lượt `UNPAID`, `ON_HOLD`, `AWAITING_SHIPMENT`, `PARTIALLY_SHIPPING`, `AWAITING_COLLECTION`, `IN_TRANSIT`, `DELIVERED`, `COMPLETED`, `CANCELLED`; `TTTST0000000099` trạng thái `XYZ` |
+| TikTok 9 trạng thái + 1 lạ | Đơn `5761TT0000000011..19` (shop `TTMOCKA`), kiện `TTTST0000000011..19` lần lượt `UNPAID`, `ON_HOLD`, `AWAITING_SHIPMENT`, `PARTIALLY_SHIPPING`, `AWAITING_COLLECTION`, `IN_TRANSIT`, `DELIVERED`, `COMPLETED`, `CANCELLED`; `TTTST0000000099` trạng thái `XYZ` |
 | TikTok kiện gộp | `TTTST0000000077` thuộc 2 đơn `5761TT0000000771`, `5761TT0000000772` (mỗi đơn 1 sản phẩm) |
 | TikTok kho TikTok xử lý | `TTTST0000000098` (`fulfillment_type` kho sàn) — phải bị bỏ qua |
 | TikTok yêu cầu hủy | `TTTST0000000050` `PENDING` · `…051` lần 1 `AWAITING_SHIPMENT`, lần 2 `PENDING`, lần 3 `REJECTED` · `…052` `PENDING` rồi người mua rút · `…053` `APPROVED` (đơn `CANCELLED`) |
-| TikTok yêu cầu trả (6 kịch bản AC-42) | `TTTST0000000061` `REFUND_ONLY` · `…062` `RETURN_AND_REFUND` mã chiều về `TTRTTST000062` · `…063` `REPLACEMENT` · `…064` `RETURN_OR_REFUND_REQUEST_PENDING` 3 ngày rồi chấp nhận · `…065` người mua hủy · `…066` hoàn tiền xong khi kiện chưa về |
-| Mã chiều về trùng | `RTTST-DUP-1` ở 2 hồ sơ hàng hoàn mở của 2 đơn khác shop |
+| TikTok yêu cầu trả (6 kịch bản AC-42) | Mã yêu cầu `RTTT00000000(61..66)`, đơn `5761TT00000000(61..66)`; đổi trạng thái theo đồng hồ từ lúc nạp mock (`_status_after`: 064 +72 giờ chấp nhận, 065 +24 giờ người mua hủy, 066 +48 giờ hoàn tiền xong). `TTTST0000000061` `REFUND_ONLY` · `…062` `RETURN_AND_REFUND` mã chiều về `TTRTTST000062` · `…063` `REPLACEMENT` · `…064` `RETURN_OR_REFUND_REQUEST_PENDING` 3 ngày rồi chấp nhận · `…065` người mua hủy · `…066` hoàn tiền xong khi kiện chưa về |
+| Mã chiều về trùng | `RTTST-DUP-1` ở 2 hồ sơ hàng hoàn mở của 2 đơn khác shop: yêu cầu `RSDUP0000001` (mã yêu cầu trả cũng trùng) của đơn `2410TSTB0020` (990002) và `5761TT0000000067` (`TTMOCKA`) |
 | EX-T2 | Mock `TTMOCKB` trả một kiện mang mã vận đơn `SPXTST0000010` (đã thuộc đơn shop `990001`) |
 | Mã lạ | `SPXVN0000000000` (không shop nào có) · `SPXTSTX0000001` (có ở `990002` **và** `TTMOCKB` — EX-P14, fixture tra) |
 | Người dùng | `tst_admin`, `tst_sup`, `tst_cskh`, `tst_cskh2`, `tst_station01` (Station 01 "Cả hai"), `tst_station02` (Station 02 "Nhận hoàn") — mật khẩu `matkhau123` |
