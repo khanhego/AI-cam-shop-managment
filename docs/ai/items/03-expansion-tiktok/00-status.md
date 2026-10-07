@@ -39,7 +39,7 @@ Số item: 03 (`docs/ai/items/` có 01, 02; remote 3 repo có `main`, `feat/01-�
 | 6 | Kế hoạch | ✅ | 2026-10-07 | [03-plan.md](03-plan.md) Approved (DEC-534): 74 task, M11 nền schema (0006 / 0007 trọn ở M11) · M12 đa shop + hardening · M13 TikTok · M14 báo cáo · M15 sao lưu · M16 link + thiếu tệp · M17 thông báo · M18 hoàn thiện; phụ thuộc mềm + chia milestone DEC-536; tổng công BE 83 (02a ghi ≈ 82) DEC-537 |
 | 7 | Test cases | ✅ | 2026-10-07 | [04-test-cases.md](04-test-cases.md) Ready (CP7 DEC-535): 378 case (328 chức năng · 14 X3 tài nguyên ngoài · 22 phân quyền 4 vai · 14 NFR), 210 P1; phủ 39 FR M, AC-40..62, BR, EX, trạng thái, mã lỗi, job tách theo shop, migration (gồm G2R3-1 — TC-MG3.13); dự kiến ⛔ 14 case X3 (TikTok partner, S3 thật, bot thật, camera, server kho, điện thoại, mạng kho); đánh số + biên BR-37 DEC-538 |
 | 8 | Implement | ▶ | 2026-10-07 | M11 BE xong 8/8 (T-201, 202, 203, 213, 214, 275, 282, 289 — commit trong 03-plan §2; DEC-539..546); full pytest ai-cam-be 1163 passed / 127 skipped; 1 triệu đơn 0005 → 0007 ~22 giây. Còn M11 FE: T-231, T-251, T-252 |
-| 8c | Tài liệu nghiệp vụ (mỗi lát) | ⬜ | | |
+| 8c | Tài liệu nghiệp vụ (mỗi lát) | ✅ | 2026-10-07 | `docs/nghiep-vu/03-expansion-tiktok/` lát 11–18 (commit `514690a`), Draft chờ PO / tech lead soát |
 | 9 | Commit / PR | ⬜ | | |
 | 10 | Review code | ⬜ | | |
 | 11 | Chạy test | ⬜ | | |
@@ -80,6 +80,7 @@ Số item: 03 (`docs/ai/items/` có 01, 02; remote 3 repo có `main`, `feat/01-�
 | 2026-10-06 | UX | Bước 2b: 01 §10 (v0.2) — kiểm kê REUSE / EXTEND / NEW, journey UC-10, 15, 16/17, 18, 20, 22, 23, đặc tả D7, D20, D21, D22, D23, W1, ShareLinkDialog + mở rộng station / dashboard đủ trạng thái và chữ thật; DEC-422..424 |
 | 2026-10-07 | PM | Bước 6: 03-plan.md — gom 74 task từ 02a §12 (52), 02b-station §14 (6: T-231..T-236), 02b-admin §14 (16); 8 milestone M11–M18 theo lát 01 §13 (migration 0006 / 0007 trọn ở M11); đường găng 17,5 ngày; 117 ngày công; phủ 39 FR M; rủi ro tiến độ; tracker `none`. Plan ✅ (DEC-534, 536, 537). Không sửa code, không commit |
 | 2026-10-07 | QA | Bước 7: 04-test-cases.md — 378 case (328 chức năng, 14 X3, 22 phân quyền, 14 NFR), 210 P1; PRE-13..PRE-20, dữ liệu `seed-demo` Phase 3 (dự kiến); truy vết FR / AC / BR / EX / job / mã lỗi / trạng thái / NFR. CP7 Ready (DEC-535, 538). Không sửa code, không commit |
+| 2026-10-07 | Dev, Flow | Bước 8c: tài liệu nghiệp vụ lát 11–18. Ghi chú cho G3 (DEC-650 dải điều phối): (1) 02a §11 nhắc `test_downgrade_phase2_jobs` chưa có trong code; (2) `evidence/m15-restore-drill.txt` thiếu dòng log bước sửa tệp sau khôi phục; (3) ví dụ JSON API-150 ở 02 lệch công thức BR-41 (DEC-571); (4) D20 chưa lọc 'Có vấn đề' / SKU (DEC-611 mở); (5) phiên có clip Thiếu tệp vẫn có thể là phiên chính nhưng không đưa vào link được — cần quyết ở G3 |
 
 ## Quyết định (DEC)
 | ID | Vấn đề | Quyết định | Lý do | Người | Ngày |
