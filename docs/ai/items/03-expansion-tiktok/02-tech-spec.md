@@ -842,6 +842,8 @@ API-188 `POST /backup/issues/{object_id}/resolve` `{"action": "UPLOAD_ANYWAY" | 
 | 422 | VALIDATION_ERROR | `upload_mbps` ngoài 1–1000 | Lỗi dưới ô |
 | 403 | FORBIDDEN | Không phải ADMIN | D12 |
 
+Bổ sung khi implement (M15, chỉ thêm — DEC-657, 660): API-185 item thêm `attempts`; API-185 không truyền `kind` = cả 3 loại; API-188 `object_id` không phải tệp bằng chứng → 404; API-182 sai dấu vân tay 409 kèm `details.fingerprint` hiện tại; API-187 gọi lại khi không còn gì vẫn 202 `queued = 0`.
+
 Audit: `BACKUP_SETTINGS_UPDATE`, `BACKUP_KEY_CONFIRM` (`{fingerprint, previous_fingerprint}`), `BACKUP_TEST` (`{ok, code}`), `BACKUP_RUN_NOW`, `BACKUP_REUPLOAD_OLD_KEY`, `BACKUP_ISSUE_RESOLVE`; CLI: `BACKUP_RESTORE_VERIFIED`, `BACKUP_VERIFY_ACCEPT` (v0.3).
 </details>
 

@@ -89,3 +89,14 @@ Loại B vì mở đường vào server kho (ADR-001). Loại C vì một lỗi 
 | Cần đếm lượt xem link | Xem lại khi nhà cung cấp có nhật ký truy cập dùng được (DEC-410 backlog) |
 | Đổi khóa sao lưu | Đã hỗ trợ tối thiểu (DEC-495). Mã hóa lại bản trên cloud: backlog |
 | Dung lượng thực > 2 lần ước tính 01 §8.2 sau 1 tháng | Xem lại phạm vi BR-33 / giá |
+
+## Ghi chú implement M15 (2026-10-07, ai-cam-be T-218..T-287)
+
+- `ObjectStore` đồng bộ, gọi qua `asyncio.to_thread` cả thao tác (DEC-651). Dev / test: MinIO bản cộng đồng
+  `pgsty/minio` (ảnh `minio/minio` không còn phát hành — DEC-652); chính sách khóa ứng dụng
+  `ai-cam-be/docs/s3-policy.example.json` đã kiểm trên MinIO tạm: khóa ứng dụng xóa phiên bản / tắt versioning →
+  `AccessDenied`. Nhà cung cấp thật (Q20): **chưa test** (presign 7 ngày, `text/html` inline, object lock).
+- Chấp nhận lệch mã băm (API-188 "Vẫn sao lưu", `backup-verify --accept`) **không ghi đè** bản cloud đang có —
+  bản cloud cũ là bản đã qua kiểm băm (DEC-663).
+- Khôi phục không bao giờ đặt `DELETED`; J-23 chỉ xóa khi nguồn bị retention xóa (clip có audit `DELETE_CLIP`
+  `RETENTION`, ảnh `DELETED` bởi J-02) và `state = ON` (DEC-656, 661).
