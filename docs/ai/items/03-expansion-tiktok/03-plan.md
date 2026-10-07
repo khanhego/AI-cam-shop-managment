@@ -69,7 +69,7 @@ Owner tất cả: khanhtt (profile §7). Ticket: chưa tạo (tracker `none` cho
 | T-261 | D2 thẻ + attention mới; D14 tab Chỉ hoàn tiền; D3 / D14 / D15 / D16 lọc sàn / shop + chip; D4 người đóng gói + `AMBIGUOUS_SHOP`; D10 nhãn | fe | FR-09.01, 08.08, 07.01, 03.16, 10.03 | 02b-ad | T-252 (BE thật: T-215, T-212) | 2 | M12 | ✅ `fe b509315` (MSW — DEC-602, 603) |
 | T-205 | Fan-out `dispatch.py` J-04 / 06 / 13; J-05 theo `lookup`; `grants.ensure_fresh` + J-12 theo grant; `budget.py`; test cô lập 3 shop | be | FR-05.14; NFR-39 | 02a | T-204 | 2 | M13 | | ✅ `3e46576` — DEC-560 (queue `sync` tới T-276) |
 | T-206 | `lookup.find_everywhere` (BR-32) + `AMBIGUOUS_SHOP`; nối PACK, RETURN, J-05; đo AC-43 | be | FR-05.19; API-11 | 02a | T-205 | 1,5 | M13 | | ✅ `780d912` — DEC-561 (AC-43 p95 2,59 giây mock; API-31 `timeline[].shops` chốt) |
-| T-207 | API-70 / 71 / 72 / 154 / 155 / 156, `RESULT_PATH`, audit, WS `shop.updated` + kênh `ws:admin` | be | FR-05.13, 05.20 | 02a | T-204 | 1,5 | M13 | | ⬜ |
+| T-207 | API-70 / 71 / 72 / 154 / 155 / 156, `RESULT_PATH`, audit, WS `shop.updated` + kênh `ws:admin` | be | FR-05.13, 05.20 | 02a | T-204 | 1,5 | M13 | | ✅ `22976fe` — DEC-562 |
 | T-208 | TikTok client (ký HMAC, thử lại, `Retry-After`, ngân sách, log, che log) + ủy quyền (token get / refresh, shop list) — respx | be | FR-05.08, 05.13 | 02a | T-203 | 2 | M13 | | ⬜ |
 | T-209 | TikTok adapter đơn / kiện / vận chuyển / yêu cầu hủy / tra khi quét + `mapping.py` + EX-T5 + kiện gộp | be | FR-05.15..05.17, 05.22 | 02a | T-208 | 2 | M13 | | ⬜ |
 | T-210 | TikTok yêu cầu trả + `returns_mapping` (BR-31) + nhóm yêu cầu trả 5 giá trị trong `returns` | be | FR-05.18; BR-31 | 02a | T-209 | 2 | M13 | | ⬜ |
