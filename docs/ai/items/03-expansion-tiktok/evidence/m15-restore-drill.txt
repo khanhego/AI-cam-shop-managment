@@ -1,0 +1,25 @@
+# M15 diễn tập khôi phục (AC-50, NFR-40) — máy dev MacBook (Apple Silicon), Postgres 16 container tạm aicam-drill-pg :55532, MinIO tạm aicam-test-minio :59100 (pgsty/minio). KHÔNG dùng stack dev aicam-dev.
+# Lệnh: DRILL_PG=… TEST_S3_*=… uv run python scripts/backup_drill.py --phase db --out …  (ai-cam-be T-223)
+## Phase db (T-223) — 2026-10-07T10:17Z
+[10:17:40Z] Diễn tập khôi phục AC-50 — phase db, 2000 kiện, thư mục /var/folders/kh/52l55q5n193_3pwj7vm85pww0000gn/T/aicam-drill-xg_4mweu
+[10:17:40Z] Kho S3 tạm: http://localhost:59100 bucket aicam-test-backup (MinIO container riêng)
+[10:17:42Z] DB nguồn drill_src: migrate head xong
+[10:17:47Z] Dữ liệu nguồn: {'package': 2000, 'session': 2000, 'clip': 12, 'snapshot': 6, 'claim': 6, 'claim_evidence': 6, 'backup_object': 0}
+[10:17:48Z] J-20 sao lưu DB: {'status': 'SUCCESS', 'run_id': '01a115de-8608-72b3-aa88-261621c72bf0', 'size': 286978} (0.9 giây)
+[10:17:48Z] — Khóa sai: máy mới chỉ có khóa KHÁC (KEY_2) —
+[10:17:48Z] backup-restore mã 2: Khóa giải mã không khớp (dấu vân tay 54F8-6045-55E8-CCE6) — không ghi gì.
+[10:17:48Z] DB đích sau lệnh khóa sai: trống
+[10:17:48Z] — Khôi phục DB vào DB trống với đúng khóa —
+[10:17:49Z]   Đã khôi phục DB từ backup/db/2026/10/07/aicam-20261007T101747Z.dump.enc (khóa 54F8-6045-55E8-CCE6, 286,926 byte, pg_restore 0.9 giây).
+[10:17:49Z]   Đã khôi phục 1 file nhập vào /var/folders/kh/52l55q5n193_3pwj7vm85pww0000gn/T/aicam-drill-xg_4mweu/dst-imports.
+[10:17:49Z]   Sao lưu tự động đã TẮT (Chờ kiểm khôi phục) tới khi `aicam backup-verify` đạt.
+[10:17:49Z]   Xong sau 1.0 giây.
+[10:17:49Z] backup-restore mã 0, tổng 1.0 giây (NFR-40 RTO DB ≤ 60 phút — máy dev)
+[10:17:49Z] Đếm dòng nguồn {'package': 2000, 'session': 2000, 'clip': 12, 'snapshot': 6, 'claim': 6, 'claim_evidence': 6, 'backup_object': 2}
+[10:17:49Z] Đếm dòng đích  {'package': 2000, 'session': 2000, 'clip': 12, 'snapshot': 6, 'claim': 6, 'claim_evidence': 6, 'backup_object': 0}
+[10:17:49Z] File nhập khôi phục: có
+[10:17:49Z] Chạy lại vào DB không trống → mã 2: DB đích không trống — từ chối khôi phục (dùng --force để ghi đè có chủ đích).
+[10:17:49Z] backup-verify (chưa khôi phục bằng chứng) mã 1: khớp 0 / lệch đã chấp nhận 0 / lệch 0 / thiếu đã ghi nhận 0 / thiếu 18
+[10:17:49Z]   → đúng kỳ vọng phase db: clip / ảnh chưa có tệp → 'thiếu', Chờ kiểm khôi phục giữ nguyên
+[10:17:49Z] KẾT QUẢ phase db: ĐẠT
+
