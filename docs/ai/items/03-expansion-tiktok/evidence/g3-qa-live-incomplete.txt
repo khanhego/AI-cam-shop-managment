@@ -1,0 +1,366 @@
+# LƯỢT CHƯA HOÀN TẤT — KHÔNG PHẢI KẾT QUẢ QA (DEC-931). Máy chủ test (MacBook, nắp gập, chạy pin) ngủ ~15 phút / chu kỳ, chỉ DarkWake ~45 giây (pmset -g log) → token truy cập hết hạn (401), dừng tay (SIGINT) ở test_m17::test_j28.
+# stack aicam-qa, image be 7ab34f2 + test be 06cbfec, bắt đầu 2026-10-07T17:50:50Z
+============================= test session starts ==============================
+platform darwin -- Python 3.12.15, pytest-9.1.1, pluggy-1.6.0 -- /Users/admin/KhanhCode/AI-cam-shop-managment/ai-cam-be/.venv/bin/python
+rootdir: /Users/admin/KhanhCode/AI-cam-shop-managment/ai-cam-be
+configfile: pyproject.toml
+plugins: asyncio-1.4.0, anyio-4.15.1, respx-0.23.1
+asyncio: mode=Mode.AUTO, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 182 items
+
+tests/qa/test_g3_live.py::test_backup_restore_list_empty PASSED          [  0%]
+tests/qa/test_g3_live.py::test_backup_restore_list_marks_latest_and_incomplete PASSED [  1%]
+tests/qa/test_g3_live.py::test_notify_reset_zalo_token PASSED            [  1%]
+tests/qa/test_g3_live.py::test_primary_unavailable_when_cam1_missing PASSED [  2%]
+tests/qa/test_g3_live.py::test_api160_session_excluded_for_wrong_scan_return PASSED [  2%]
+tests/qa/test_g3_live.py::test_d2_cancel_revert_pending_admin_only PASSED [  3%]
+tests/qa/test_m12_live.py::test_tc_05_73_same_order_sn_two_shops PASSED  [  3%]
+tests/qa/test_m12_live.py::test_tc_05_93_code_in_two_shops_ambiguous PASSED [  4%]
+tests/qa/test_m12_live.py::test_tc_03_86_cancel_requested_alert[SPXTSTB000000015-SHOPEE] PASSED [  4%]
+tests/qa/test_m12_live.py::test_tc_03_86_cancel_requested_alert[TTTST0000000050-TIKTOK] PASSED [  5%]
+tests/qa/test_m12_live.py::test_tc_03_92_packer_name_optional PASSED     [  6%]
+tests/qa/test_m12_live.py::test_tc_07_40_packages_platform_shop_filter PASSED [  6%]
+tests/qa/test_m12_live.py::test_tc_07_41_returns_recon_claims_filter PASSED [  7%]
+tests/qa/test_m12_live.py::test_tc_ms_01_03_08_missing_clip_readers PASSED [  7%]
+tests/qa/test_m12_live.py::test_tc_08_53_review_errors PASSED            [  8%]
+tests/qa/test_m12_live.py::test_tc_08_59_remove_evidence_needs_reason PASSED [  8%]
+tests/qa/test_m12_live.py::test_tc_09_45_daily_new_counts_and_role_filter PASSED [  9%]
+tests/qa/test_m12_live.py::test_tc_10_44_me_permissions PASSED           [  9%]
+tests/qa/test_m13_live.py::test_ac41_tiktok_status_groups_on_stack PASSED [ 10%]
+tests/qa/test_m13_live.py::test_ac42_tiktok_returns_initial_state PASSED [ 10%]
+tests/qa/test_m13_live.py::test_tiktok_connect_mock_callback PASSED      [ 11%]
+tests/qa/test_m13_live.py::test_api73_sync_now_runs_on_sync_fast_worker PASSED [ 12%]
+tests/qa/test_m13_live.py::test_j13_dispatch_runs_on_sync_worker PASSED  [ 12%]
+tests/qa/test_m13_live.py::test_tc_05_55_disconnect_one_shop PASSED      [ 13%]
+tests/qa/test_m14_live.py::test_tc_09_30_31_returns_report_consistent PASSED [ 13%]
+tests/qa/test_m14_live.py::test_tc_09_32_filter_platform_shop PASSED     [ 14%]
+tests/qa/test_m14_live.py::test_tc_09_33_empty_period PASSED             [ 14%]
+tests/qa/test_m14_live.py::test_tc_09_34_35_claims_productivity_shape PASSED [ 15%]
+tests/qa/test_m14_live.py::test_tc_09_36_cskh_no_productivity PASSED     [ 15%]
+tests/qa/test_m14_live.py::test_tc_09_37_bad_period PASSED               [ 16%]
+tests/qa/test_m14_live.py::test_tc_09_40_csv_export_and_audit PASSED     [ 17%]
+tests/qa/test_m15_live.py::test_tc_02_50_not_configured_temp_api PASSED  [ 17%]
+tests/qa/test_m15_live.py::test_key_confirm_then_enable PASSED           [ 18%]
+tests/qa/test_m15_live.py::test_tc_02_53_test_connection_ok PASSED       [ 18%]
+tests/qa/test_m15_live.py::test_tc_02_54_connection_errors PASSED        [ 19%]
+tests/qa/test_m15_live.py::test_tc_02_65_run_db_now_on_worker PASSED     [ 19%]
+tests/qa/test_m15_live.py::test_j21_j22_all_pack_clips_uploaded PASSED   [ 20%]
+tests/qa/test_m15_live.py::test_tc_02_72_resolve_errors PASSED           [ 20%]
+tests/qa/test_m15_live.py::test_tc_02_70_upload_anyway PASSED            [ 21%]
+tests/qa/test_m15_live.py::test_tc_02_71_ignore_mismatch PASSED          [ 21%]
+tests/qa/test_m15_live.py::test_tc_02_78_80_source_missing PASSED        [ 22%]
+tests/qa/test_m15_live.py::test_restore_then_kr_11_then_verify FAILED    [ 23%]
+tests/qa/test_m16_live.py::test_tc_07_46_create_from_session_active ERROR [ 23%]
+tests/qa/test_m16_live.py::test_w1_opens_from_minio_without_login ERROR  [ 24%]
+tests/qa/test_m16_live.py::test_tc_07_48_validation ERROR                [ 24%]
+tests/qa/test_m16_live.py::test_tc_ms_07_missing_clip_not_shareable ERROR [ 25%]
+tests/qa/test_m16_live.py::test_tc_07_51_cloud_not_configured_temp_api ERROR [ 25%]
+tests/qa/test_m16_live.py::test_tc_07_62_cskh_revokes_only_own ERROR     [ 26%]
+tests/qa/test_m17_live.py::test_tc_06_41_channel_validation PASSED       [ 26%]
+tests/qa/test_m17_live.py::test_tc_06_43_provider_not_configured_temp_api PASSED [ 27%]
+tests/qa/test_m17_live.py::test_tc_06_44_channels_and_test_send PASSED   [ 28%]
+tests/qa/test_m17_live.py::test_j26_quiet_hours_holds_medium FAILED      [ 28%]
+tests/qa/test_m17_live.py::test_j26_j27_dispatch_and_camera_offline FAILED [ 29%]
+tests/qa/test_m17_live.py::test_j28_daily_summary 
+
+==================================== ERRORS ====================================
+__________ ERROR at setup of test_tc_07_46_create_from_session_active __________
+
+client = <httpx.Client object at 0x10cee7290>
+tokens = {'ADMIN': {'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMWExMTc4Zi05ZWU1LTcwZmUtOWU0YS0yZ...sImlhdCI6MTc5MTM5NjY2NSwiZXhwIjoxNzkxMzk3NTY1LCJ0eXAiOiJhY2Nlc3MifQ.sjK0JoIEUINeEq9gxhDe1sLi4PLWCPBYb9H59O8xjg8'}, ...}
+
+    @pytest.fixture(scope="module")
+    def sessions(client: httpx.Client, tokens: dict[str, dict[str, str]]) -> dict[str, str]:
+        """Phiên PACK thật có clip READY: 01 (link chính), 02 (clip Cam 1 MISSING), 07 (31 phút)."""
+        out = {}
+        for code in ("SPXTST0000001", "SPXTST0000002", "SPXTST0000007"):
+>           detail = p3.pack_with_clips(client, tokens, code, hold_s=5)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/qa/test_m16_live.py:58: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/qa/p3.py:152: in pack_with_clips
+    return wait_for(ready, 150, 3, f"clip READY của {code}")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/qa/p3.py:117: in wait_for
+    last = fn()
+           ^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def ready() -> dict[str, Any] | None:
+        detail: dict[str, Any] = client.get(f"/packages/{package_id}", headers=tokens["ADMIN"]).json()
+>       sessions = [s for s in detail["sessions"] if s["type"] == "PACK"]
+                               ^^^^^^^^^^^^^^^^^^
+E       KeyError: 'sessions'
+
+tests/qa/p3.py:146: KeyError
+___________ ERROR at setup of test_w1_opens_from_minio_without_login ___________
+
+client = <httpx.Client object at 0x10cee7290>
+tokens = {'ADMIN': {'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMWExMTc4Zi05ZWU1LTcwZmUtOWU0YS0yZ...sImlhdCI6MTc5MTM5NjY2NSwiZXhwIjoxNzkxMzk3NTY1LCJ0eXAiOiJhY2Nlc3MifQ.sjK0JoIEUINeEq9gxhDe1sLi4PLWCPBYb9H59O8xjg8'}, ...}
+
+    @pytest.fixture(scope="module")
+    def sessions(client: httpx.Client, tokens: dict[str, dict[str, str]]) -> dict[str, str]:
+        """Phiên PACK thật có clip READY: 01 (link chính), 02 (clip Cam 1 MISSING), 07 (31 phút)."""
+        out = {}
+        for code in ("SPXTST0000001", "SPXTST0000002", "SPXTST0000007"):
+>           detail = p3.pack_with_clips(client, tokens, code, hold_s=5)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/qa/test_m16_live.py:58: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/qa/p3.py:152: in pack_with_clips
+    return wait_for(ready, 150, 3, f"clip READY của {code}")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/qa/p3.py:117: in wait_for
+    last = fn()
+           ^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def ready() -> dict[str, Any] | None:
+        detail: dict[str, Any] = client.get(f"/packages/{package_id}", headers=tokens["ADMIN"]).json()
+>       sessions = [s for s in detail["sessions"] if s["type"] == "PACK"]
+                               ^^^^^^^^^^^^^^^^^^
+E       KeyError: 'sessions'
+
+tests/qa/p3.py:146: KeyError
+__________________ ERROR at setup of test_tc_07_48_validation __________________
+
+client = <httpx.Client object at 0x10cee7290>
+tokens = {'ADMIN': {'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMWExMTc4Zi05ZWU1LTcwZmUtOWU0YS0yZ...sImlhdCI6MTc5MTM5NjY2NSwiZXhwIjoxNzkxMzk3NTY1LCJ0eXAiOiJhY2Nlc3MifQ.sjK0JoIEUINeEq9gxhDe1sLi4PLWCPBYb9H59O8xjg8'}, ...}
+
+    @pytest.fixture(scope="module")
+    def sessions(client: httpx.Client, tokens: dict[str, dict[str, str]]) -> dict[str, str]:
+        """Phiên PACK thật có clip READY: 01 (link chính), 02 (clip Cam 1 MISSING), 07 (31 phút)."""
+        out = {}
+        for code in ("SPXTST0000001", "SPXTST0000002", "SPXTST0000007"):
+>           detail = p3.pack_with_clips(client, tokens, code, hold_s=5)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/qa/test_m16_live.py:58: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/qa/p3.py:152: in pack_with_clips
+    return wait_for(ready, 150, 3, f"clip READY của {code}")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/qa/p3.py:117: in wait_for
+    last = fn()
+           ^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def ready() -> dict[str, Any] | None:
+        detail: dict[str, Any] = client.get(f"/packages/{package_id}", headers=tokens["ADMIN"]).json()
+>       sessions = [s for s in detail["sessions"] if s["type"] == "PACK"]
+                               ^^^^^^^^^^^^^^^^^^
+E       KeyError: 'sessions'
+
+tests/qa/p3.py:146: KeyError
+__________ ERROR at setup of test_tc_ms_07_missing_clip_not_shareable __________
+
+client = <httpx.Client object at 0x10cee7290>
+tokens = {'ADMIN': {'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMWExMTc4Zi05ZWU1LTcwZmUtOWU0YS0yZ...sImlhdCI6MTc5MTM5NjY2NSwiZXhwIjoxNzkxMzk3NTY1LCJ0eXAiOiJhY2Nlc3MifQ.sjK0JoIEUINeEq9gxhDe1sLi4PLWCPBYb9H59O8xjg8'}, ...}
+
+    @pytest.fixture(scope="module")
+    def sessions(client: httpx.Client, tokens: dict[str, dict[str, str]]) -> dict[str, str]:
+        """Phiên PACK thật có clip READY: 01 (link chính), 02 (clip Cam 1 MISSING), 07 (31 phút)."""
+        out = {}
+        for code in ("SPXTST0000001", "SPXTST0000002", "SPXTST0000007"):
+>           detail = p3.pack_with_clips(client, tokens, code, hold_s=5)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/qa/test_m16_live.py:58: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/qa/p3.py:152: in pack_with_clips
+    return wait_for(ready, 150, 3, f"clip READY của {code}")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/qa/p3.py:117: in wait_for
+    last = fn()
+           ^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def ready() -> dict[str, Any] | None:
+        detail: dict[str, Any] = client.get(f"/packages/{package_id}", headers=tokens["ADMIN"]).json()
+>       sessions = [s for s in detail["sessions"] if s["type"] == "PACK"]
+                               ^^^^^^^^^^^^^^^^^^
+E       KeyError: 'sessions'
+
+tests/qa/p3.py:146: KeyError
+________ ERROR at setup of test_tc_07_51_cloud_not_configured_temp_api _________
+
+client = <httpx.Client object at 0x10cee7290>
+tokens = {'ADMIN': {'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMWExMTc4Zi05ZWU1LTcwZmUtOWU0YS0yZ...sImlhdCI6MTc5MTM5NjY2NSwiZXhwIjoxNzkxMzk3NTY1LCJ0eXAiOiJhY2Nlc3MifQ.sjK0JoIEUINeEq9gxhDe1sLi4PLWCPBYb9H59O8xjg8'}, ...}
+
+    @pytest.fixture(scope="module")
+    def sessions(client: httpx.Client, tokens: dict[str, dict[str, str]]) -> dict[str, str]:
+        """Phiên PACK thật có clip READY: 01 (link chính), 02 (clip Cam 1 MISSING), 07 (31 phút)."""
+        out = {}
+        for code in ("SPXTST0000001", "SPXTST0000002", "SPXTST0000007"):
+>           detail = p3.pack_with_clips(client, tokens, code, hold_s=5)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/qa/test_m16_live.py:58: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/qa/p3.py:152: in pack_with_clips
+    return wait_for(ready, 150, 3, f"clip READY của {code}")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/qa/p3.py:117: in wait_for
+    last = fn()
+           ^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def ready() -> dict[str, Any] | None:
+        detail: dict[str, Any] = client.get(f"/packages/{package_id}", headers=tokens["ADMIN"]).json()
+>       sessions = [s for s in detail["sessions"] if s["type"] == "PACK"]
+                               ^^^^^^^^^^^^^^^^^^
+E       KeyError: 'sessions'
+
+tests/qa/p3.py:146: KeyError
+____________ ERROR at setup of test_tc_07_62_cskh_revokes_only_own _____________
+
+client = <httpx.Client object at 0x10cee7290>
+tokens = {'ADMIN': {'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMWExMTc4Zi05ZWU1LTcwZmUtOWU0YS0yZ...sImlhdCI6MTc5MTM5NjY2NSwiZXhwIjoxNzkxMzk3NTY1LCJ0eXAiOiJhY2Nlc3MifQ.sjK0JoIEUINeEq9gxhDe1sLi4PLWCPBYb9H59O8xjg8'}, ...}
+
+    @pytest.fixture(scope="module")
+    def sessions(client: httpx.Client, tokens: dict[str, dict[str, str]]) -> dict[str, str]:
+        """Phiên PACK thật có clip READY: 01 (link chính), 02 (clip Cam 1 MISSING), 07 (31 phút)."""
+        out = {}
+        for code in ("SPXTST0000001", "SPXTST0000002", "SPXTST0000007"):
+>           detail = p3.pack_with_clips(client, tokens, code, hold_s=5)
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/qa/test_m16_live.py:58: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/qa/p3.py:152: in pack_with_clips
+    return wait_for(ready, 150, 3, f"clip READY của {code}")
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+tests/qa/p3.py:117: in wait_for
+    last = fn()
+           ^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+    def ready() -> dict[str, Any] | None:
+        detail: dict[str, Any] = client.get(f"/packages/{package_id}", headers=tokens["ADMIN"]).json()
+>       sessions = [s for s in detail["sessions"] if s["type"] == "PACK"]
+                               ^^^^^^^^^^^^^^^^^^
+E       KeyError: 'sessions'
+
+tests/qa/p3.py:146: KeyError
+=================================== FAILURES ===================================
+_____________________ test_restore_then_kr_11_then_verify ______________________
+
+client = <httpx.Client object at 0x10cea7a10>
+tokens = {'ADMIN': {'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMWExMTc3Zi0yMTNlLTc0OTUtYjM5OC01M...RkMSIsImlhdCI6MTc5MTM5NTU3OCwiZXhwIjoxNzkxMzk2NDc4LCJ0eXAiOiJhY2Nlc3MifQ.YO5ExCiU_ZnH5sGeASgg5fFaoQfUnBVEClub_Ch2crs'}}
+
+    def test_restore_then_kr_11_then_verify(client: httpx.Client, tokens: dict[str, dict[str, str]]) -> None:
+        """AC-50 trên stack: J-20 mới → xóa sạch schema DB → `aicam backup-restore` (latest, giải mã bằng khóa
+        hiện
+        tại) → số dòng như trước; `RESTORE_PENDING` → TC-KR.11: API-181 bật / API-184 → 409
+        `BACKUP_RESTORE_UNVERIFIED`; `aicam backup-verify` → mã 0, audit `BACKUP_RESTORE_VERIFIED`, hết chờ
+        kiểm."""
+        admin = tokens["ADMIN"]
+        res = client.post("/backup/run-db", headers=admin)
+        assert res.status_code == 202, res.text
+        run_id = res.json()["run_id"]
+    
+        def ok() -> bool:
+            return any(h["id"] == run_id and h["status"] == "SUCCESS" for h in _status(client, tokens)["history"])
+    
+>       p3.wait_for(ok, 180, 2, "J-20 trước khôi phục")
+
+tests/qa/test_m15_live.py:376: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/qa/p3.py:117: in wait_for
+    last = fn()
+           ^^^^
+tests/qa/test_m15_live.py:374: in ok
+    return any(h["id"] == run_id and h["status"] == "SUCCESS" for h in _status(client, tokens)["history"])
+                                                                       ^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+client = <httpx.Client object at 0x10cea7a10>
+tokens = {'ADMIN': {'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMWExMTc3Zi0yMTNlLTc0OTUtYjM5OC01M...RkMSIsImlhdCI6MTc5MTM5NTU3OCwiZXhwIjoxNzkxMzk2NDc4LCJ0eXAiOiJhY2Nlc3MifQ.YO5ExCiU_ZnH5sGeASgg5fFaoQfUnBVEClub_Ch2crs'}}
+
+    def _status(client: httpx.Client, tokens: dict[str, dict[str, str]]) -> dict[str, Any]:
+        res = client.get("/backup", headers=tokens["ADMIN"])
+>       assert res.status_code == 200, res.text
+E       AssertionError: {"error":{"code":"UNAUTHENTICATED","message":"Phiên đăng nhập đã hết hạn. Đăng nhập lại.","details":{}}}
+E       assert 401 == 200
+E        +  where 401 = <Response [401 Unauthorized]>.status_code
+
+tests/qa/test_m15_live.py:50: AssertionError
+______________________ test_j26_quiet_hours_holds_medium _______________________
+
+client = <httpx.Client object at 0x10cdba240>
+tokens = {'ADMIN': {'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMWExMTc5ZS02MDFmLTc1ZWEtYjQzMC1mO...I2ZiIsImlhdCI6MTc5MTM5NzYyOCwiZXhwIjoxNzkxMzk4NTI4LCJ0eXAiOiJhY2Nlc3MifQ.C_3TbG4Wb2tfw2R-CSFuAEWijFspyLs7YeUiDjEsNT8'}}
+
+    def test_j26_quiet_hours_holds_medium(client: httpx.Client, tokens: dict[str, dict[str, str]]) -> None:
+        """Giờ yên lặng đang hiệu lực (API-176, audit `NOTIFY_SETTINGS_UPDATE`) → J-26 (beat, worker-notify) tạo
+        tin
+        từ dữ liệu seed: N03 (TB) `HELD`; N02, N04 (Cao) vẫn `QUEUED` (BR-36)."""
+        now_vn = datetime.now(ZoneInfo("Asia/Ho_Chi_Minh"))
+        quiet = {"enabled": True, "start": (now_vn - timedelta(hours=1)).strftime("%H:%M"),
+                 "end": (now_vn + timedelta(hours=1)).strftime("%H:%M")}  # fmt: skip
+        res = client.put("/notify/quiet-hours", json=quiet, headers=tokens["ADMIN"])
+        assert res.status_code == 200, res.text
+        assert len(p3.audit_rows(client, tokens["ADMIN"], "NOTIFY_SETTINGS_UPDATE")) == 1
+    
+        def grouped() -> dict[str, str] | None:
+            got = {m["event_code"]: m["status"] for m in _messages(client, tokens)}
+            return got if {"N02", "N03", "N04"} <= set(got) else None
+    
+>       got = p3.wait_for(grouped, 90, 3, "J-26 tạo tin N02 / N03 / N04")
+              ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+tests/qa/test_m17_live.py:152: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+tests/qa/p3.py:117: in wait_for
+    last = fn()
+           ^^^^
+tests/qa/test_m17_live.py:149: in grouped
+    got = {m["event_code"]: m["status"] for m in _messages(client, tokens)}
+                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+client = <httpx.Client object at 0x10cdba240>
+tokens = {'ADMIN': {'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMWExMTc5ZS02MDFmLTc1ZWEtYjQzMC1mO...I2ZiIsImlhdCI6MTc5MTM5NzYyOCwiZXhwIjoxNzkxMzk4NTI4LCJ0eXAiOiJhY2Nlc3MifQ.C_3TbG4Wb2tfw2R-CSFuAEWijFspyLs7YeUiDjEsNT8'}}
+
+    def _messages(client: httpx.Client, tokens: dict[str, dict[str, str]]) -> list[dict[str, Any]]:
+        res = client.get("/notify/messages", params={"page_size": 100}, headers=tokens["ADMIN"])
+>       assert res.status_code == 200, res.text
+E       AssertionError: {"error":{"code":"UNAUTHENTICATED","message":"Phiên đăng nhập đã hết hạn. Đăng nhập lại.","details":{}}}
+E       assert 401 == 200
+E        +  where 401 = <Response [401 Unauthorized]>.status_code
+
+tests/qa/test_m17_live.py:63: AssertionError
+___________________ test_j26_j27_dispatch_and_camera_offline ___________________
+
+client = <httpx.Client object at 0x10cdba240>
+tokens = {'ADMIN': {'Authorization': 'Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMWExMTc5ZS02MDFmLTc1ZWEtYjQzMC1mO...I2ZiIsImlhdCI6MTc5MTM5NzYyOCwiZXhwIjoxNzkxMzk4NTI4LCJ0eXAiOiJhY2Nlc3MifQ.C_3TbG4Wb2tfw2R-CSFuAEWijFspyLs7YeUiDjEsNT8'}}
+
+    def test_j26_j27_dispatch_and_camera_offline(client: httpx.Client, tokens: dict[str, dict[str, str]]) -> None:
+        """Tắt giờ yên lặng, dừng camera giả Cam 1 thật (> 60 giây → N01) → J-27 trên worker-notify gửi qua sink
+        mock
+        sau cửa sổ gom 2 phút: N02 + N01 tới kênh "Kho", N04 tới "CSKH" (chữ có "[CAO]", link "Xem:" về
+        `SITE_ADDRESS`); tin `SENT`."""
+        res = client.put("/notify/quiet-hours", json={"enabled": False, "start": "22:00", "end": "07:00"},
+                         headers=tokens["ADMIN"])  # fmt: skip
+>       assert res.status_code == 200, res.text
+E       AssertionError: {"error":{"code":"UNAUTHENTICATED","message":"Phiên đăng nhập đã hết hạn. Đăng nhập lại.","details":{}}}
+E       assert 401 == 200
+E        +  where 401 = <Response [401 Unauthorized]>.status_code
+
+tests/qa/test_m17_live.py:166: AssertionError
+=========================== short test summary info ============================
+ERROR tests/qa/test_m16_live.py::test_tc_07_46_create_from_session_active - K...
+ERROR tests/qa/test_m16_live.py::test_w1_opens_from_minio_without_login - Key...
+ERROR tests/qa/test_m16_live.py::test_tc_07_48_validation - KeyError: 'sessions'
+ERROR tests/qa/test_m16_live.py::test_tc_ms_07_missing_clip_not_shareable - K...
+ERROR tests/qa/test_m16_live.py::test_tc_07_51_cloud_not_configured_temp_api
+ERROR tests/qa/test_m16_live.py::test_tc_07_62_cskh_revokes_only_own - KeyErr...
+FAILED tests/qa/test_m15_live.py::test_restore_then_kr_11_then_verify - Asser...
+FAILED tests/qa/test_m17_live.py::test_j26_quiet_hours_holds_medium - Asserti...
+FAILED tests/qa/test_m17_live.py::test_j26_j27_dispatch_and_camera_offline - ...
+!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! KeyboardInterrupt !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+/Users/admin/KhanhCode/AI-cam-shop-managment/ai-cam-be/tests/qa/p3.py:120: KeyboardInterrupt
+(to show a full traceback on KeyboardInterrupt use --full-trace)
+============== 3 failed, 44 passed, 6 errors in 481.59s (0:08:01) ==============
+exit_code=2
