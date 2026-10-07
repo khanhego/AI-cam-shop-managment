@@ -71,7 +71,7 @@ Owner tất cả: khanhtt (profile §7). Ticket: chưa tạo (tracker `none` cho
 | T-206 | `lookup.find_everywhere` (BR-32) + `AMBIGUOUS_SHOP`; nối PACK, RETURN, J-05; đo AC-43 | be | FR-05.19; API-11 | 02a | T-205 | 1,5 | M13 | | ✅ `780d912` — DEC-561 (AC-43 p95 2,59 giây mock; API-31 `timeline[].shops` chốt) |
 | T-207 | API-70 / 71 / 72 / 154 / 155 / 156, `RESULT_PATH`, audit, WS `shop.updated` + kênh `ws:admin` | be | FR-05.13, 05.20 | 02a | T-204 | 1,5 | M13 | | ✅ `22976fe` — DEC-562 |
 | T-208 | TikTok client (ký HMAC, thử lại, `Retry-After`, ngân sách, log, che log) + ủy quyền (token get / refresh, shop list) — respx | be | FR-05.08, 05.13 | 02a | T-203 | 2 | M13 | | ✅ `5ba3737` — DEC-563 (respx theo định dạng giả định; TikTok thật: chưa test — thiếu tài nguyên) |
-| T-209 | TikTok adapter đơn / kiện / vận chuyển / yêu cầu hủy / tra khi quét + `mapping.py` + EX-T5 + kiện gộp | be | FR-05.15..05.17, 05.22 | 02a | T-208 | 2 | M13 | | ⬜ |
+| T-209 | TikTok adapter đơn / kiện / vận chuyển / yêu cầu hủy / tra khi quét + `mapping.py` + EX-T5 + kiện gộp | be | FR-05.15..05.17, 05.22 | 02a | T-208 | 2 | M13 | | ✅ `52af26d` — DEC-564 (respx định dạng giả định; TikTok thật: chưa test — thiếu tài nguyên) |
 | T-210 | TikTok yêu cầu trả + `returns_mapping` (BR-31) + nhóm yêu cầu trả 5 giá trị trong `returns` | be | FR-05.18; BR-31 | 02a | T-209 | 2 | M13 | | ⬜ |
 | T-211 | Mock TikTok 2 shop + fixture (9 trạng thái, kiện gộp, kho TikTok, 6 kịch bản trả) + mock Shopee nhiều shop; `seed_phase3.py` | be | §7.2; AC-40..44 | 02a | T-209, T-210 | 1,5 | M13 | | ⬜ |
 | T-277 | TikTok yêu cầu hủy: `cancellations/search` → luôn `orders?ids=`; nhóm từ (đơn, yêu cầu hủy mới nhất); fixture 4 kịch bản | be | FR-05.17 | 02a | T-209, T-211 | 1 | M13 | | ⬜ |
