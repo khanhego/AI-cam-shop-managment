@@ -84,7 +84,7 @@ Owner tất cả: khanhtt (profile §7). Ticket: chưa tạo (tracker `none` cho
 | T-216 | Báo cáo API-150..152 (BR-41) + cache + `statement_timeout` + test công thức | be | FR-09.02..05 | 02a | T-201 | 2 | M14 | | ✅ `be 12517a6` (unit công thức 8 + integration 8 với số ví dụ BR-41 / AC-45..47; claims API-133 ghi `submitted_at` / `result_at` — DEC-570..573) |
 | T-217 | API-153 CSV + `series` (C) + `perf_reports.py` đo NFR-37 | be | FR-09.06, 09.07; NFR-37 | 02a | T-216 | 1,5 | M14 | | ⬜ |
 | T-254 | D20 khung + `ReportFilters` (URL, validate) + tab Hàng hoàn (thẻ, 4 bảng, ⓘ, bấm số) | fe | D20 / FR-09.03, 09.05 | 02b-ad | T-252 (BE thật: T-216) | 2 | M14 | | ✅ `fe d17c8b9` (MSW; BE thật chờ T-216 — DEC-611..614) |
-| T-255 | D20 tab Khiếu nại + Năng suất (quyền) + CSV + (C) biểu đồ cột nếu còn thời gian | fe | D20 / FR-09.02, 09.04, 09.06, 09.07 | 02b-ad | T-254 (BE thật: T-217) | 2 | M14 | | ⬜ |
+| T-255 | D20 tab Khiếu nại + Năng suất (quyền) + CSV + (C) biểu đồ cột nếu còn thời gian | fe | D20 / FR-09.02, 09.04, 09.06, 09.07 | 02b-ad | T-254 (BE thật: T-217) | 2 | M14 | | ✅ `fe ac003ac` (MSW; biểu đồ C đã làm; BE thật chờ T-216 / T-217 — DEC-615..617) |
 | T-218 | `cloud`: `ObjectStore`, `S3Store`, `MemoryStore`, `ratelimit`; MinIO + `minio-init`; API-183 | be | FR-02.17; ADR-010 | 02a | — | 1,5 | M15 | | ⬜ |
 | T-219 | `cloud/crypto.py` `AICAMENC1` + `aicam backup-keygen` + test | be | FR-02.13; NFR-41 | 02a | — | 1,5 | M15 | | ⬜ |
 | T-220 | J-20 sao lưu DB (pg_dump, imports tgz, mã hóa, tải, kiểm đọc lại) + `backup_run`; `worker-backup` + Dockerfile | be | FR-02.08 a; NFR-40 | 02a | T-218, T-219 | 2 | M15 | | ⬜ |
