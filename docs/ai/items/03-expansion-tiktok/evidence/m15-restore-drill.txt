@@ -23,3 +23,34 @@
 [10:17:49Z]   → đúng kỳ vọng phase db: clip / ảnh chưa có tệp → 'thiếu', Chờ kiểm khôi phục giữ nguyên
 [10:17:49Z] KẾT QUẢ phase db: ĐẠT
 
+
+## Phase full (T-274: bằng chứng, 2 khóa, xóa 1 đối tượng clip trên kho) — 2026-10-07T10:28Z
+# Ghi chú: lần chạy trước đó (10:26:07Z) J-20 lỗi CLOUD_ERROR do Redis dev (giới hạn tốc độ) vừa được điều phối khởi động lại — chạy lại ngay, đạt; lỗi Redis nay phân loại REDIS_UNAVAILABLE.
+[10:26:35Z] Diễn tập khôi phục AC-50 — phase full, 2000 kiện, thư mục /var/folders/kh/52l55q5n193_3pwj7vm85pww0000gn/T/aicam-drill-dojw98y6
+[10:26:35Z] Kho S3 tạm: http://localhost:59100 bucket aicam-test-backup (MinIO container riêng)
+[10:26:39Z] DB nguồn drill_src: migrate head xong
+[10:26:50Z] Dữ liệu nguồn: {'package': 2000, 'session': 2000, 'clip': 16, 'snapshot': 8, 'claim': 6, 'claim_evidence': 6, 'backup_object': 0}
+[10:26:52Z] J-20 sao lưu DB: {'status': 'SUCCESS', 'run_id': '01a115e6-d121-74ec-b448-e1fef679fbc5', 'size': 289089} (1.3 giây)
+[10:26:53Z] Bằng chứng khóa 1: J-21 {'clips': 12, 'snapshots': 6}; J-22 {'lease_expired': 0, 'UPLOADED': 18} (1.0 giây)
+[10:26:53Z] — Đổi khóa: 54F8-6045-55E8-CCE6 → 1B5C-091B-E756-E5E8 (khóa cũ giữ trong BACKUP_OLD_KEYS) —
+[10:26:53Z] API-180 sau đổi khóa: state ON, old_keys [{'fingerprint': '54F8-6045-55E8-CCE6', 'evidence_objects': 18, 'db_runs': 1, 'reuploadable': 18, 'reuploadable_bytes': 3269352}]
+[10:26:53Z] Bằng chứng mới sau đổi khóa (khóa 2): J-21 {'clips': 2, 'snapshots': 1}; J-22 {'lease_expired': 0, 'UPLOADED': 3} (0.3 giây)
+[10:26:55Z] J-20 lượt 2 (khóa 2): {'status': 'SUCCESS', 'run_id': '01a115e6-dd76-731a-8127-e8470abb46ea', 'size': 291812}
+[10:26:55Z] Đối tượng bằng chứng trên kho theo khóa: {'54F8-6045-55E8-CCE6': 18, '1B5C-091B-E756-E5E8': 3}
+[10:26:55Z] Xóa 1 đối tượng clip trên kho trước khi khôi phục: 01a115e6-a74a-7520-9af1-aae14b2dedcb (clips/2026/10/06/01a115e6-a738-71ef-8d8d-b22cdb7654e8-CAM1.mp4)
+[10:26:55Z] — Máy mới: DB trống + thư mục video trống, khóa 2 + khóa cũ 1 —
+[10:26:57Z]   Đã khôi phục DB từ backup/db/2026/10/07/aicam-20261007T102653Z.dump.enc (khóa 1B5C-091B-E756-E5E8, 291,760 byte, pg_restore 1.7 giây).
+[10:26:57Z]   Đã khôi phục 1 file nhập vào /var/folders/kh/52l55q5n193_3pwj7vm85pww0000gn/T/aicam-drill-dojw98y6/dst-imports.
+[10:26:57Z]   Sao lưu tự động đã TẮT (Chờ kiểm khôi phục) tới khi `aicam backup-verify` đạt.
+[10:26:57Z]   Bằng chứng: tải 20 / thiếu (MISSING) 4 / ngoài DB 0 / giải mã lỗi 0 / thiếu khóa 0 (đã có trên đĩa 0, nguồn đã xóa theo lưu trữ 0, về lại bình thường 0) — 0.3 giây.
+[10:26:57Z]   Xong sau 2.2 giây.
+[10:26:57Z] backup-restore --evidence mã 0, tổng 2.2 giây
+[10:26:58Z] Trạng thái clip đích: {'MISSING': 3, 'READY': 13}
+[10:26:58Z] Setting đích: backup_enabled=False, restore_pending=True
+[10:26:58Z] J-23 trên máy mới khi chờ kiểm: {'skipped': 'RESTORE_PENDING'} (không xóa gì)
+[10:26:58Z]   verify: khớp 20 / lệch đã chấp nhận 0 / lệch 0 / thiếu đã ghi nhận 4 / thiếu 0
+[10:26:58Z]   verify: ĐẠT — đã gỡ 'Chờ kiểm khôi phục'. Admin bật lại sao lưu ở Dashboard → Sao lưu cloud.
+[10:26:58Z] Sau verify: restore_pending=False
+[10:26:58Z] Đối tượng bằng chứng còn trên kho sau diễn tập: 20 (không đối tượng nào bị xóa thêm)
+[10:26:58Z] KẾT QUẢ phase full: ĐẠT
+
