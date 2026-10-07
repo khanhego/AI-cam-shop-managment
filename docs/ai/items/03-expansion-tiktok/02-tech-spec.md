@@ -458,7 +458,7 @@ Item thêm:
               "expires_at": "…Z", "session_count": 1, "url": "https://…", "can_revoke": true } ]
 ```
 
-`shares` = ≤ 3 link mới nhất (mọi trạng thái trừ `FAILED`) có phiên của kiện; `url` chỉ khi `ACTIVE`. Sự kiện phiên có `AMBIGUOUS_SHOP` thêm `{shops: [{platform, name}]}` trong dòng thời gian.
+`shares` = ≤ 3 link mới nhất (mọi trạng thái trừ `FAILED`) có phiên của kiện; `url` chỉ khi `ACTIVE`. Sự kiện phiên có `AMBIGUOUS_SHOP` thêm `{shops: [{platform, name}]}` trong dòng thời gian — chốt T-206 (DEC-561, khớp FE DEC-603): một dòng `timeline[]` riêng `{at, source: "WAREHOUSE", from_status: null, to_status: "PACKING", actor: <station>, shops: [{platform, name}]}`; dòng trạng thái thường `shops = null`.
 </details>
 
 <details><summary><b>API-32 mở rộng</b> — Tổng quan D2</summary>
