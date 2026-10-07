@@ -123,3 +123,13 @@
 [10:32:44Z] Đối tượng bằng chứng còn trên kho sau diễn tập: 20 (không đối tượng nào bị xóa thêm)
 [10:32:44Z] KẾT QUẢ phase full: ĐẠT
 
+
+---- Ghi chú sau review G3 Phase 3 (G3-BK-9, 2026-10-07) ----
+Dòng "verify: … lệch 1 …" và "lệch: CLIP 01a115ec-1632-7362-affb-d3d815f71f01" ở trên KHÔNG phải lỗi khôi phục:
+script diễn tập cố ý ghi đè một clip READY trên máy đích ngay trước lần verify (giả lập tệp bị sửa sau khôi phục)
+để kiểm đường "lệch → --accept thiếu --reason bị từ chối → --accept có lý do → ĐẠT". Bản biên bản này chạy trước khi
+script in dòng cho bước đó; từ commit be "fix(G3-BK-9)" script in thêm
+"Giả lập tệp bị sửa sau khôi phục: ghi đè CLIP <id> (<path>) → verify kế tiếp phải báo lệch 1 (CLIP này)".
+Không chạy lại diễn tập (cần MinIO tạm; logic khôi phục DB / bằng chứng của diễn tập không đổi bởi bước ghi log).
+Lưu ý từ G3-BK-2 / BK-3: backup-restore nay có mã thoát 4 (bản DB hỏng) / 5 (pg_restore lỗi giữa chừng) và
+`--db latest` bỏ qua bản của lượt chưa hoàn tất — diễn tập quý sau ghi thêm `aicam backup-restore --list`.
