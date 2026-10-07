@@ -458,7 +458,7 @@ Item thêm:
               "expires_at": "…Z", "session_count": 1, "url": "https://…", "can_revoke": true } ]
 ```
 
-`shares` = ≤ 3 link mới nhất (mọi trạng thái trừ `FAILED`) có phiên của kiện; `url` chỉ khi `ACTIVE`. Sự kiện phiên có `AMBIGUOUS_SHOP` thêm `{shops: [{platform, name}]}` trong dòng thời gian — chốt T-206 (DEC-561, khớp FE DEC-603): một dòng `timeline[]` riêng `{at, source: "WAREHOUSE", from_status: null, to_status: "PACKING", actor: <station>, shops: [{platform, name}]}`; dòng trạng thái thường `shops = null`.
+`shares` = ≤ 3 link mới nhất (mọi trạng thái trừ `FAILED`) có phiên của kiện; `url` chỉ khi `ACTIVE`. (M16 — DEC-666, chỉ thêm) item có thêm `revoke_pending`, `created_at`; API-132 `shares` = link tạo từ hồ sơ (`claim_id`); `shares_active_count` = `CREATING` + `ACTIVE` còn hạn. Sự kiện phiên có `AMBIGUOUS_SHOP` thêm `{shops: [{platform, name}]}` trong dòng thời gian — chốt T-206 (DEC-561, khớp FE DEC-603): một dòng `timeline[]` riêng `{at, source: "WAREHOUSE", from_status: null, to_status: "PACKING", actor: <station>, shops: [{platform, name}]}`; dòng trạng thái thường `shops = null`.
 </details>
 
 <details><summary><b>API-32 mở rộng</b> — Tổng quan D2</summary>
@@ -677,6 +677,7 @@ BR-41: `packed` = phiên PACK `COMPLETED` có `ended_at` trong kỳ (phiên đó
 ```
 
 - `CLAIM`: `sessions` = `evidence[]` của hồ sơ (phiên chính trước, rồi theo `started_at`); `default_selected` = 4 phiên đầu `selectable`. `SESSION`: đúng phiên đó, chọn sẵn.
+- (M16 — DEC-667, 668, chỉ thêm) `default_selected` bỏ phiên bị loại theo BR-39 nằm trong bằng chứng do thêm tay (`sessions[].excluded = true`) và phiên `review_needed`, dừng khi tổng `duration_s` vượt 1.800; `sessions[].snapshot_count` = ảnh `READY` của phiên trong bằng chứng — link chỉ kèm ảnh của **phiên được chọn** (API-160), `snapshot_count` = tổng của phiên chọn được.
 - `unavailable_reason`: `CLIP_PENDING` ("Chưa có clip") · `CLIP_FAILED` ("Clip lỗi") · `CLIP_DELETED` (+ `unavailable_at` — "Clip đã bị xóa ngày dd/mm") · `CLIP_MISSING` ("Clip thiếu tệp" — v0.3; v0.4 bỏ "(khôi phục)" vì `MISSING` còn do EX-K9). Phiên `review_needed: true` (v0.3) → `default_selected = false`, FE chip "Cần soát". `review_pending_count` (v0.4 — DEC-531) = số phiên "Cần soát" chưa xử lý của hồ sơ (= API-132 `review_sessions`, kể cả phiên không nằm trong `sessions`; nguồn `SESSION` → 0). FE: > 0 → Alert vàng "Hồ sơ còn {n} phiên mở hoàn Cần soát chưa xử lý — xem ở chi tiết hồ sơ trước khi gửi link."; nguồn `CLAIM`, có ≥ 1 phiên `RETURN` `selectable` mà không phiên `RETURN` nào đang được chọn → Alert vàng "Chưa chọn video mở hộp nào — link chỉ có video đóng gói." Cả hai không chặn "Tạo link". Phiên có ít nhất Cam 1 `READY` là `selectable`; `cameras` = các camera `READY` (thiếu Cam 2 → bản ghép chỉ Cam 1).
 - `storage_configured = false` → FE khóa nút, tooltip "Chưa cấu hình kho lưu cloud. Admin: Cài đặt → Sao lưu." (EX-S1).
 
