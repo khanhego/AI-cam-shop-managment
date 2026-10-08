@@ -1,0 +1,323 @@
+# G5 Phase 3 — staging local, bước 1: dựng Phase 2 (code main) — 2026-10-08T13:19:45+07:00
+Phase 2: BE f7010d3 (main, merge PR #2) · FE 1f214a1 (main) — git worktree tạm /Users/admin/KhanhCode/.aicam-g5-tmp/p2 (colima không mount /private/tmp)
+Phase 3: BE cc5dddf · FE e893a36 (feat/03-expansion-tiktok HEAD)
+dc2 = docker compose -p aicam-staging --env-file <tmp>/p2.env -f <worktree P2>/ai-cam-be/docker/compose.yml -f <tmp>/staging-extra.yml (AICAM_IMAGE=aicam-be:staging-p2)
+dc3 = docker compose -p aicam-staging --env-file <tmp>/p3.env -f ai-cam-be/docker/compose.yml -f <tmp>/staging-extra.yml (AICAM_IMAGE=aicam-be:staging-p3)
+staging-extra.yml (giả lập, không phải compose sản phẩm): minio + minio-init (nhà cung cấp S3 — Q20), s3proxy (Caddy tls internal :8944 → minio, HTTPS công khai giả), camsrc (MediaMTX) + fake-cam1/2 (camera IP giả — T-4). Không dùng gì của aicam-dev.
+Cổng: Caddy 8088/8443, ICE 8190, s3proxy 8944; subnet 172.30.20.0/24, CADDY_IP .10, ip_range .128/25
+## Máy
+Now drawing from 'AC Power'
+ -InternalBattery-0 (id=7077987)	53%; charging; 1:19 remaining present: true
+  |   "AppleClamshellState" = No
+## df -h / (trước)
+/dev/disk3s1s1   460Gi    11Gi    24Gi    33%    453k  253M    0%   /
+## docker system df (trước)
+TYPE            TOTAL     ACTIVE    SIZE      RECLAIMABLE
+Images          18        11        7.583GB   2.263GB (29%)
+Containers      21        16        6.779MB   258kB (3%)
+Local Volumes   16        9         8.141GB   466.9MB (5%)
+Build Cache     0         0         0B        0B
+## dc2 up -d --build
+(lược 2577 dòng log build Docker — apt / pip / layer của image aicam-be:staging-p2 và aicam-fakecam:staging; giữ dòng kết quả)
+ Image aicam-be:staging-p2 Pulling 
+ Image aicam-fakecam:staging Pulling 
+ Image aicam-be:staging-p2 Error pull access denied for aicam-be, repository does not exist or may require 'docker login'
+ Image aicam-fakecam:staging Error pull access denied for aicam-fakecam, repository does not exist or may require 'docker login'
+ Image aicam-fakecam:staging Building 
+ Image aicam-be:staging-p2 Building 
+Get:130 http://deb.debian.org/debian bookworm/main arm64 libsphinxbase3 arm64 0.8+5prealpha+1-16 [109 kB]
+Get:131 http://deb.debian.org/debian bookworm/main arm64 libpocketsphinx3 arm64 0.8+5prealpha+1-15 [114 kB]
+Get:137 http://deb.debian.org/debian bookworm/main arm64 libsphinxbase3 arm64 0.8+5prealpha+1-16 [109 kB]
+Get:138 http://deb.debian.org/debian bookworm/main arm64 libpocketsphinx3 arm64 0.8+5prealpha+1-15 [114 kB]
+Preparing to unpack .../129-libsphinxbase3_0.8+5prealpha+1-16_arm64.deb ...
+Unpacking libsphinxbase3:arm64 (0.8+5prealpha+1-16) ...
+Preparing to unpack .../130-libpocketsphinx3_0.8+5prealpha+1-15_arm64.deb ...
+Unpacking libpocketsphinx3:arm64 (0.8+5prealpha+1-15) ...
+Setting up libsphinxbase3:arm64 (0.8+5prealpha+1-16) ...
+Setting up libpocketsphinx3:arm64 (0.8+5prealpha+1-15) ...
+Successfully installed pillow-12.3.0 python-barcode-0.15.1
+Preparing to unpack .../136-libsphinxbase3_0.8+5prealpha+1-16_arm64.deb ...
+Preparing to unpack .../137-libpocketsphinx3_0.8+5prealpha+1-15_arm64.deb ...
+Successfully built c6a276c2409b
+Successfully tagged aicam-fakecam:staging
+ Image aicam-fakecam:staging Built 
+Successfully built 81b52366f121
+Successfully tagged aicam-be:staging-p2
+ Image aicam-be:staging-p2 Built 
+ Volume aicam-staging_pgdata Created 
+ Volume aicam-staging_caddy_data Created 
+ Volume aicam-staging_s3proxy_data Created 
+ Volume aicam-staging_imports Created 
+ Volume aicam-staging_caddy_config Created 
+ Volume aicam-staging_minio Created 
+ Volume aicam-staging_redisdata Created 
+ Volume aicam-staging_video Created 
+ Network aicam-staging_aicam Created 
+ Container aicam-staging-postgres-1 Started 
+ Container aicam-staging-minio-1 Started 
+ Container aicam-staging-camsrc-1 Started 
+ Container aicam-staging-volume-init-1 Started 
+ Container aicam-staging-redis-1 Started 
+ Container aicam-staging-s3proxy-1 Started 
+ Container aicam-staging-volume-init-1 Exited 
+ Container aicam-staging-fake-cam1-1 Started 
+ Container aicam-staging-mediamtx-1 Started 
+ Container aicam-staging-fake-cam2-1 Started 
+ Container aicam-staging-minio-1 Healthy 
+ Container aicam-staging-minio-init-1 Started 
+ Container aicam-staging-postgres-1 Healthy 
+ Container aicam-staging-backup-1 Started 
+ Container aicam-staging-migrate-1 Started 
+ Container aicam-staging-redis-1 Healthy 
+ Container aicam-staging-migrate-1 Exited 
+ Container aicam-staging-api-1 Started 
+ Container aicam-staging-api-1 Healthy 
+ Container aicam-staging-worker-export-1 Started 
+ Container aicam-staging-caddy-1 Started 
+ Container aicam-staging-beat-1 Started 
+ Container aicam-staging-worker-1 Started 
+ Container aicam-staging-worker-sync-1 Started 
+ Container aicam-staging-vision-1 Started 
+      632.58 real         0.30 user         0.27 sys
+exit=0
+## ps
+api	Up 22 seconds (healthy)
+backup	Up 23 seconds
+beat	Up 16 seconds
+caddy	Up 16 seconds (health: starting)
+camsrc	Up 34 seconds
+fake-cam1	Up 33 seconds
+fake-cam2	Up 33 seconds
+mediamtx	Up 33 seconds
+migrate	Exited (0) 22 seconds ago
+minio	Up 34 seconds (healthy)
+minio-init	Exited (0) 28 seconds ago
+postgres	Up 34 seconds (healthy)
+redis	Up 34 seconds (healthy)
+s3proxy	Up 33 seconds
+vision	Up 15 seconds
+volume-init	Exited (0) 34 seconds ago
+worker	Up 16 seconds
+worker-export	Up 16 seconds
+worker-sync	Up 15 seconds
+## logs migrate
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade  -> 0001, initial
+INFO  [alembic.runtime.migration] Running upgrade 0001 -> 0002, clip: deleted_at, timeline (T-14, DEC-102)
+INFO  [alembic.runtime.migration] Running upgrade 0002 -> 0003, returns_recon_claims — schema Phase 2 (02a §3, T-101)
+INFO  [alembic.runtime.migration] Running upgrade 0003 -> 0004, hold_to_claims — clip đang "giữ" → hồ sơ khiếu nại `LEGACY_HOLD` (02a §3 Migration 0004, ADR-009, T-111)
+INFO  [alembic.runtime.migration] 0004: 0 clip giữ → 0 hồ sơ LEGACY_HOLD (0 phiên)
+INFO  [alembic.runtime.migration] 0004: held_before=0 protected_after=0 chênh=0
+INFO  [alembic.runtime.migration] Running upgrade 0004 -> 0005, return_lookup_indexes — index `text_pattern_ops` cho API-104 tìm tiền tố (T-118, DEC-334)
+## alembic current
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+0005 (head)
+## minio-init
+Created policy `aicam-app` successfully.
+Added user `aicam-stg-app` successfully.
+Attached Policies: [aicam-app]
+To User: aicam-stg-app
+minio-init: aicam-stg-backup (versioning) + aicam-stg-share, user aicam-stg-app — xong
+## healthz qua Caddy
+{"status":"ok","version":"0.1.0"} HTTP 200
+## image
+aicam-be:staging-p2 81b52366f121 1.58GB
+aicam-fakecam:staging c6a276c2409b 846MB
+## camsrc paths
+['cam-fake1', 'cam-fake2']
+## Dữ liệu Phase 2 (code main, qua Caddy) — 2026-10-08T13:31:40+07:00
+Đã tạo Admin admin.
+create-admin (mật khẩu qua biến môi trường, không in): exit=0 ("Đã tạo Admin admin.")
+login admin 200
+tạo user sup (SUPERVISOR): 201
+tạo user cskh (CSKH): 201
+tạo user station01 (STATION): 201
+tạo station: 201
+station kind BOTH: 200 BOTH
+gắn CAM1 (camsrc giả): 200
+gắn CAM2 (camsrc giả): 200
+  ROI Cam 2 góc trống (như qa-reset --mute-cam2): 200
+camera: [('CAM1', 'ONLINE'), ('CAM2', 'ONLINE')]
+nhập CSV preview: 201
+nhập CSV commit: 200 {"new": 6, "updated": 0, "skipped": 0, "error": 0}
+người thao tác: 200
+phiên PACK SPXSTG0000001: SESSION_OPENED → SESSION_COMPLETED None
+phiên PACK SPXSTG0000002: SESSION_OPENED → SESSION_COMPLETED None
+phiên PACK SPXSTG0000003: SESSION_OPENED → SESSION_COMPLETED None
+phiên PACK SPXSTG0000004: SESSION_OPENED → SESSION_COMPLETED None
+phiên PACK SPXSTG0000005: SESSION_OPENED → SESSION_COMPLETED None
+clip PACK SPXSTG0000001: [('CAM1', 'READY'), ('CAM2', 'READY')]
+clip PACK SPXSTG0000002: [('CAM1', 'READY'), ('CAM2', 'READY')]
+clip PACK SPXSTG0000003: [('CAM1', 'READY'), ('CAM2', 'READY')]
+clip PACK SPXSTG0000004: [('CAM1', 'READY'), ('CAM2', 'READY')]
+clip PACK SPXSTG0000005: [('CAM1', 'READY'), ('CAM2', 'READY')]
+bàn giao tay SPXSTG0000002 (SUPERVISOR): 200
+bàn giao tay SPXSTG0000003 (SUPERVISOR): 200
+bàn giao tay SPXSTG0000005 (SUPERVISOR): 200
+station → RETURN: 200
+RETURN SPXSTG0000002: SESSION_OPENED RETURN HH-000001 UNANNOUNCED pack_reference clips ['CAM1', 'CAM2']
+  chụp ảnh 1: 201
+  chụp ảnh 2: 201
+  kết luận EMPTY_BOX: 200
+  đóng: SESSION_COMPLETED RETURN_RECEIVED_ISSUE KN-000001
+RETURN SPXSTG0000003: SESSION_OPENED HH-000002
+  kết luận OK: 200 
+  đóng: SESSION_COMPLETED RETURN_RECEIVED_OK None
+RETURN SPXSTG0000005 mở → hủy WRONG_SCAN: SESSION_OPENED 200
+station → PACK: 200
+hồ sơ tay: 201 KN-000002 [('SESSION', 'PACK'), ('SNAPSHOT', None)]
+  ghi chú / SUBMITTED: 201 200 SUBMITTED
+gói bằng chứng hồ sơ tự tạo: 202 READY 41444631
+xuất clip SPXSTG0000004: 202 QUEUED
+hồ sơ khiếu nại: [('KN-000002', 'MANUAL', 'SUBMITTED', 'BUYER_CLAIM'), ('KN-000001', 'AUTO_RETURN', 'NEW', 'EMPTY_BOX')]
+hồ sơ hàng hoàn: [('HH-000003', 'UNANNOUNCED', 'CANCELLED'), ('HH-000002', 'UNANNOUNCED', 'RECEIVED_OK'), ('HH-000001', 'UNANNOUNCED', 'RECEIVED_ISSUE')]
+## Đơn sàn Phase 2 (giả lập đồng bộ: shop Shopee chèn SQL + upsert_platform_order của code Phase 2 trong container api p2)
+Traceback (most recent call last):
+  File "<stdin>", line 37, in <module>
+  File "/usr/local/lib/python3.12/asyncio/runners.py", line 195, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/asyncio/base_events.py", line 691, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "<stdin>", line 26, in main
+  File "/app/src/aicam/modules/orders/service.py", line 259, in upsert_platform_order
+    await session.flush()
+  File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/ext/asyncio/session.py", line 1030, in flush
+    await greenlet_spawn(self.sync_session.flush, objects=objects)
+  File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/util/concurrency.py", line 212, in greenlet_spawn
+    result = context.switch(value)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 4536, in flush
+    self._flush(objects)
+  File "<sqlalchemy generated warned() wrapper for sqlalchemy.orm.session.Session._flush>", line 2, in _flush
+  File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/util/deprecations.py", line 281, in warned
+    return fn(*args, **kwargs)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 4679, in _flush
+    with util.safe_reraise():
+         ^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 166, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 4640, in _flush
+    flush_context.execute()
+  File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/orm/unitofwork.py", line 467, in execute
+    rec.execute(self)
+  File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/orm/unitofwork.py", line 643, in execute
+    util.preloaded.orm_persistence._save_obj(
+  File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/orm/persistence.py", line 75, in _save_obj
+    for table, mapper in base_mapper._sorted_tables.items():
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 1449, in __get__
+    obj.__dict__[self.__name__] = result = self.fget(obj)
+                                           ^^^^^^^^^^^^^^
+  File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/orm/mapper.py", line 4053, in _sorted_tables
+    sorted_ = sql_util.sort_tables(
+              ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/sql/ddl.py", line 1818, in sort_tables
+    for (t, fkcs) in sort_tables_and_constraints(
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/sql/ddl.py", line 1890, in sort_tables_and_constraints
+    filtered = filter_fn(fkc)
+               ^^^^^^^^^^^^^^
+  File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/sql/ddl.py", line 1808, in _skip_fn
+    if fixed_skip_fn(fk):
+       ^^^^^^^^^^^^^^^^^
+  File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/orm/mapper.py", line 4036, in skip
+    dep = table_to_mapper.get(fk.column.table)
+                              ^^^^^^^^^
+  File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 1337, in __get__
+    obj.__dict__[self.__name__] = result = self.fget(obj)
+                                           ^^^^^^^^^^^^^^
+  File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/sql/schema.py", line 3864, in column
+    return self._resolve_column()
+           ^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/sql/schema.py", line 3887, in _resolve_column
+    raise exc.NoReferencedTableError(
+sqlalchemy.exc.NoReferencedTableError: Foreign key associated with column 'order.csv_import_id' could not find table 'csv_import' with which to generate a foreign key to target column 'id'
+exit=1
+phiên PACK SPXSTG0000012 (đơn API shop giả lập): SESSION_OPENED → SESSION_COMPLETED None
+clip: [('CAM1', 'READY'), ('CAM2', 'READY')]
+Traceback (most recent call last):
+  File "<stdin>", line 37, in <module>
+  File "/usr/local/lib/python3.12/asyncio/runners.py", line 195, in run
+    return runner.run(main)
+           ^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/asyncio/runners.py", line 118, in run
+    return self._loop.run_until_complete(task)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/usr/local/lib/python3.12/asyncio/base_events.py", line 691, in run_until_complete
+    return future.result()
+           ^^^^^^^^^^^^^^^
+  File "<stdin>", line 26, in main
+  File "/app/src/aicam/modules/orders/service.py", line 259, in upsert_platform_order
+    await session.flush()
+  File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/ext/asyncio/session.py", line 1030, in flush
+    await greenlet_spawn(self.sync_session.flush, objects=objects)
+  File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/util/concurrency.py", line 212, in greenlet_spawn
+    result = context.switch(value)
+             ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 4536, in flush
+    self._flush(objects)
+  File "<sqlalchemy generated warned() wrapper for sqlalchemy.orm.session.Session._flush>", line 2, in _flush
+  File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/util/deprecations.py", line 281, in warned
+    return fn(*args, **kwargs)  # type: ignore[no-any-return]
+           ^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 4679, in _flush
+    with util.safe_reraise():
+         ^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 166, in __exit__
+    raise exc_value.with_traceback(exc_tb)
+  File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/orm/session.py", line 4640, in _flush
+    flush_context.execute()
+  File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/orm/unitofwork.py", line 467, in execute
+    rec.execute(self)
+  File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/orm/unitofwork.py", line 643, in execute
+    util.preloaded.orm_persistence._save_obj(
+  File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/orm/persistence.py", line 75, in _save_obj
+    for table, mapper in base_mapper._sorted_tables.items():
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 1449, in __get__
+    obj.__dict__[self.__name__] = result = self.fget(obj)
+                                           ^^^^^^^^^^^^^^
+  File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/orm/mapper.py", line 4053, in _sorted_tables
+    sorted_ = sql_util.sort_tables(
+              ^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/sql/ddl.py", line 1818, in sort_tables
+    for (t, fkcs) in sort_tables_and_constraints(
+                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/sql/ddl.py", line 1890, in sort_tables_and_constraints
+    filtered = filter_fn(fkc)
+               ^^^^^^^^^^^^^^
+  File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/sql/ddl.py", line 1808, in _skip_fn
+    if fixed_skip_fn(fk):
+       ^^^^^^^^^^^^^^^^^
+  File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/orm/mapper.py", line 4036, in skip
+    dep = table_to_mapper.get(fk.column.table)
+                              ^^^^^^^^^
+  File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/util/langhelpers.py", line 1337, in __get__
+    obj.__dict__[self.__name__] = result = self.fget(obj)
+                                           ^^^^^^^^^^^^^^
+  File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/sql/schema.py", line 3864, in column
+    return self._resolve_column()
+           ^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv/lib/python3.12/site-packages/sqlalchemy/sql/schema.py", line 3887, in _resolve_column
+    raise exc.NoReferencedTableError(
+sqlalchemy.exc.NoReferencedTableError: Foreign key associated with column 'order.csv_import_id' could not find table 'csv_import' with which to generate a foreign key to target column 'id'
+exit=1
+(lần chạy trên lỗi do script giả lập chưa nạp đủ model SQLAlchemy — lỗi của script, không phải sản phẩm; không ghi gì vào DB. Kiện SPXSTG0000012 vì thế được tạo bởi lần quét đóng gói ở trên dưới dạng kiện chưa có đơn; đơn API gắn vào ở lần chạy lại dưới — như J-05 xác minh lại)
+create 11 READY_TO_SHIP UpsertResult
+create 12 READY_TO_SHIP UpsertResult
+create 13 READY_TO_SHIP UpsertResult
+kiện của shop giả lập: [('SPXSTG0000011', 'NEW', 'READY_TO_SHIP'), ('SPXSTG0000012', 'PACKED', 'READY_TO_SHIP'), ('SPXSTG0000013', 'NEW', 'READY_TO_SHIP')]
+exit=0
+cancel 11 IN_CANCEL UpsertResult
+cancel 12 IN_CANCEL UpsertResult
+cancel 13 CANCELLED UpsertResult
+kiện của shop giả lập: [('SPXSTG0000011', 'CANCELLED', 'IN_CANCEL'), ('SPXSTG0000012', 'CANCELLED_AFTER_PACK', 'IN_CANCEL'), ('SPXSTG0000013', 'CANCELLED', 'CANCELLED')]
+exit=0

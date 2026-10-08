@@ -1,0 +1,238 @@
+# Bước 5: lùi Phase 3 → Phase 2 theo docs/ops.md §7.2 'Lùi về Phase 2', rồi nâng cấp lại — 2026-10-08T14:02:00+07:00
+## Chuẩn bị dữ liệu Phase 3 cho điều kiện từ chối / EV-1 / BR-38
+-- đơn TikTok (giả lập J-04: shop TIKTOK chèn SQL + upsert_platform_order code Phase 3)
+(lượt 1 lỗi: script giả lập đặt status_group='READY_TO_SHIP' không thuộc ORDER_STATUS_GROUPS → CHECK của DB từ chối, không ghi gì — lỗi script; traceback lược. Kiện TTSTG0000001 vì thế được tạo bởi lần quét đóng gói dưới đây dạng kiện chưa có đơn; đơn TikTok gắn vào ở lần chạy lại — như J-05)
+phiên PACK TTSTG0000001 (đơn TikTok giả lập): SESSION_OPENED → SESSION_COMPLETED None platform: {}
+  clip: [('CAM1', 'READY'), ('CAM2', 'READY')] kiện: PACKED
+hồ sơ Phase 3 trên SPXSTG0000004: 201 KN-000003 deadline_source DEFAULT
+bỏ 1 ảnh khỏi KN-000001 (BR-38 bỏ mềm): 200 removed_evidence: [('SNAPSHOT', '2027-01-06T07:02:21.463596Z')]
+-- chạy lại giả lập J-04 TikTok (status_group=AWAITING_SHIPMENT)
+upsert UpsertResult [('TTSTG0000001', 'PACKED', 'AWAITING_SHIPMENT', 'AWAITING_SHIPMENT')]
+exit=0
+-- giả lập BR-42 (EV-1): đặt deadline_source = DEFAULT_PLATFORM_PASSED cho KN-000003 bằng SQL (không có hạn sàn thật để sinh tự nhiên)
+KN-000003|DEFAULT_PLATFORM_PASSED
+UPDATE 1
+## Mốc TRƯỚC khi lùi (0007): số dòng + md5 MỌI bảng (mọi cột Phase 3 — cols-p3.json) + tệp bằng chứng — 2026-10-08T14:02:54+07:00
+alembic_version|1|30930fc98915eedc732ba0eb8a285897
+approval_request|0|d41d8cd98f00b204e9800998ecf8427e
+audit_log|91|4c71efc8dc12a5e691be288a18e2f7f7
+backup_object|17|7fdb8419524d5d5882dc0a61ce4f07e1
+backup_run|1|9c8b59ac2a77d6abbc041a11b714c350
+camera|2|adc878a702d969b6b01ebd29c9342521
+claim|3|f3002c3c9d4b5cacc8710880d600a6a6
+claim_evidence|9|018b0cbde6eaa956614eb4ae33a034b8
+claim_note|7|a953b0035e387e40263ab610683f1627
+clip|20|e98e365b5a4d651d9f4dfa6da424f45e
+csv_import|1|c086e15f1ead201325d6c789da2330ec
+evidence_pack|1|85765eeb7646f950b6c01c7bade2a62b
+export|1|72574d9d462ad14915ca506d09146be8
+inspection_line|3|20e7ec2ab73700f6c2bc1ffdedf0e3b3
+notify_channel|0|d41d8cd98f00b204e9800998ecf8427e
+notify_event|2|db03b627a31aed1bab092a30db5dc1db
+notify_message|0|d41d8cd98f00b204e9800998ecf8427e
+notify_provider_token|0|d41d8cd98f00b204e9800998ecf8427e
+order|10|d5d88f53e2ca8b5aca90a8df9ecf1dc0
+order_item|11|04873ceaf21ad0bb0abc2d44511e7ebb
+package|10|643b81159b95a038a96173214a40d4dc
+package_order|0|d41d8cd98f00b204e9800998ecf8427e
+recon_alert|0|d41d8cd98f00b204e9800998ecf8427e
+refresh_token|64|8e52d9fe78aa13c365adff5782d7026b
+return_case|3|ef789cf087e24014a0968e4123e88174
+return_case_package|3|74f2863873abea2e58cdf7d87d841ee4
+scan_dedup|2|f1aaac2567a75e477b76208653d55824
+session|10|d47365ff77c181098be1ab01a114b48c
+session_event|20|19cdd159a4970c5048057438db045585
+setting|1|811b98ae5f86bfeaed75f745b8514ea5
+share_item|3|50756244778313aaa6ea73d03858dd5c
+share_link|2|5634dea0b151e0c2bcffd7503b0046f4
+shop|2|0f31256133408bd859f2a22c613eb38f
+snapshot|9|3a0701c85c4ef8289bc518b19d98266a
+station|1|290b3a605e32fe49145ab009a2de30a0
+status_history|34|346d11ed2892117a7e9f115a6a1a83f3
+user|4|5dff40bb16cf3893937bad698cc0d39b
+video_segment|61|69fc10a4a1537e68f912e09d1efca70b
+clips|20 tệp|e9a0c7c1797442c81a3844c0cb1bd52c
+snapshots|9 tệp|738f9e93bd3f2dbdcd6fed6a8a0606d0
+-- shop: SHOPEE Shop Shopee STG (giả lập) CONNECTED; TIKTOK TikTok STG (giả lập) CONNECTED
+-- link: REVOKED=1, ACTIVE=1
+-- hồ sơ: KN-000001 NEW DEFAULT; KN-000002 SUBMITTED DEFAULT; KN-000003 NEW DEFAULT_PLATFORM_PASSED
+-- bằng chứng đã bỏ (removed_at): 1
+-- hàng đợi video: 0
+## Lùi bước 1: sao lưu
+2026-10-08T14:03:00+07:00 backup_ok aicam-20261008-140300.dump
+exit=0
+## Lùi bước 3 (chưa thu hồi link — để xem điều kiện từ chối): dc stop api vision worker worker-sync worker-sync-long worker-export worker-backup worker-notify beat
+9
+   kết nối khác vào DB: 0
+## bước 4: alembic current (image Phase 3)
+0007 (head)
+## bước 5 lần 1: alembic downgrade 0005 (kỳ vọng TỪ CHỐI: link đang hoạt động)
+exit=1
+    raise RuntimeError(
+RuntimeError: Không downgrade 0006: còn 1 link chia sẻ đang tạo / đang hoạt động (01a11a4c-59c5-7092-a7d7-f9182ac5f723 (ACTIVE)) — bản Phase 2 không thu hồi / hết hạn được. Thu hồi ở màn Link chia sẻ rồi chạy lại; chấp nhận để link sống tới khi bản cloud tự hết hạn thì đặt AICAM_DOWNGRADE_ALLOW_ACTIVE_SHARES=1. Không có gì bị thay đổi. Xem docs/ops.md §7.2.
+   current sau từ chối: 0007 (head)
+## bước 2 theo ops: thu hồi link (cần api) — dc3 up -d, thu hồi qua API-163, chờ J-25
+12
+thu hồi ACTIVE → 200 REVOKED ; W1 → 404 application/xml sau 3s
+-- dừng lại 9 service
+9
+   kết nối khác vào DB: 0
+## bước 5 lần 2: alembic downgrade 0005 (kỳ vọng TỪ CHỐI: đơn ngoài — kiện của đơn TikTok)
+exit=1
+    raise RuntimeError(
+RuntimeError: Không downgrade 0006: còn kiện của đơn TikTok / shop Shopee sẽ bị ngắt (PACKED: 1) — bản Phase 2 tra vận chuyển mọi kiện bằng token một shop Shopee. Chấp nhận tách các kiện này khỏi đơn trong thời gian chạy Phase 2 thì đặt AICAM_DOWNGRADE_DETACH_FOREIGN_ORDERS=1 (nâng cấp lại gắn lại). Không có gì bị thay đổi. Xem docs/ops.md §7.2.
+   current sau từ chối: 0007 (head)
+## bước 5b: -e AICAM_DOWNGRADE_DETACH_FOREIGN_ORDERS=1 alembic downgrade 0005
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+INFO  [alembic.runtime.migration] Running downgrade 0007 -> 0006, order_unique_per_shop — mã đơn / mã yêu cầu trả unique theo shop (02a §3 Migration 0007, BR-29, T-202)
+INFO  [alembic.runtime.migration] 0007 downgrade: tạo lại unique toàn cục mã đơn / mã yêu cầu trả
+INFO  [alembic.runtime.migration] Running downgrade 0006 -> 0005, phase3_schema — schema Phase 3 (02a §3 Migration 0006, T-201)
+INFO  [alembic.runtime.migration] 0006 downgrade: chép sang phase3_archive {"notify_event": 2, "notify_provider_token": 0, "backup_run": 1, "notify_channel": 0, "notify_message": 0, "package_order": 0, "share_link": 2, "backup_object": 17, "share_item": 3, "shop_cols": 1, "order_cols": 4, "return_case_cols": 0, "claim_cols": 1, "claim_evidence_cols": 1, "session_cols": 0, "setting_cols": 1, "claim_deadline_cols": 1, "tiktok_shops": 1, "order_shop": 1, "backfill_prior_pairs": 0, "missing_clips": 0, "missing_snapshots": 0, "reconnected_shops": 0}
+INFO  [alembic.runtime.migration] 0006 downgrade: 1 dòng bằng chứng đã bỏ; 0 clip + 1 ảnh còn hạn giữ → 1 hồ sơ LEGACY_HOLD đã đóng
+INFO  [alembic.runtime.migration] 0006 downgrade: |B| = 1, được bảo vệ sau = 12 clip + 6 ảnh, thiếu = 0
+INFO  [alembic.runtime.migration] 0006 downgrade: tách 1 kiện của đơn ngoài, 0 clip / ảnh MISSING về trạng thái Phase 2
+INFO  [alembic.runtime.migration] 0006 downgrade: 1 hồ sơ khiếu nại nguồn hạn DEFAULT_PLATFORM_PASSED → DEFAULT (G3-EV-1)
+INFO  [alembic.runtime.migration] 0006 downgrade: ngắt 0 shop Shopee (Phase 2 một shop), 1 đơn TikTok rời shop, xóa 1 shop TikTok
+(2 giây cả khởi động container)
+   current: 0005
+   phase3_archive: 26 bảng
+   shop: SHOPEE Shop Shopee STG (giả lập) CONNECTED
+   kiện TTSTG0000001: TTSTG0000001 PACKED order_id=NULL
+   hồ sơ: KN-000001 NEW DEFAULT AUTO_RETURN; KN-000002 SUBMITTED DEFAULT MANUAL; KN-000003 NEW DEFAULT MANUAL; KN-000004 CLOSED DEFAULT LEGACY_HOLD
+## bước 6: AICAM_IMAGE=aicam-be:staging-p2 dc up -d (compose Phase 3 như ops §7.2; FE_DIST_DIR = FE Phase 2 1f214a1) — 2026-10-08T14:04:39+07:00
+    Container aicam-staging-migrate-1 Recreated 
+    Container aicam-staging-api-1 Recreated 
+    Container aicam-staging-beat-1 Recreated 
+    Container aicam-staging-vision-1 Recreated 
+    Container aicam-staging-worker-sync-1 Recreated 
+    Container aicam-staging-worker-sync-long-1 Recreated 
+    Container aicam-staging-worker-notify-1 Recreated 
+    Container aicam-staging-worker-export-1 Recreated 
+    Container aicam-staging-worker-1 Recreated 
+    Container aicam-staging-worker-backup-1 Recreated 
+    Container aicam-staging-caddy-1 Recreated 
+   api	aicam-be:staging-p2	Up 38 seconds (healthy)
+   backup	postgres:16-alpine	Up 17 minutes
+   beat	aicam-be:staging-p2	Up 30 seconds
+   caddy	caddy:2-alpine	Up 31 seconds (healthy)
+   camsrc	bluenviron/mediamtx:1	Up 35 minutes
+   fake-cam1	aicam-fakecam:staging	Up 35 minutes
+   fake-cam2	aicam-fakecam:staging	Up 35 minutes
+   mediamtx	bluenviron/mediamtx:1	Up 17 minutes
+   migrate	aicam-be:staging-p2	Exited (0) 38 seconds ago
+   minio	pgsty/minio:latest	Up 35 minutes (healthy)
+   minio-init	pgsty/minio:latest	Exited (0) 39 seconds ago
+   postgres	postgres:16-alpine	Up 35 minutes (healthy)
+   redis	redis:7-alpine	Up 35 minutes (healthy)
+   s3proxy	caddy:2-alpine	Up 35 minutes
+   vision	aicam-be:staging-p2	Up 31 seconds
+   volume-init	alpine:3	Exited (0) 40 seconds ago
+   worker	aicam-be:staging-p2	Up 32 seconds
+   worker-backup	aicam-be:staging-p2	Up 31 seconds
+   worker-export	aicam-be:staging-p2	Up 31 seconds
+   worker-notify	aicam-be:staging-p2	Up 31 seconds
+   worker-sync	aicam-be:staging-p2	Up 30 seconds
+   worker-sync-long	aicam-be:staging-p2	Up 31 seconds
+   migrate (image P2) log: 
+   healthz: {"status":"ok","version":"0.1.0"} HTTP 200
+   FE: /assets/index-phMxIoGg.js
+## Kiểm Phase 2 chạy sau lùi (qua Caddy, FE + BE Phase 2)
+[✓] R1 đăng nhập admin trên Phase 2 sau lùi — ADMIN
+[✓] R1 đăng nhập sup trên Phase 2 sau lùi — SUPERVISOR
+[✓] R1 đăng nhập cskh trên Phase 2 sau lùi — CSKH
+[✓] R1 đăng nhập station01 trên Phase 2 sau lùi — STATION
+[✓] R2 API-130 danh sách hồ sơ (Phase 2) 200 — 200 [('KN-000004', 'LEGACY_HOLD', 'CLOSED'), ('KN-000003', 'MANUAL', 'NEW'), ('KN-000002', 'MANUAL', 'SUBMITTED'), ('KN-000001', 'AUTO_RETURN', 'NEW')]
+[✓] R3 API-132 mở hồ sơ KN-000004 trên Phase 2 (EV-1: KN-000003 từng là DEFAULT_PLATFORM_PASSED) — 200 deadline_source=DEFAULT evidence=[('SNAPSHOT', None)] note0=Bằng chứng đã bỏ khỏi KN-000001 lúc 14:02 08/10/2026 (lý do: Ảnh mờ, bỏ khỏi hồ 
+[✓] R3 API-132 mở hồ sơ KN-000003 trên Phase 2 (EV-1: KN-000003 từng là DEFAULT_PLATFORM_PASSED) — 200 deadline_source=DEFAULT evidence=[('SESSION', 'PACK'), ('SNAPSHOT', None)] note0=G5 hồ sơ Phase 3
+[✓] R3 API-132 mở hồ sơ KN-000002 trên Phase 2 (EV-1: KN-000003 từng là DEFAULT_PLATFORM_PASSED) — 200 deadline_source=DEFAULT evidence=[('SESSION', 'PACK'), ('SNAPSHOT', None)] note0=G5 khách báo thiếu
+[✓] R3 API-132 mở hồ sơ KN-000001 trên Phase 2 (EV-1: KN-000003 từng là DEFAULT_PLATFORM_PASSED) — 200 deadline_source=DEFAULT evidence=[('SESSION', 'PACK'), ('SESSION', 'RETURN'), ('SNAPSHOT', None), ('SNAPSHOT', None)] note0=Tạo tự động từ phiên mở hoàn (Hộp rỗng).
+[✓] R4 kiện SPXSTG0000002 trên Phase 2 — RETURN_RECEIVED_ISSUE order=2410STG00002 phiên=[('RETURN', [('CAM1', 'READY'), ('CAM2', 'READY')]), ('PACK', [('CAM1', 'READY'), ('CAM2', 'READY')])]
+[✓] R4 kiện TTSTG0000001 trên Phase 2 — PACKED order=None phiên=[('PACK', [('CAM1', 'READY'), ('CAM2', 'READY')])]
+[✓] R4 kiện SPXSTG0000011 trên Phase 2 — NEW order=2410STG00011 phiên=[]
+[✓] R5 phát clip trên Phase 2 sau lùi (206) — 206
+[✓] R6 API-110 hồ sơ hàng hoàn trên Phase 2 — [('HH-000003', 'CANCELLED'), ('HH-000002', 'RECEIVED_OK'), ('HH-000001', 'RECEIVED_ISSUE')]
+TỔNG: 14/14 ✓
+-- log worker image P2 nhận task lạ (queue backup / notify còn tin của Phase 3?):
+   (rỗng = không có)
+-- schema_guard P2: schema_version_ok              component=beat revision=0005 schema_version_ok              component=worker revision=0005 
+-- FE Phase 2 (Chromium) sau lùi, CSKH:
+/admin/claims: "KN-000003" có
+chi tiết KN-000003: url=/admin/claims/01a11a51-f5c9-75ea-ac4e-642f748ae896 có mã=true
+chi tiết KN-000004: url=/admin/claims/a58cdc7d-9ca1-46e4-8994-9786fbeaa2de có mã=true
+FE Phase 2 sau lùi: lỗi console=0 []
+## Nâng cấp lại lên Phase 3 (ops §7.2 'Nâng cấp lại' = như phần Nâng cấp) — 2026-10-08T14:06:45+07:00
+-- bước 1: sao lưu
+2026-10-08T14:06:45+07:00 backup_ok aicam-20261008-140645.dump
+exit=0
+-- bước 3 đúng chữ ops: dc stop api vision worker worker-sync worker-export beat
+6
+   kết nối khác vào DB: 0
+   container ứng dụng còn chạy: worker-backup aicam-be:staging-p2;worker-notify aicam-be:staging-p2;worker-sync-long aicam-be:staging-p2;
+   kết nối theo IP: 
+   → OBS: sau khi lùi theo ops bước 6 (compose Phase 3 + image Phase 2) còn 3 container image Phase 2 chạy (worker-sync-long nhận queue 'sync' = J-04/J-06/J-13 của Phase 2; worker-backup, worker-notify) mà bước 3 của 'Nâng cấp' không dừng. Ở kho có Shopee thật, J-06 Phase 2 trên worker-sync-long có thể ghi DB trong lúc migrate (kiểm pg_stat_activity chỉ là một thời điểm). Xử lý: dừng thêm 3 service này (sửa ops §7.2 bước 3 — 'docker compose stop' service chưa tạo trả 0, đã thử).
+-- dừng thêm worker-sync-long worker-backup worker-notify
+3
+   kết nối khác vào DB: 0
+-- bước 4: current (image P3): 0005
+-- bước 5: upgrade head
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade 0005 -> 0006, phase3_schema — schema Phase 3 (02a §3 Migration 0006, T-201)
+INFO  [alembic.runtime.migration] 0006: backfill {"order_group": 3, "order_unknown": {"AWAITING_SHIPMENT": 1}, "return_group": 0, "return_shop": 0, "shop_grant_ref": 1, "claim_submitted_audit": 1, "claim_result_audit": 0, "claim_submitted_fallback": 0, "claim_result_fallback": 0, "session_cols_3b": 0, "prior_rows": 0, "prior_claims": 0, "prior_review_needed": 0, "cancel_revert_candidates": 0, "seconds": 0.3}
+INFO  [alembic.runtime.migration] 0006: khôi phục từ phase3_archive {"tiktok_shops": 1, "shop_cols": 1, "reconnected_shops": 0, "order_shop": 1, "order_cols": 4, "return_case_cols": 0, "claim_cols": 1, "claim_deadline_cols": 1, "claim_evidence_cols": 0, "removed_evidence_reinserted": 1, "removed_evidence_conflicts": 0, "legacy_hold_claims_dropped": 1, "detached_reattached": 1, "missing_clips": 0, "missing_snapshots": 0, "setting_cols": 1, "notify_channel": 0, "notify_event": 2, "notify_message": 0, "notify_provider_token": 0, "backup_run": 1, "backup_object": 17, "share_link": 2, "share_item": 3, "package_order": 0}
+WARNI [alembic.runtime.migration] 0006: đơn có trạng thái sàn chưa ánh xạ → nhóm UNKNOWN (không đổi trạng thái kho): {"AWAITING_SHIPMENT": 1}
+INFO  [alembic.runtime.migration] Running upgrade 0006 -> 0007, order_unique_per_shop — mã đơn / mã yêu cầu trả unique theo shop (02a §3 Migration 0007, BR-29, T-202)
+   current: 0007 (head)
+-- bước 6: VACUUM
+VACUUM
+VACUUM
+-- bước 7: fix-cancel-requests (chạy lại vô hại)
+Tổng: 0 kiện hủy có đơn chưa hủy trên sàn — chạy thử (thêm --apply để ghi): sẽ trả lại 0, bỏ qua 0.
+-- bước 8: dc3 up -d (image P3, FE P3)
+24
+   api	aicam-be:staging-p3	Up 37 seconds (healthy)
+   beat	aicam-be:staging-p3	Up 31 seconds
+   vision	aicam-be:staging-p3	Up 31 seconds
+   worker	aicam-be:staging-p3	Up 30 seconds
+   worker-backup	aicam-be:staging-p3	Up 30 seconds
+   worker-export	aicam-be:staging-p3	Up 31 seconds
+   worker-notify	aicam-be:staging-p3	Up 30 seconds
+   worker-sync	aicam-be:staging-p3	Up 31 seconds
+   worker-sync-long	aicam-be:staging-p3	Up 30 seconds
+   healthz: {"status":"ok","version":"0.1.0"} HTTP 200
+   phase3_archive còn: 0
+## Mốc SAU nâng cấp lại: so với mốc TRƯỚC khi lùi (mọi bảng, mọi cột Phase 3)
+   < audit_log|91|4c71efc8dc12a5e691be288a18e2f7f7
+   > audit_log|102|97878324b9a9d2859058da0a0b7d28ea
+   < refresh_token|64|8e52d9fe78aa13c365adff5782d7026b
+   > refresh_token|72|e8cacf589ae4b93a61738df1815805b7
+   < share_link|2|5634dea0b151e0c2bcffd7503b0046f4
+   > share_link|2|f979f7d38e2f58212d55c93955207d58
+   < video_segment|61|69fc10a4a1537e68f912e09d1efca70b
+   > video_segment|67|27875cae4fab2355f283f928828f71e5
+   → 34/38 bảng y hệt (số dòng + md5)
+## Tệp bằng chứng
+clips|20 tệp|e9a0c7c1797442c81a3844c0cb1bd52c
+snapshots|9 tệp|738f9e93bd3f2dbdcd6fed6a8a0606d0
+   tệp bằng chứng: KHỚP trước khi lùi / sau nâng cấp lại
+-- shop: SHOPEE Shop Shopee STG (giả lập) CONNECTED; TIKTOK TikTok STG (giả lập) CONNECTED
+-- kiện TTSTG0000001: TTSTG0000001 PACKED đơn=577000000000000001
+-- hồ sơ: KN-000001 NEW DEFAULT; KN-000002 SUBMITTED DEFAULT; KN-000003 NEW DEFAULT_PLATFORM_PASSED
+-- bằng chứng đã bỏ: 1
+## Giải thích 4 bảng lệch: khôi phục bản sao lưu ở bước 1 của lùi (aicam-20261008-140300.dump) vào DB tạm aicam_predown
+   pg_restore exit=0
+   audit_log dòng cũ: trước=91 4c71efc8dc12a5e691be288a18e2f7f7 sau=91 4c71efc8dc12a5e691be288a18e2f7f7 KHỚP; dòng mới: 11
+   refresh_token dòng cũ: trước=64 8e52d9fe78aa13c365adff5782d7026b sau=64 8e52d9fe78aa13c365adff5782d7026b KHỚP; dòng mới: 8
+   video_segment dòng cũ: trước=61 69fc10a4a1537e68f912e09d1efca70b sau=61 69fc10a4a1537e68f912e09d1efca70b KHỚP; dòng mới: 6
+   audit_log 11 dòng mới (theo id mới nhất): VIEW_CLIP=1, LOGIN=7, SHARE_REVOKE=1, VIEW_SNAPSHOT=2
+   share_link trừ cột thu hồi [aicam_predown]: 2 ae0a3e4bcac88a082b0d64dc3fc0142a — trạng thái: REVOKED,ACTIVE
+   share_link trừ cột thu hồi [aicam]: 2 ae0a3e4bcac88a082b0d64dc3fc0142a — trạng thái: REVOKED,REVOKED
+   xoá DB tạm: exit=0
+   → lệch đều có lý do: audit_log / refresh_token = đăng nhập + thu hồi link sau mốc; share_link = link ACTIVE được thu hồi (bước 2 của lùi) sau mốc; video_segment = camera vẫn ghi. Bằng chứng (clip, snapshot, claim, claim_evidence, session, share_item, backup_object, return_case…) y nguyên.
+## Smoke lại P1–P5 (chỉ đọc) sau nâng cấp lại — 2026-10-08T14:08:53+07:00
+[✗] P3c hồ sơ khiếu nại Phase 2 + bằng chứng (PACK, RETURN, ảnh) đọc được qua API-132 Phase 3; có đúng 1 phiên chính (BR-39) — [('KN-000003', 'MANUAL', 'NEW'), ('KN-000002', 'MANUAL', 'SUBMITTED'), ('KN-000001', 'AUTO_RETURN', 'NEW')]; KN-000001 evidence=[('SESSION', 'PACK', False), ('SESSION', 'RETURN', True), ('SNAPSHOT', None, False), ('SNAPSHOT', None, False)] deadline_source=DEFAULT
+[✓] P3e hồ sơ hàng hoàn Phase 2 trên API-110 Phase 3 — [('HH-000003', 'UNANNOUNCED', 'CANCELLED', None, None), ('HH-000002', 'UNANNOUNCED', 'RECEIVED_OK', None, None), ('HH-000001', 'UNANNOUNCED', 'RECEIVED_ISSUE', None, None)]
+[✓] P4 API-70 GET /shops: platforms[] Shopee + TikTok, chưa cấu hình (staging không có partner) — platforms=[{"platform": "SHOPEE", "enabled": false, "returns_enabled": false, "configured": false}, {"platform": "TIKTOK", "enabled": false, "returns_enabled": false, "configured": false}] shops=[('SHOPEE', 'Shop Shopee STG (giả lập)', 'CONNECTED'), ('TIKTOK', 'TikTok STG (giả lập)', 'CONNECTED')]
+TỔNG: 25/26 ✓
+(P3c ✗ ở lượt này do script đếm cứng 2 hồ sơ — nay có KN-000003 tạo ở Phase 3 cho kiểm EV-1, và 1 ảnh của KN-000001 đã bỏ mềm (BR-38) trước khi lùi → evidence còn 2 ảnh + removed_evidence 1; dữ liệu đúng như trước khi lùi. Không phải lỗi sản phẩm.)

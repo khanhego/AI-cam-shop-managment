@@ -1,0 +1,287 @@
+# Bước 2: nâng cấp Phase 2 → Phase 3 theo docs/ops.md §7.2 — 2026-10-08T13:45:54+07:00
+## Mốc TRƯỚC (schema 0005, code Phase 2): số dòng + md5 theo cột Phase 2 (cột lưu ở cols-p2.json)
+alembic_version|1|43567539c91ee97e5aae767c99b5c3cb
+approval_request|0|d41d8cd98f00b204e9800998ecf8427e
+audit_log|26|b58d09a5b5a28bbf37304692d6c98ab8
+camera|2|1e301674fbf49851eb489a513ad10e5a
+claim|2|575923b35be335b10795353134e85287
+claim_evidence|7|2f01137a3858b786dc46ce5e152c6f65
+claim_note|5|599b69bbb132d845e269fbe26805d8ce
+clip|18|1e704e9219757a9d3ed24122377cbc2b
+csv_import|1|c086e15f1ead201325d6c789da2330ec
+evidence_pack|1|85765eeb7646f950b6c01c7bade2a62b
+export|1|72574d9d462ad14915ca506d09146be8
+inspection_line|3|20e7ec2ab73700f6c2bc1ffdedf0e3b3
+order|9|f647b461ea11805b4a40cfc5cafc0330
+order_item|10|3fea1a73064e944c4c48c6f2224d1aff
+package|9|7e32a072a9bd418fb9ea33ed56c9eff5
+recon_alert|0|d41d8cd98f00b204e9800998ecf8427e
+refresh_token|6|74ae29159bbe9d867966342a2aa77be0
+return_case|3|a1381755d255ea01a88a0dc9ecdb1010
+return_case_package|3|74f2863873abea2e58cdf7d87d841ee4
+scan_dedup|0|d41d8cd98f00b204e9800998ecf8427e
+session|9|ad22e8a8ad16d98af2e767bc4487b9d9
+session_event|18|e1421db4f95c64ddc8c2245df8afe1ed
+setting|1|61ab1824434b72041a883cd86b3d5faf
+shop|1|de2feeea0c2f2f5f8aab74fb6b2c1d07
+snapshot|8|fa2625bb0fdde5eea7d4ab3dc149fcf2
+station|1|290b3a605e32fe49145ab009a2de30a0
+status_history|30|fa98db1299241b7d8a549f840ff215ca
+user|4|5dff40bb16cf3893937bad698cc0d39b
+video_segment|26|98fa6763cc8b9266fc2843711ad23c2f
+## Tệp bằng chứng trong volume video (sha256 từng tệp → md5 danh sách)
+clips|18 tệp|e91e266348475c2bab3ac1a7e6924e7a
+snapshots|8 tệp|59c8177656e6df97ccfbd03d78719934
+## Bằng chứng theo DB
+claim_evidence|SESSION|3
+claim_evidence|SNAPSHOT|4
+clip|READY|18
+snapshot|READY|8
+## Kiện bị Phase 2 coi là hủy (IN_CANCEL)
+SPXSTG0000011|CANCELLED|IN_CANCEL
+SPXSTG0000012|CANCELLED_AFTER_PACK|IN_CANCEL
+SPXSTG0000013|CANCELLED|CANCELLED
+## §7.2 bước 1: sao lưu (image Phase 2)
+2026-10-08T13:46:18+07:00 backup_ok aicam-20261008-134617.dump
+exit=0
+   total 208
+   -rw-------  1 admin  staff  102009 Oct  8 13:46 aicam-20261008-134617.dump
+   -rw-------  1 admin  staff     405 Oct  8 13:46 imports-20261008-134617.tgz
+## §7.2 bước 2: mã Phase 3 (BE cc5dddf, FE e893a36 — pnpm build xong); image aicam-be:staging-p3 build trước (9 phút 55 giây, lúc stack Phase 2 còn chạy — build không đụng stack)
+aicam-be:staging-p3 4ec511687c3a
+aicam-be:staging-p2 81b52366f121
+   image P3 SCHEMA_HEAD: 0007
+## Kiểm schema_guard TRƯỚC migrate (DB 0005, image Phase 3) — dc3 run --rm --no-deps <svc>
+-- api: exit=3
+schema_version_mismatch
+"db_revision": "0005" image_head": "0007 
+-- worker: exit=78
+schema_version_mismatch        action=exit component=worker db_revision=0005 hint='Chạy migrate (`alembic upgrade head`) bằng ĐÚNG image này trước khi khởi động
+db_revision=0005 image_head=0007 
+-- worker-sync: exit=78
+schema_version_mismatch        action=exit component=worker db_revision=0005 hint='Chạy migrate (`alembic upgrade head`) bằng ĐÚNG image này trước khi khởi động
+db_revision=0005 image_head=0007 
+-- worker-sync-long: exit=78
+schema_version_mismatch        action=exit component=worker db_revision=0005 hint='Chạy migrate (`alembic upgrade head`) bằng ĐÚNG image này trước khi khởi động
+db_revision=0005 image_head=0007 
+-- worker-export: exit=78
+schema_version_mismatch        action=exit component=worker db_revision=0005 hint='Chạy migrate (`alembic upgrade head`) bằng ĐÚNG image này trước khi khởi động
+db_revision=0005 image_head=0007 
+-- worker-backup: exit=78
+schema_version_mismatch        action=exit component=worker db_revision=0005 hint='Chạy migrate (`alembic upgrade head`) bằng ĐÚNG image này trước khi khởi động
+db_revision=0005 image_head=0007 
+-- worker-notify: exit=78
+schema_version_mismatch        action=exit component=worker db_revision=0005 hint='Chạy migrate (`alembic upgrade head`) bằng ĐÚNG image này trước khi khởi động
+db_revision=0005 image_head=0007 
+-- beat: exit=78
+schema_version_mismatch
+"db_revision": "0005" image_head": "0007 
+-- vision: exit=78
+schema_version_mismatch
+"db_revision": "0005" image_head": "0007 
+## Quy trình §7.2 — 2026-10-08T13:47:18+07:00
+-- bước 3: dc stop api vision worker worker-sync worker-export beat (dc2 = cấu hình Phase 2)
+6
+   kết nối khác vào DB: 0
+-- bước 4: dc3 run --rm migrate alembic current
+0005
+-- bước 5: dc3 run --rm migrate alembic upgrade head
+INFO  [alembic.runtime.migration] Context impl PostgresqlImpl.
+INFO  [alembic.runtime.migration] Will assume transactional DDL.
+INFO  [alembic.runtime.migration] Running upgrade 0005 -> 0006, phase3_schema — schema Phase 3 (02a §3 Migration 0006, T-201)
+WARNI [alembic.runtime.migration] 0006: 2 kiện có thể bị hủy oan (đơn nay không ở nhóm Đã hủy) — chạy `aicam fix-cancel-requests` (dry-run rồi --apply): SPXSTG0000011 (CANCELLED, đơn 2410STG00011 CANCEL_REQUESTED), SPXSTG0000012 (CANCELLED_AFTER_PACK, đơn 2410STG00012 CANCEL_REQUESTED)
+INFO  [alembic.runtime.migration] 0006: backfill {"order_group": 3, "order_unknown": {}, "return_group": 0, "return_shop": 0, "shop_grant_ref": 1, "claim_submitted_audit": 1, "claim_result_audit": 0, "claim_submitted_fallback": 0, "claim_result_fallback": 0, "session_cols_3b": 0, "prior_rows": 0, "prior_claims": 0, "prior_review_needed": 0, "cancel_revert_candidates": 2, "seconds": 0.2}
+INFO  [alembic.runtime.migration] Running upgrade 0006 -> 0007, order_unique_per_shop — mã đơn / mã yêu cầu trả unique theo shop (02a §3 Migration 0007, BR-29, T-202)
+exit= (3 giây cả khởi động container)
+   current: 0007 (head)
+-- bước 6: VACUUM ANALYZE
+VACUUM
+VACUUM
+-- bước 7a: fix-cancel-requests (chạy thử)
+SẼ TRẢ LẠI SPXSTG0000012 · đơn 2410STG00012 (Shop Shopee STG (giả lập), nhóm CANCEL_REQUESTED) · CANCELLED_AFTER_PACK → PACKED
+SẼ TRẢ LẠI SPXSTG0000011 · đơn 2410STG00011 (Shop Shopee STG (giả lập), nhóm CANCEL_REQUESTED) · CANCELLED → NEW
+Tổng: 2 kiện hủy có đơn chưa hủy trên sàn — chạy thử (thêm --apply để ghi): sẽ trả lại 2, bỏ qua 0.
+exit=
+-- bước 7b: fix-cancel-requests --apply
+2026-10-08 06:47:33 [info     ] package_cancel_reverted        from_status=CANCELLED_AFTER_PACK package_id=01a11a37-fe2d-75f5-8e34-202b9684aff5 to_status=PACKED trigger=COMMAND
+2026-10-08 06:47:33 [info     ] package_cancel_reverted        from_status=CANCELLED package_id=01a11a38-7df5-77fc-b9bb-60a60f9b5dea to_status=NEW trigger=COMMAND
+ĐÃ TRẢ LẠI SPXSTG0000012 · đơn 2410STG00012 (Shop Shopee STG (giả lập), nhóm CANCEL_REQUESTED) · CANCELLED_AFTER_PACK → PACKED
+ĐÃ TRẢ LẠI SPXSTG0000011 · đơn 2410STG00011 (Shop Shopee STG (giả lập), nhóm CANCEL_REQUESTED) · CANCELLED → NEW
+Tổng: 2 kiện hủy có đơn chưa hủy trên sàn — áp dụng: trả lại 2, bỏ qua 0, lỗi 0.
+exit=
+-- bước 7c: chạy lại (phải 'sẽ trả lại 0')
+Tổng: 0 kiện hủy có đơn chưa hủy trên sàn — chạy thử (thêm --apply để ghi): sẽ trả lại 0, bỏ qua 0.
+exit=
+-- bước 8: dc3 up -d
+1  Container aicam-staging-api-1 Recreate 
+1  Container aicam-staging-api-1 Recreated 
+1  Container aicam-staging-api-1 Started 
+1  Container aicam-staging-backup-1 Recreate 
+1  Container aicam-staging-backup-1 Recreated 
+1  Container aicam-staging-backup-1 Started 
+1  Container aicam-staging-beat-1 Recreate 
+1  Container aicam-staging-beat-1 Recreated 
+1  Container aicam-staging-beat-1 Started 
+1  Container aicam-staging-caddy-1 Recreate 
+1  Container aicam-staging-caddy-1 Recreated 
+1  Container aicam-staging-caddy-1 Started 
+1  Container aicam-staging-mediamtx-1 Recreate 
+1  Container aicam-staging-mediamtx-1 Recreated 
+1  Container aicam-staging-mediamtx-1 Started 
+1  Container aicam-staging-migrate-1 Recreate 
+1  Container aicam-staging-migrate-1 Recreated 
+1  Container aicam-staging-migrate-1 Started 
+1  Container aicam-staging-minio-init-1 Started 
+1  Container aicam-staging-vision-1 Recreate 
+1  Container aicam-staging-vision-1 Recreated 
+1  Container aicam-staging-vision-1 Started 
+1  Container aicam-staging-volume-init-1 Started 
+1  Container aicam-staging-worker-1 Recreate 
+1  Container aicam-staging-worker-1 Recreated 
+1  Container aicam-staging-worker-1 Started 
+1  Container aicam-staging-worker-backup-1 Created 
+1  Container aicam-staging-worker-backup-1 Started 
+1  Container aicam-staging-worker-export-1 Recreate 
+1  Container aicam-staging-worker-export-1 Recreated 
+1  Container aicam-staging-worker-export-1 Started 
+1  Container aicam-staging-worker-notify-1 Created 
+1  Container aicam-staging-worker-notify-1 Started 
+1  Container aicam-staging-worker-sync-1 Recreate 
+1  Container aicam-staging-worker-sync-1 Recreated 
+1  Container aicam-staging-worker-sync-1 Started 
+1  Container aicam-staging-worker-sync-long-1 Created 
+1  Container aicam-staging-worker-sync-long-1 Started 
+exit= (21 giây)
+(ghi chú: 'exit=' trống ở trên do script dùng PIPESTATUS của bash trong zsh — lỗi script log. Mã thoát kiểm lại: upgrade đã vào 0007 (current = 0007 head); chạy lại no-op dưới đây)
+   alembic upgrade head (no-op trên 0007): exit=0
+   fix-cancel-requests (chạy thử, sau --apply): exit=0
+-- bước 9: dc3 ps
+api	aicam-be:staging-p3	Up 49 seconds (healthy)
+backup	postgres:16-alpine	Up 50 seconds
+beat	aicam-be:staging-p3	Up 43 seconds
+caddy	caddy:2-alpine	Up 42 seconds (healthy)
+camsrc	bluenviron/mediamtx:1	Up 18 minutes
+fake-cam1	aicam-fakecam:staging	Up 18 minutes
+fake-cam2	aicam-fakecam:staging	Up 18 minutes
+mediamtx	bluenviron/mediamtx:1	Up 50 seconds
+migrate	aicam-be:staging-p3	Exited (0) 49 seconds ago
+minio	pgsty/minio:latest	Up 18 minutes (healthy)
+minio-init	pgsty/minio:latest	Exited (0) 49 seconds ago
+postgres	postgres:16-alpine	Up 18 minutes (healthy)
+redis	redis:7-alpine	Up 18 minutes (healthy)
+s3proxy	caddy:2-alpine	Up 18 minutes
+vision	aicam-be:staging-p3	Up 43 seconds
+volume-init	alpine:3	Exited (0) 51 seconds ago
+worker	aicam-be:staging-p3	Up 43 seconds
+worker-backup	aicam-be:staging-p3	Up 43 seconds
+worker-export	aicam-be:staging-p3	Up 43 seconds
+worker-notify	aicam-be:staging-p3	Up 43 seconds
+worker-sync	aicam-be:staging-p3	Up 43 seconds
+worker-sync-long	aicam-be:staging-p3	Up 42 seconds
+-- schema_version trong log
+   6 schema_version_ok              component=worker revision=0007
+-- healthz qua Caddy: {"status":"ok","version":"0.1.0"} HTTP 200
+-- kiện sau fix-cancel-requests
+SPXSTG0000011|NEW|IN_CANCEL|CANCEL_REQUESTED
+SPXSTG0000012|PACKED|IN_CANCEL|CANCEL_REQUESTED
+SPXSTG0000013|CANCELLED|CANCELLED|CANCELLED
+-- audit PACKAGE_CANCEL_REVERT: 2
+## Mốc SAU (schema 0007, code Phase 3): số dòng + md5 theo ĐÚNG cột Phase 2
+alembic_version|1|30930fc98915eedc732ba0eb8a285897
+approval_request|0|d41d8cd98f00b204e9800998ecf8427e
+audit_log|28|3b30866cfe67547086c7fbec196db927
+camera|2|cc5fc65a3c62b74c3298f64e6ffe99dc
+claim|2|575923b35be335b10795353134e85287
+claim_evidence|7|2f01137a3858b786dc46ce5e152c6f65
+claim_note|5|599b69bbb132d845e269fbe26805d8ce
+clip|18|1e704e9219757a9d3ed24122377cbc2b
+csv_import|1|c086e15f1ead201325d6c789da2330ec
+evidence_pack|1|85765eeb7646f950b6c01c7bade2a62b
+export|1|72574d9d462ad14915ca506d09146be8
+inspection_line|3|20e7ec2ab73700f6c2bc1ffdedf0e3b3
+order|9|f647b461ea11805b4a40cfc5cafc0330
+order_item|10|3fea1a73064e944c4c48c6f2224d1aff
+package|9|0f04101323ee6366dfd95c7983fcae46
+recon_alert|0|d41d8cd98f00b204e9800998ecf8427e
+refresh_token|6|74ae29159bbe9d867966342a2aa77be0
+return_case|3|a1381755d255ea01a88a0dc9ecdb1010
+return_case_package|3|74f2863873abea2e58cdf7d87d841ee4
+scan_dedup|0|d41d8cd98f00b204e9800998ecf8427e
+session|9|ad22e8a8ad16d98af2e767bc4487b9d9
+session_event|18|e1421db4f95c64ddc8c2245df8afe1ed
+setting|1|61ab1824434b72041a883cd86b3d5faf
+shop|1|de2feeea0c2f2f5f8aab74fb6b2c1d07
+snapshot|8|fa2625bb0fdde5eea7d4ab3dc149fcf2
+station|1|290b3a605e32fe49145ab009a2de30a0
+status_history|32|d5548c4ab09c29354d5b906853a6fdd0
+user|4|5dff40bb16cf3893937bad698cc0d39b
+video_segment|31|3a71c79f86a1e27ad66e6386eec86602
+## So sánh trước / sau (bảng khác nhau)
+   1c1
+   < alembic_version|1|43567539c91ee97e5aae767c99b5c3cb
+   ---
+   > alembic_version|1|30930fc98915eedc732ba0eb8a285897
+   3,4c3,4
+   < audit_log|26|b58d09a5b5a28bbf37304692d6c98ab8
+   < camera|2|1e301674fbf49851eb489a513ad10e5a
+   ---
+   > audit_log|28|3b30866cfe67547086c7fbec196db927
+   > camera|2|cc5fc65a3c62b74c3298f64e6ffe99dc
+   15c15
+   < package|9|7e32a072a9bd418fb9ea33ed56c9eff5
+   ---
+   > package|9|0f04101323ee6366dfd95c7983fcae46
+   27c27
+   < status_history|30|fa98db1299241b7d8a549f840ff215ca
+   ---
+   > status_history|32|d5548c4ab09c29354d5b906853a6fdd0
+   29c29
+   < video_segment|26|98fa6763cc8b9266fc2843711ad23c2f
+   ---
+   > video_segment|31|3a71c79f86a1e27ad66e6386eec86602
+## Tệp bằng chứng
+clips|18 tệp|e91e266348475c2bab3ac1a7e6924e7a
+snapshots|8 tệp|59c8177656e6df97ccfbd03d78719934
+   tệp bằng chứng: KHỚP trước / sau
+## Bảng mới Phase 3
+alembic_version, approval_request, audit_log, backup_object, backup_run, camera, claim, claim_evidence, claim_note, clip, csv_import, evidence_pack, export, inspection_line, notify_channel, notify_event, notify_message, notify_provider_token, order, order_item, package, package_order, recon_alert, refresh_token, return_case, return_case_package, scan_dedup, session, session_event, setting, share_item, share_link, shop, snapshot, station, status_history, user, video_segment
+## Giải thích từng bảng lệch: khôi phục bản sao lưu trước nâng cấp (aicam-20261008-134617.dump) vào DB tạm aicam_p2ref, so từng dòng theo cột Phase 2
+   pg_restore exit=0
+   package trừ SPXSTG0000011/12 [aicam_p2ref]: 7|df7b071d91c21da6ae1b762d1baaca43
+   package trừ SPXSTG0000011/12 [aicam]: 7|df7b071d91c21da6ae1b762d1baaca43
+   package SPXSTG0000011/12 [aicam_p2ref]: SPXSTG0000011 CANCELLED, SPXSTG0000012 CANCELLED_AFTER_PACK
+   package SPXSTG0000011/12 [aicam]: SPXSTG0000012 PACKED, SPXSTG0000011 NEW
+   audit_log trừ PACKAGE_CANCEL_REVERT [aicam_p2ref]: 26|b58d09a5b5a28bbf37304692d6c98ab8
+   audit_log trừ PACKAGE_CANCEL_REVERT [aicam]: 26|b58d09a5b5a28bbf37304692d6c98ab8
+ERROR:  column "created_at" does not exist
+LINE 1: ...r_label,x.id)::text)) from status_history x where created_at...
+                                                             ^
+   status_history dòng cũ (id có trong bản trước) [aicam_p2ref]: 
+ERROR:  column "created_at" does not exist
+LINE 1: ...r_label,x.id)::text)) from status_history x where created_at...
+                                                             ^
+   status_history dòng cũ (id có trong bản trước) [aicam]: 
+   camera trừ last_seen_at/status/updated_at [aicam_p2ref]: 2|657b4cf3200a43c403748ebf6ff88427
+   camera trừ last_seen_at/status/updated_at [aicam]: 2|657b4cf3200a43c403748ebf6ff88427
+   video_segment [aicam_p2ref]: 26|2026-10-08 06:43:53.449693+00
+   video_segment [aicam]: 35|2026-10-08 06:47:09.543452+00
+(dòng lỗi 'created_at' ở trên: lỗi câu SQL của script — bảng không có cột đó; so lại theo id:)
+   status_history 30 dòng cũ theo id [aicam_p2ref]: 30|fa98db1299241b7d8a549f840ff215ca
+   status_history 30 dòng cũ theo id [aicam]: 30|fa98db1299241b7d8a549f840ff215ca
+   status_history dòng mới [aicam]: CANCELLED_AFTER_PACK→PACKED PLATFORM; CANCELLED→NEW PLATFORM
+   video_segment 26 dòng cũ theo id [aicam_p2ref]: 26|98fa6763cc8b9266fc2843711ad23c2f
+   video_segment 26 dòng cũ theo id [aicam]: 26|98fa6763cc8b9266fc2843711ad23c2f
+   → mọi lệch đều có lý do: alembic_version (0005→0007); audit_log +2 PACKAGE_CANCEL_REVERT (26 dòng cũ khớp); package: chỉ 2 kiện fix-cancel-requests trả lại (7 kiện còn lại khớp); status_history +2 dòng của 2 kiện đó (30 dòng cũ khớp); camera: chỉ last_seen_at/status (heartbeat); video_segment: đoạn ghi mới (camera vẫn ghi), 26 dòng cũ khớp
+   xoá DB tạm aicam_p2ref: exit=0
+## Bật dần (§7.2 bảng 'Bật dần'): sao lưu cloud + link — thêm S3_ENDPOINT=http://minio:9000 (MinIO giả lập Q20), S3_PUBLIC_ENDPOINT=https://s3.aicam-staging.test:8944 (s3proxy TLS nội bộ, giả lập HTTPS nhà cung cấp), BACKUP_ENCRYPTION_KEY từ 'dc run --rm api aicam backup-keygen' (dấu vân tay A230-947D-47BC-2A4D, khóa không ghi log) → dc3 up -d — 2026-10-08T13:49:33+07:00
+    Container aicam-staging-migrate-1 Recreated 
+    Container aicam-staging-api-1 Recreated 
+    Container aicam-staging-vision-1 Recreated 
+    Container aicam-staging-beat-1 Recreated 
+    Container aicam-staging-worker-sync-1 Recreated 
+    Container aicam-staging-worker-sync-long-1 Recreated 
+    Container aicam-staging-worker-notify-1 Recreated 
+    Container aicam-staging-worker-export-1 Recreated 
+    Container aicam-staging-worker-1 Recreated 
+    Container aicam-staging-worker-backup-1 Recreated 
+   TikTok: TIKTOK_ENABLED để mặc định false (chưa có tài khoản đối tác — Q18); thông báo: NOTIFY_TRANSPORT mặc định real, không có TELEGRAM_BOT_TOKEN / ZALO_* → kênh 'chưa cấu hình'

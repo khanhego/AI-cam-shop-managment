@@ -8,7 +8,7 @@
 | Quy mô | M |
 | Component bị chạm | ai-cam-be (be), ai-cam-fe (fe: admin; station nếu L11 cần) |
 | Nhánh | `feat/03-expansion-tiktok` ở cả 3 repo, tạo từ `main` sau merge Phase 2 (PR #2) |
-| Last update | 2026-10-07 · BE (bước 8 M11 BE xong T-201..T-289 — DEC-539..546; NOW = T-204 / FE M11) |
+| Last update | 2026-10-08 · Ops (G5 staging local — 05-release.md, DEC-991..997; chờ duyệt G5) |
 
 Phạm vi: [SRS hệ thống §13.2](../../system/SRS.md) giai đoạn 3 "Mở rộng" — **chỉ TikTok Shop, không Lazada** (quyết định user 2026-10-05); báo cáo M09 (FR-09.02..04), sao lưu cloud, chia sẻ link, thông báo Zalo / Telegram (FR-06.04); kèm hardening L11, L13, L15 từ [06-business-qa Phase 2](../02-returns-reconciliation/06-business-qa.md). Phần cần tài nguyên ngoài (TikTok Shop partner thật, bucket cloud thật, bot Zalo / Telegram thật, camera thật, server kho) làm bằng adapter mock + ghi "chưa test — thiếu tài nguyên".
 Số item: 03 (`docs/ai/items/` có 01, 02; remote 3 repo có `main`, `feat/01-…`, `feat/02-…` — 2026-10-06).
@@ -23,7 +23,7 @@ Số item: 03 (`docs/ai/items/` có 01, 02; remote 3 repo có `main`, `feat/01-�
 | Plan | ✅ | 2026-10-07 | khanhtt (PM, tự quyết theo ủy quyền user — DEC-534) | [03-plan.md](03-plan.md): 74 task (52 BE · 6 FE station · 16 FE admin), 117 ngày công, 8 milestone M11–M18, đường găng 17,5 ngày (T-201 → 202 → 204 → 215 → 279 → 281 → 227 → 276 → 280 → 229), xong dự kiến 2027-03-19 (1 dev, chưa trừ Tết); mọi FR mức M có task; ticket chưa tạo (tracker `none` — phải hỏi user trước khi tạo) |
 | G3 Build | ✅ có điều kiện | 2026-10-08 | khanhtt (điều phối, tự quyết theo ủy quyền user — DEC-950) | 5 reviewer (bằng chứng/migration, sao lưu, bảo mật link/thông báo, nhiều shop/TikTok/báo cáo, FE) → sửa BE DEC-850..877, FE DEC-900..910 → xác minh (Đạt có điều kiện) → sửa G3V-1..3 (DEC-932..935). QA live 182/182, E2E BE thật 75 + 1 skip (stack `aicam-qa`, DEC-941). Backlog: BK-6 (DEC-875), MS-5 (DEC-876) |
 | G4 Kiểm thử | ✅ có điều kiện | 2026-10-08 | khanhtt (điều phối, tự quyết theo ủy quyền user — DEC-990) | 378 case: ✅ 359 · ❌ 0 · ⛔ 16 · ⬜ 3 (NFR cần stack/máy kho); P1 210: ✅ 209 · ⛔ 1 (MG3.19). AC 17 ✅ · 6 ⚠️. Bug mở 0 ([04a](04a-test-report.md)) |
-| G5 Release | ⬜ | | | |
+| G5 Release | ⬜ | | | Ops đề xuất ✅ có điều kiện (DEC-997) — [05-release.md](05-release.md): staging local đạt; BUG-G5-P3-1 (Low, FE) chưa sửa; chờ chủ sản phẩm duyệt |
 
 ## Solo pipeline
 | # | Bước | Trạng thái | Ngày | Ghi chú |
@@ -43,12 +43,13 @@ Số item: 03 (`docs/ai/items/` có 01, 02; remote 3 repo có `main`, `feat/01-�
 | 9 | Commit / PR | ✅ | 2026-10-08 | Commit + push từng task trên `feat/03-expansion-tiktok` (3 repo); PR + merge cuối phase |
 | 10 | Review code | ✅ | 2026-10-08 | **G3 ✅ có điều kiện** (DEC-950) |
 | 11 | Chạy test | ✅ | 2026-10-08 | G4 ✅ có điều kiện (DEC-990) |
-| 12 | Release | ▶ | | G5 staging local (không deploy thật) |
+| 12 | Release | ▶ | 2026-10-08 | G5 staging local xong ([05-release.md](05-release.md)): nâng cấp P2→P3 có dữ liệu, smoke 47/47 API + FE 0 lỗi, khôi phục 38/38, lùi + nâng cấp lại bằng chứng y nguyên; chờ duyệt G5 |
 
 ## NOW
 | Owner tiếp | Việc tiếp | Skill |
 |---|---|---|
-| Dev BE | Bước 8 — M12: **T-204** đa shop (`upsert_platform_order(…, shop)`, BR-29) — đường găng; FE M11 còn T-231, T-251, T-252 (MSW) | `ai-be-implement` (T-204) · `ai-fe-implement` (T-231) |
+| Chủ sản phẩm | Duyệt **G5** theo [05-release.md](05-release.md) §10 (Ops đề xuất ✅ có điều kiện — DEC-997) | `ai-ops-release` (duyệt) |
+| Dev FE | BUG-G5-P3-1 (Low): D20 "Theo sàn / shop" hiện "undefined · null" cho kiện không shop | `ai-dev-fix` |
 
 ## Phản hồi giữa các vai
 | Từ | Tới | Nội dung | Trạng thái |
@@ -82,6 +83,7 @@ Số item: 03 (`docs/ai/items/` có 01, 02; remote 3 repo có `main`, `feat/01-�
 | 2026-10-07 | QA | Bước 7: 04-test-cases.md — 378 case (328 chức năng, 14 X3, 22 phân quyền, 14 NFR), 210 P1; PRE-13..PRE-20, dữ liệu `seed-demo` Phase 3 (dự kiến); truy vết FR / AC / BR / EX / job / mã lỗi / trạng thái / NFR. CP7 Ready (DEC-535, 538). Không sửa code, không commit |
 | 2026-10-07 | Dev, Flow | Bước 8c: tài liệu nghiệp vụ lát 11–18. Ghi chú cho G3 (DEC-650 dải điều phối): (1) 02a §11 nhắc `test_downgrade_phase2_jobs` chưa có trong code; (2) `evidence/m15-restore-drill.txt` thiếu dòng log bước sửa tệp sau khôi phục; (3) ví dụ JSON API-150 ở 02 lệch công thức BR-41 (DEC-571); (4) D20 chưa lọc 'Có vấn đề' / SKU (DEC-611 mở); (5) phiên có clip Thiếu tệp vẫn có thể là phiên chính nhưng không đưa vào link được — cần quyết ở G3 |
 | 2026-10-08 | BE | Sửa review G3 Phase 3 (phần BE) trên `feat/03-expansion-tiktok` (be `db65062`..): bắt buộc G3-MS-1..4, RP-1, BK-1 (HIGH), BK-2, BK-3, BK-9, NT-1 (major), NT-3, EV-1, EV-3, EV-4 (giữ BR-39 + `primary_unavailable`), kiểm G3-FE-1 (API-160 nguồn phiên **không** chặn → sửa 409 `SESSION_EXCLUDED`); nên sửa: EV-2, EV-5, NT-2, SH-1..4, BK-4, BK-5, BK-7, BK-8, MS-6 đã sửa; BK-6, MS-5 → backlog. DEC-850..877 (02a); 02 §6.2 chỉ thêm (API-32 / 106 / 132 / 160 / 164 / 186, ví dụ API-150); ops §6.2 / §10 (mã thoát restore 4 / 5, `--list`, `aicam notify-reset-zalo-token`). **Chưa test** với TikTok / S3 / Zalo thật; diễn tập khôi phục không chạy lại |
+| 2026-10-08 | Ops | G5 staging local (`ai-ops-release`): project `aicam-staging` (compose production + MinIO / s3proxy / camera giả trong project); Phase 2 (`main`) có dữ liệu → nâng cấp ops §7.2 (0006 / 0007, `fix-cancel-requests` 2 kiện) → bật dần S3 → smoke 47/47 API, FE 0 lỗi console / CSP, W1 → `pg_restore` 38/38 → lùi (từ chối link / đơn ngoài, cờ tách, EV-1) → Phase 2 chạy → nâng cấp lại (bằng chứng y nguyên) → log 0 secret → dọn. BUG-G5-P3-1 (Low, FE) báo lại; sửa ops.md §7.2 (BE `170b4f3`, OBS-G5-P3-1/2). DEC-991..997. **Không tick G5** — chờ duyệt |
 
 ## Quyết định (DEC)
 | ID | Vấn đề | Quyết định | Lý do | Người | Ngày |
@@ -227,3 +229,10 @@ Số item: 03 (`docs/ai/items/` có 01, 02; remote 3 repo có `main`, `feat/01-�
 | DEC-550 | Trùng số DEC giữa agent BE và FE chạy song song (M11) | DEC FE M11 đổi số: 543 → **547** (drawer ẩn), 541 → **548** (PlatformChip / DueCountdown / PlatformFilter), 542 → **549** (mock Phase 3) trong 02b-admin / 02b-station / 03-plan. Từ M12: mỗi agent được cấp dải DEC riêng (BE 551–599 · FE 600–649 · điều phối 650+) | Tránh hai quyết định khác nhau cùng ID | khanhtt (điều phối, tự quyết theo ủy quyền user) | 2026-10-07 |
 | DEC-950 | Chốt G3 item 03 | **G3 ✅ có điều kiện**: review 5 reviewer (không CRITICAL nghiệp vụ; 1 blocker kỹ thuật G3-MS-1 đã sửa), mọi finding bắt buộc đã sửa + test; xác minh Đạt có điều kiện → G3V-1..3 đã sửa; QA live 182/182, E2E BE thật 75 + 1 skip trên build sau sửa (DEC-941). Điều kiện còn lại: BK-6 (DEC-875), MS-5 (DEC-876) backlog Phase 3.1; chữ mới chờ PO duyệt | Không còn đường mất / sai bằng chứng không chặn — không báo — không cách xử lý | khanhtt (điều phối, tự quyết theo ủy quyền user) | 2026-10-08 |
 | DEC-990 | Chốt G4 item 03 | **G4 ✅ có điều kiện**: bug mở 0 (BUG-G4-1 CSV Excel `;`, BUG-G4-2 cô lập test, BUG-G4-3 API-21 ghi chú — đã sửa); chấp nhận 16 case ⛔ (X3 ×14 TikTok/S3/bot/camera/máy kho/điện thoại, TC-06.70 mạng kho, TC-MG3.19 runbook trên máy kho + bản sao DB production) và 3 NFR ⬜ (N3.02 locust, N3.11 quét khi đang tải, N3.14) + AC ⚠️ (43, 47 Excel Windows vi-VN, 48, 50, 51, 52) là điều kiện go-live, như DEC-78 / DEC-367 | Không còn ❌; phần còn lại cần tài nguyên ngoài hoặc máy kho | khanhtt (điều phối, tự quyết theo ủy quyền user) | 2026-10-08 |
+| DEC-991 | Dựng staging G5 khi `aicam-dev` đang dùng | Project `aicam-staging`, compose production, cổng 8088 / 8443 / 8190 / 8944, subnet 172.30.20.0/24; camera giả + MinIO **trong** project (`staging-extra.yml`), không đọc RTSP stack dev | Không đụng stack đang test; dọn bằng `down -v` | khanhtt (Ops, tự quyết theo ủy quyền user) | 2026-10-08 |
+| DEC-992 | Production đòi `S3_PUBLIC_ENDPOINT` https, không localhost | s3proxy Caddy `tls internal` tên giả `s3.aicam-staging.test:8944` (giả lập Q20) | Giữ `APP_ENV=production` + validator; loại `APP_ENV=staging` | khanhtt (Ops, tự quyết theo ủy quyền user) | 2026-10-08 |
+| DEC-993 | Không có partner → không sinh được đơn IN_CANCEL / TikTok / hạn sàn đã qua | Giả lập: shop chèn SQL + đơn qua `upsert_platform_order` của chính code phase đó trong container; `DEFAULT_PLATFORM_PASSED` đặt SQL; phiên / clip / hồ sơ / link qua API thật | Phủ `fix-cancel-requests`, đơn ngoài, cờ tách, EV-1; adapter sàn: chưa test | khanhtt (Ops, tự quyết theo ủy quyền user) | 2026-10-08 |
+| DEC-994 | Runbook nâng cấp lại sau lùi không dừng 3 worker image Phase 2 (OBS-G5-P3-1) | Sửa `ops.md` §7.2 bước 3 dừng đủ 9 service + "api mã 3" (chore(G5) BE `170b4f3`) | Sửa nhỏ, rõ, đúng phạm vi Ops; `stop` service chưa tạo trả 0 | khanhtt (Ops, tự quyết theo ủy quyền user) | 2026-10-08 |
+| DEC-995 | BUG-G5-P3-1 (D20 "undefined · null") là code FE | Không sửa ở G5, báo lại; Low; không chặn G5 staging, chặn go-live | Luật dừng khi lỗi code sản phẩm | khanhtt (Ops, tự quyết theo ủy quyền user) | 2026-10-08 |
+| DEC-996 | Khôi phục cloud khi stack đang chạy | `backup-restore` / `backup-verify` với `DATABASE_URL` DB tạm + `VIDEO_ROOT` volume tạm, xoá ngay sau | Không ghi vào DB / video đang chạy | khanhtt (Ops, tự quyết theo ủy quyền user) | 2026-10-08 |
+| DEC-997 | Đề xuất G5 | **G5 ✅ có điều kiện** (staging local đạt; điều kiện: sửa BUG-G5-P3-1, 05 §8 trước deploy kho, diễn tập §7.2 trên server kho). Ops **không tick** — chủ sản phẩm duyệt | Rollback / khôi phục chạy thật; lỗi mới chỉ Low | khanhtt (Ops) | 2026-10-08 |
