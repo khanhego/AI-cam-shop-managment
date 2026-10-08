@@ -22,7 +22,7 @@ Số item: 03 (`docs/ai/items/` có 01, 02; remote 3 repo có `main`, `feat/01-�
 | G2 Thiết kế | ✅ có điều kiện | 2026-10-07 | khanhtt (điều phối, tự quyết theo ủy quyền user — DEC-533) | Lượt 1 **Chưa đạt** (1 CRITICAL, 8 blocker, 5 major, 5 minor, 1 nit) → đã sửa (DEC-512) · Lượt 2 **Chưa đạt** (1 CRITICAL, 2 blocker, 2 major, 3 minor, 1 nit) → đã sửa toàn bộ (DEC-526) · Lượt 3 **Đạt có điều kiện** (điều kiện G2R3-1 major; 3 minor) → đã sửa G2R3-1..G2R3-4 (DEC-532); **chưa tick** — chờ tech lead xác nhận điều kiện |
 | Plan | ✅ | 2026-10-07 | khanhtt (PM, tự quyết theo ủy quyền user — DEC-534) | [03-plan.md](03-plan.md): 74 task (52 BE · 6 FE station · 16 FE admin), 117 ngày công, 8 milestone M11–M18, đường găng 17,5 ngày (T-201 → 202 → 204 → 215 → 279 → 281 → 227 → 276 → 280 → 229), xong dự kiến 2027-03-19 (1 dev, chưa trừ Tết); mọi FR mức M có task; ticket chưa tạo (tracker `none` — phải hỏi user trước khi tạo) |
 | G3 Build | ✅ có điều kiện | 2026-10-08 | khanhtt (điều phối, tự quyết theo ủy quyền user — DEC-950) | 5 reviewer (bằng chứng/migration, sao lưu, bảo mật link/thông báo, nhiều shop/TikTok/báo cáo, FE) → sửa BE DEC-850..877, FE DEC-900..910 → xác minh (Đạt có điều kiện) → sửa G3V-1..3 (DEC-932..935). QA live 182/182, E2E BE thật 75 + 1 skip (stack `aicam-qa`, DEC-941). Backlog: BK-6 (DEC-875), MS-5 (DEC-876) |
-| G4 Kiểm thử | ⬜ | | | |
+| G4 Kiểm thử | ✅ có điều kiện | 2026-10-08 | khanhtt (điều phối, tự quyết theo ủy quyền user — DEC-990) | 378 case: ✅ 359 · ❌ 0 · ⛔ 16 · ⬜ 3 (NFR cần stack/máy kho); P1 210: ✅ 209 · ⛔ 1 (MG3.19). AC 17 ✅ · 6 ⚠️. Bug mở 0 ([04a](04a-test-report.md)) |
 | G5 Release | ⬜ | | | |
 
 ## Solo pipeline
@@ -42,8 +42,8 @@ Số item: 03 (`docs/ai/items/` có 01, 02; remote 3 repo có `main`, `feat/01-�
 | 8c | Tài liệu nghiệp vụ (mỗi lát) | ✅ | 2026-10-07 | `docs/nghiep-vu/03-expansion-tiktok/` lát 11–18 (commit `514690a`), Draft chờ PO / tech lead soát |
 | 9 | Commit / PR | ✅ | 2026-10-08 | Commit + push từng task trên `feat/03-expansion-tiktok` (3 repo); PR + merge cuối phase |
 | 10 | Review code | ✅ | 2026-10-08 | **G3 ✅ có điều kiện** (DEC-950) |
-| 11 | Chạy test | ▶ | | G4 |
-| 12 | Release | ⬜ | | |
+| 11 | Chạy test | ✅ | 2026-10-08 | G4 ✅ có điều kiện (DEC-990) |
+| 12 | Release | ▶ | | G5 staging local (không deploy thật) |
 
 ## NOW
 | Owner tiếp | Việc tiếp | Skill |
@@ -226,3 +226,4 @@ Số item: 03 (`docs/ai/items/` có 01, 02; remote 3 repo có `main`, `feat/01-�
 | DEC-538 | Đánh số TC + biên BR-37 | ID nối tiếp không trùng item 01 / 02 (M05 `.50+`, M03 `.80+`, M04 `.60+`, M08 `.40+`, M02 `.50+`, M06 / M07 / M10 `.40+`, M09 `.30+`; nhóm `KR`, `MS`, `ST3`, `MG3`, `R3`, `X3`, `P3`, `N3`); cột Cách thêm `UNIT`, `CLI`, `EXT`; KQ để trống tới bước 11; BR-37 kiểm server "≤ 60 giây" (60,0 được), chấp nhận FE ẩn nút từ 60,0 | Case chạy lại được, tách phần cần tài nguyên ngoài; luật theo SRS, FE ẩn sớm là phía an toàn | khanhtt (QA, tự quyết theo ủy quyền user) | 2026-10-07 |
 | DEC-550 | Trùng số DEC giữa agent BE và FE chạy song song (M11) | DEC FE M11 đổi số: 543 → **547** (drawer ẩn), 541 → **548** (PlatformChip / DueCountdown / PlatformFilter), 542 → **549** (mock Phase 3) trong 02b-admin / 02b-station / 03-plan. Từ M12: mỗi agent được cấp dải DEC riêng (BE 551–599 · FE 600–649 · điều phối 650+) | Tránh hai quyết định khác nhau cùng ID | khanhtt (điều phối, tự quyết theo ủy quyền user) | 2026-10-07 |
 | DEC-950 | Chốt G3 item 03 | **G3 ✅ có điều kiện**: review 5 reviewer (không CRITICAL nghiệp vụ; 1 blocker kỹ thuật G3-MS-1 đã sửa), mọi finding bắt buộc đã sửa + test; xác minh Đạt có điều kiện → G3V-1..3 đã sửa; QA live 182/182, E2E BE thật 75 + 1 skip trên build sau sửa (DEC-941). Điều kiện còn lại: BK-6 (DEC-875), MS-5 (DEC-876) backlog Phase 3.1; chữ mới chờ PO duyệt | Không còn đường mất / sai bằng chứng không chặn — không báo — không cách xử lý | khanhtt (điều phối, tự quyết theo ủy quyền user) | 2026-10-08 |
+| DEC-990 | Chốt G4 item 03 | **G4 ✅ có điều kiện**: bug mở 0 (BUG-G4-1 CSV Excel `;`, BUG-G4-2 cô lập test, BUG-G4-3 API-21 ghi chú — đã sửa); chấp nhận 16 case ⛔ (X3 ×14 TikTok/S3/bot/camera/máy kho/điện thoại, TC-06.70 mạng kho, TC-MG3.19 runbook trên máy kho + bản sao DB production) và 3 NFR ⬜ (N3.02 locust, N3.11 quét khi đang tải, N3.14) + AC ⚠️ (43, 47 Excel Windows vi-VN, 48, 50, 51, 52) là điều kiện go-live, như DEC-78 / DEC-367 | Không còn ❌; phần còn lại cần tài nguyên ngoài hoặc máy kho | khanhtt (điều phối, tự quyết theo ủy quyền user) | 2026-10-08 |
