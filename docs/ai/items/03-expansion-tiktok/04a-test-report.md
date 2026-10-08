@@ -4,16 +4,17 @@
 |---|---|
 | QA (tác giả) | khanhtt |
 | Reviewer | Tech lead · PO (duyệt G4) |
-| Trạng thái | Draft — QA đánh giá **đạt có điều kiện** (DEC-959). G4 **chưa tick** trong `00-status` — người điều phối quyết |
-| Build / commit | Nhánh `feat/03-expansion-tiktok`. BE `fe9bfe5`, FE `e3fa8ce` (gồm sửa G3 DEC-850..877, 900..910 và G3V-1..3 DEC-932..935). Test mới G4 (chỉ file test) ở BE `b8ea2be` — §3 |
+| Trạng thái | Draft — sau lượt sửa G4 (DEC-970..979): mọi bug G4 đã sửa, QA đánh giá **đạt có điều kiện** (DEC-979). G4 **chưa tick** trong `00-status` — người điều phối quyết |
+| Build / commit | Nhánh `feat/03-expansion-tiktok`. BE `fe9bfe5`, FE `e3fa8ce` (gồm sửa G3 DEC-850..877, 900..910 và G3V-1..3 DEC-932..935). Test mới G4 (chỉ file test) ở BE `b8ea2be` — §3. **Lượt sửa G4:** BE `077e0ca`..`cc5dddf` (CSV `;`, API-21 ghi chú, W1, cô lập test + khóa một-pytest, 12 hàm test mới), FE `e893a36` (MSW CSV `;`) — §7 |
 | Môi trường | (a) Stack QA riêng `aicam-qa` (`docker compose -p aicam-qa -f docker/compose.dev.yml -f docker/compose.qa.yml`, API :8280, FE :5281, MinIO, `worker-sync`, `worker-sync-long`, `worker-backup`, `worker-notify`, `worker-export`, camera giả, adapter mock Shopee 2 shop + TikTok 2 shop, `NOTIFY_TRANSPORT=mock`): QA live 182/182 và E2E BE thật 75 + 1 skip, chạy 2026-10-08 sau sửa G3 (DEC-941). (b) Lượt G4 này: không docker, không gọi :8180 — pytest unit / contract / integration trên Postgres `aicam_test` (:55432) + Redis db 15 (:56379), vitest, Playwright + MSW (dev:mock :5180), Chrome và Microsoft Excel trên máy dev. Máy dev MacBook (Apple Silicon, macOS, vùng en_VN). Không có: TikTok partner thật, Shopee partner thật, nhà cung cấp S3 thật, bot Telegram / Zalo thật, camera / máy quét thật, server kho, điện thoại, mạng kho |
 | Ngày chạy | 2026-10-08 |
 | Test cases | [04-test-cases.md](04-test-cases.md) (378 case, cột KQ đã điền) |
-| Last update | 2026-10-08 · QA |
+| Last update | 2026-10-08 · QA (lượt sửa G4 — §7) · 2026-10-08 · QA |
 
-> **TL;DR** — **Kết luận (QA): ⚠️ đạt có điều kiện.** Không còn bug Critical / High; 1 bug Medium mới (BUG-G4-1: CSV báo cáo mở bằng Excel vùng VN không tách cột → AC-47 chưa đạt) + 1 Low (BUG-G4-2: lỗi cô lập test làm bộ pytest BE đỏ).
-> 378 case: ✅ 346 · ❌ 1 · ⛔ 15 (chưa test — thiếu tài nguyên) · ⬜ 16. **P1: 208 ✅ · 1 ❌ (TC-09.40) · 1 ⛔ (TC-MG3.19) · 0 ⬜** / 210.
-> AC-40..62: 16 ✅ · 6 ⚠️ (4 chỉ đo máy dev / thiếu điện thoại, 2 thiếu 1 case P2 / NFR) · 1 ❌ (AC-47).
+> **TL;DR (sau lượt sửa G4, DEC-979)** — **Kết luận (QA): ⚠️ đạt có điều kiện.** Bug mở = 0: BUG-G4-1 (CSV `;` — Excel thật tách cột), BUG-G4-2 (cô lập test + khóa một-pytest) và 1 lỗi Low do test mới lộ (API-21 ghi chú 501 ký tự trả lời nhắn tiếng Anh) đã sửa, có test đỏ trước.
+> 378 case: ✅ 359 · ❌ 0 · ⛔ 16 (chưa test — thiếu tài nguyên) · ⬜ 3 (N3.02, N3.11, N3.14). **P1: 209 ✅ · 0 ❌ · 1 ⛔ (TC-MG3.19) · 0 ⬜** / 210.
+> AC-40..62: 17 ✅ · 6 ⚠️ (AC-43, 47, 48, 50 chỉ máy dev; AC-51 N3.11 ⬜; AC-52 điện thoại ⛔) · 0 ❌.
+> Lượt G4 đầu (giữ để đối chiếu): ✅ 346 · ❌ 1 · ⛔ 15 · ⬜ 16; P1 208 ✅ · 1 ❌; AC 16 ✅ · 6 ⚠️ · 1 ❌ (AC-47).
 > 14 hàm test mới (BE, chỉ thêm test; 22 kết quả pass) đóng 20 case ⬜, không lộ bug sản phẩm. Hồi quy: BE unit + contract 883 pass; BE full 1748 pass / 1 fail (BUG-G4-2, lỗi cô lập test có sẵn, không phải sản phẩm); FE vitest 787 pass; E2E mock 44 pass.
 > Go-live còn chặn bởi: Q13 + L14, Q18 / Q19 (TikTok partner), Q20 (S3 + NĐ 13), Q21 (kênh chat), T-3, T-4, server kho, điện thoại, mạng kho (§6).
 
@@ -34,32 +35,32 @@ Viết tắt tham chiếu trong cột KQ của `04`: **QA** = QA live G3 (`g3-qa
 
 | Module | Tổng | ✅ Pass | ❌ Fail | ⛔ Thiếu tài nguyên | ⬜ Chưa có bằng chứng |
 |---|---|---|---|---|---|
-| M05 Sàn: nhiều shop, TikTok | 47 | 46 | 0 | 0 | 1 |
+| M05 Sàn: nhiều shop, TikTok | 47 | 47 | 0 | 0 | 0 |
 | M03 Station đóng gói | 17 | 17 | 0 | 0 | 0 |
-| M04 Phiên mở hoàn (BR-37, D13, mã trùng) | 22 | 21 | 0 | 0 | 1 |
-| M08 Hồ sơ khiếu nại (L11, L13, L14, L15) | 38 | 36 | 0 | 0 | 2 |
-| M02 Sao lưu cloud | 47 | 45 | 0 | 0 | 2 |
+| M04 Phiên mở hoàn (BR-37, D13, mã trùng) | 22 | 22 | 0 | 0 | 0 |
+| M08 Hồ sơ khiếu nại (L11, L13, L14, L15) | 38 | 38 | 0 | 0 | 0 |
+| M02 Sao lưu cloud | 47 | 47 | 0 | 0 | 0 |
 | KR Khôi phục từ cloud | 14 | 14 | 0 | 0 | 0 |
-| MS Clip / ảnh "Thiếu tệp" | 10 | 9 | 0 | 0 | 1 |
-| M07 Lọc sàn / shop, link chia sẻ, W1 | 34 | 31 | 0 | 0 | 3 |
-| M06 Thông báo | 35 | 34 | 0 | 0 | 1 |
-| M09 Báo cáo, D2 | 18 | 17 | **1** | 0 | 0 |
+| MS Clip / ảnh "Thiếu tệp" | 10 | 10 | 0 | 0 | 0 |
+| M07 Lọc sàn / shop, link chia sẻ, W1 | 34 | 34 | 0 | 0 | 0 |
+| M06 Thông báo | 35 | 34 | 0 | 1 | 0 |
+| M09 Báo cáo, D2 | 18 | 18 | 0 | 0 | 0 |
 | M10 Nhật ký, `/me` | 5 | 5 | 0 | 0 | 0 |
 | ST3 Chuyển trạng thái | 9 | 9 | 0 | 0 | 0 |
-| MG3 Migration, nâng cấp / lùi | 20 | 18 | 0 | 1 | 1 |
+| MG3 Migration, nâng cấp / lùi | 20 | 19 | 0 | 1 | 0 |
 | R3 Hồi quy Phase 1 / 2 | 12 | 12 | 0 | 0 | 0 |
 | X3 Tài nguyên ngoài | 14 | 0 | 0 | 14 | 0 |
-| **Chức năng** | **342** | **314** | **1** | **15** | **12** |
-| Phân quyền TC-P3.01..22 | 22 | 21 | 0 | 0 | 1 |
+| **Chức năng** | **342** | **326** | **0** | **16** | **0** |
+| Phân quyền TC-P3.01..22 | 22 | 22 | 0 | 0 | 0 |
 | Phi chức năng TC-N3.01..14 | 14 | 11 (5 chỉ máy dev) | 0 | 0 | 3 |
-| **Tổng** | **378** | **346** | **1** | **15** | **16** |
-| **Trong đó P1** | **210** | **208** | **1** | **1** | **0** |
+| **Tổng** | **378** | **359** | **0** | **16** | **3** |
+| **Trong đó P1** | **210** | **209** | **0** | **1** | **0** |
 
-**Mức bằng chứng của 346 case ✅:**
+Bảng trên là số **sau lượt sửa G4** (§7). **Mức bằng chứng của 346 case ✅ lượt G4 đầu** (13 case ✅ thêm ở lượt sửa — §7):
 - QA live / E2E BE thật trên stack `aicam-qa` (build G3): phần lớn case `API` / `E2E` P1 có dữ liệu seed (TC-05.51, 05.55, 05.73, 03.86, 03.92, 07.40, 07.41, 07.46, 07.48, 07.51, 07.62, 08.53, 08.59, 08.64, 08.72, 02.50, 02.53..02.57, 02.65, 02.70..02.72, 02.78, 02.80, KR.11, MS.01, 03, 07, 08, 06.41, 06.43, 06.44, 09.30..09.37, 09.45, 10.44, R3.01..R3.03, R3.08, R3.11; E2E thật AC-40, EX-T7, D13, D17 L15, D2, D14 L13, báo cáo, sao lưu, link, thông báo, station Phase 3).
 - `INT` trên build G4 (đồng hồ giả, mock nhiều shop, `MemoryStore`): job theo shop, BR-29 §5.1, BR-37..42, sao lưu J-20..J-23, khôi phục, link J-24 / J-25, thông báo J-26..J-28, migration.
 - **Ghép** (BE `INT` / QA + UI vitest / MSW): 47 case, ghi "ghép" trong cột KQ.
-- Test MinIO tạm (`test_backup_security_nfr41` 1 test, `test_share_security_nfr42` 2, `test_cloud_minio` 4, `test_perf_backup_throttle` 2) **skip** trên build G4 vì không có MinIO tạm (lượt này không chạy docker). Kết quả pass của chúng lấy từ T-218 / T-221 / T-280 (build cũ hơn) — DEC-954. Ảnh hưởng: TC-02.82, 02.84, 07.73, N3.08, N3.09, P3.20 (các case này còn bằng chứng khác trên build G4: QA live MinIO, `INT` `MemoryStore`, E2E thật).
+- Test MinIO tạm (`test_backup_security_nfr41` 1 test, `test_share_security_nfr42` 2, `test_cloud_minio` 4, `test_perf_backup_throttle` 2) **skip** trên build G4 vì không có MinIO tạm (lượt này không chạy docker). Kết quả pass của chúng lấy từ T-218 / T-221 / T-280 (build cũ hơn) — DEC-954. **Lượt sửa G4: chạy lại cả 11 test trên MinIO tạm riêng → 11 passed** ([be-minio-tests](evidence/g4/be-minio-tests.txt), DEC-976). Ảnh hưởng: TC-02.82, 02.84, 07.73, N3.08, N3.09, P3.20 (các case này còn bằng chứng khác trên build G4: QA live MinIO, `INT` `MemoryStore`, E2E thật).
 
 **Ghi chú với case ✅** (mẫu nhỏ hơn `04` hoặc chỉ cấu hình):
 - TC-05.76: song song 10 lượt (`04` ghi 20). TC-R3.09 (test mới): 20 lượt, 4 đường đồng thời.
@@ -78,7 +79,7 @@ Viết tắt tham chiếu trong cột KQ của `04`: **QA** = QA live G3 (`g3-qa
 | AC-44 tắt cờ TikTok / cờ trả hàng; chuỗi trạng thái ngoài adapter = 0 | ✅ | TC-05.57, 05.58, 05.91 |
 | AC-45 Năng suất đúng ví dụ BR-41; CSKH 403 | ✅ | TC-09.35, 09.36 |
 | AC-46 Hàng hoàn 4,0 / 0,6 / 20,0 %; lọc sàn / shop | ✅ | TC-09.30..09.33 |
-| AC-47 Khiếu nại 75 %, 2.350.000 đ; bấm số → D16; **CSV mở bằng Excel đúng tiếng Việt, số khớp màn**; audit | ❌ | TC-09.34, 09.39 ✅; TC-09.40 ❌: Excel (Mac, vùng en_VN) hiện đúng tiếng Việt nhưng cả dòng nằm ở cột A — BUG-G4-1 |
+| AC-47 Khiếu nại 75 %, 2.350.000 đ; bấm số → D16; **CSV mở bằng Excel đúng tiếng Việt, số khớp màn**; audit | ⚠️ máy dev | TC-09.34, 09.39 ✅; TC-09.40 ✅ sau sửa BUG-G4-1 (dấu `;`): Excel for Mac vùng en_VN tách cột, tiếng Việt đúng, "3,7%" là số, khớp API-150 ([tc-09-40-excel-after](evidence/g4/tc-09-40-excel-after.txt)). Excel Windows vi-VN ở kho chưa kiểm (DEC-978) |
 | AC-48 báo cáo 92 ngày ≤ 3 giây, 366 ngày ≤ 10 giây | ⚠️ máy dev | TC-N3.04 (0,50 / 1,41 giây, DEC-574). Server kho TC-X3.13 ⛔ |
 | AC-49 sao lưu MinIO: lịch 6 giờ, bằng chứng ≤ 1 giờ, không thô / ngoài BR-33, không mở được khi thiếu khóa | ✅ | TC-02.60, 02.61, 02.67, 02.51; N3.08 (MinIO tạm T-280 — DEC-954) |
 | AC-50 diễn tập khôi phục: DB + bằng chứng, SHA-256, ≤ 60 phút, KN trước, khóa sai, 2 khóa | ⚠️ máy dev | TC-KR.01..KR.11 ✅ (máy dev). Máy kho TC-X3.12 ⛔ |
@@ -87,15 +88,15 @@ Viết tắt tham chiếu trong cột KQ của `04`: **QA** = QA live G3 (`g3-qa
 | AC-53 link không lộ | ✅ | TC-07.48, 07.57, 07.58, N3.09, P3.20 |
 | AC-54 thông báo N01..N09, bỏ trùng, gom, trần 30 / giờ, giờ yên lặng, mất mạng | ✅ | TC-06.50..06.69, N3.10 |
 | AC-55 gửi thử ≤ 10 giây, nhật ký 30 ngày, "Bị bỏ", tóm tắt 18:00 | ✅ | TC-06.44, 06.45, 06.49, 06.59, 06.65 (bot thật: theo AC, chờ Q21) |
-| AC-56 (L11) phiên trước, luật 60 giây, Supervisor hủy có lý do, quét nhầm | ✅ | TC-04.60..04.69, 04.71, 08.40..08.57 (04.70, 08.58 ⬜ là P2 phụ) |
+| AC-56 (L11) phiên trước, luật 60 giây, Supervisor hủy có lý do, quét nhầm | ✅ | TC-04.60..04.71, 08.40..08.58 (04.70, 08.58 ✅ ở lượt sửa G4) |
 | AC-57 (L13) Chỉ hoàn tiền hạn 36 giờ, nhắc 12 giờ, mặc định 48 giờ | ✅ | TC-08.69..08.72 |
 | AC-58 (L15) bỏ bằng chứng cần lý do, giữ tới đúng ngày | ✅ | TC-08.59..08.64 |
 | AC-59 (L14) hạn sàn đã qua, quá hạn chưa gửi + N05 | ✅ | TC-08.66..08.68 |
-| AC-60 ma trận quyền 4 vai; người không đăng nhập chỉ xem link | ⚠️ | 21/22 ✅ (gồm 6 case nhờ test mới G4). TC-P3.19 (WS `share.updated` tới Supervisor / CSKH) ⬜ |
+| AC-60 ma trận quyền 4 vai; người không đăng nhập chỉ xem link | ✅ | 22/22 ✅ (6 case nhờ test mới G4; TC-P3.19 WS `share.updated` nhờ test lượt sửa G4) |
 | AC-61 audit mọi hành động FR-10.03; D10 lọc nhãn tiếng Việt | ✅ | TC-10.40..10.42 (ghép nhiều test module) |
 | AC-62 tên người đóng gói; chip sàn / shop; lọc sàn / shop | ✅ | TC-03.80, 03.92..03.96, 07.40, 07.41 |
 
-Tổng AC: **16 ✅ · 6 ⚠️ · 1 ❌** / 23.
+Tổng AC: **17 ✅ · 6 ⚠️ · 0 ❌** / 23 (lượt G4 đầu: 16 ✅ · 6 ⚠️ · 1 ❌).
 
 ## 2. Bug
 
@@ -103,15 +104,17 @@ Tổng AC: **16 ✅ · 6 ⚠️ · 1 ❌** / 23.
 
 | ID | Mức | TC | Tóm tắt | Tái hiện | Kỳ vọng / Thực tế | Môi trường | Trạng thái | Owner |
 |---|:---:|---|---|---|---|---|---|---|
-| BUG-G4-1 | Medium | TC-09.40 (AC-47, FR-09.06) | CSV báo cáo (API-153) mở bằng Excel vùng Việt Nam không tách cột | 1. Xuất CSV tab Hàng hoàn (API-153 `report=returns`) 2. Bấm đúp mở bằng Microsoft Excel trên máy vùng en_VN / vi-VN | Kỳ vọng: mỗi giá trị một ô, số khớp màn. Thực tế: tiếng Việt đúng (BOM nhận) nhưng mỗi dòng nằm trọn ở cột A (`Tỷ lệ hoàn,"3,7%",26,700`). Nghi do vùng VN dùng `,` làm dấu thập phân nên Excel lấy `;` làm dấu tách — DEC-476 (dấu phẩy) giả định "Excel VN mở đúng". Chưa kiểm Excel Windows vi-VN. Bằng chứng: [tc-09-40-excel.txt](evidence/g4/tc-09-40-excel.txt) | BE `fe9bfe5`; Excel for Mac 15.34, macOS vùng en_VN | Open | be (`reports/csv_export`) — chọn cách sửa (vd dòng `sep=,`, đổi `;`, hoặc xuất xlsx) và cập nhật 02a DEC-476; PO xác nhận Excel ở kho |
-| BUG-G4-2 | Low | (hồi quy BE) | Test `test_share_review_affected::test_mark_wrong_scan_reports_affected_shares` fail khi chạy sau `test_share_mark_race` (G3V-1) | `uv run pytest tests/integration/test_share_mark_race.py tests/integration/test_share_review_affected.py` | Kỳ vọng: pass. Thực tế: 1 failed — test đọc dòng audit `SESSION_WRONG_SCAN_MARK` đầu tiên, gặp dòng do `test_share_mark_race` commit thật để lại (`audit_log` không bị TRUNCATE). Chạy riêng: pass. Lỗi cô lập test, không phải lỗi sản phẩm; làm bộ `uv run pytest` đỏ (trái với ghi chú "1724 passed" sau G3). Ngoài ra thấy 1 lần mỗi test (không tái hiện khi chạy riêng): `test_session_lifecycle::test_timeouts_warn_once_then_abandon`, `test_migration_0006_0007::test_0007_downgrade_refused_with_duplicate_codes` — nghi cùng loại dữ liệu commit còn sót. [be-full-after-g4.txt](evidence/g4/be-full-after-g4.txt) | BE `fe9bfe5`, Postgres `aicam_test` | Open | be (test) — lọc audit theo `object_id` hoặc dọn `audit_log` trong fixture `committed` |
+| BUG-G4-1 | Medium | TC-09.40 (AC-47, FR-09.06) | CSV báo cáo (API-153) mở bằng Excel vùng Việt Nam không tách cột | 1. Xuất CSV tab Hàng hoàn (API-153 `report=returns`) 2. Bấm đúp mở bằng Microsoft Excel trên máy vùng en_VN / vi-VN | Kỳ vọng: mỗi giá trị một ô, số khớp màn. Thực tế: tiếng Việt đúng (BOM nhận) nhưng mỗi dòng nằm trọn ở cột A (`Tỷ lệ hoàn,"3,7%",26,700`). Nghi do vùng VN dùng `,` làm dấu thập phân nên Excel lấy `;` làm dấu tách — DEC-476 (dấu phẩy) giả định "Excel VN mở đúng". Chưa kiểm Excel Windows vi-VN. Bằng chứng: [tc-09-40-excel.txt](evidence/g4/tc-09-40-excel.txt) | BE `fe9bfe5`; Excel for Mac 15.34, macOS vùng en_VN | **Fixed** — be `077e0ca` (dấu `;`, 02a DEC-970), MSW fe `e893a36`; kiểm lại Excel thật: đạt | be — PO xác nhận Excel Windows ở kho |
+| BUG-G4-2 | Low | (hồi quy BE) | Test `test_share_review_affected::test_mark_wrong_scan_reports_affected_shares` fail khi chạy sau `test_share_mark_race` (G3V-1) | `uv run pytest tests/integration/test_share_mark_race.py tests/integration/test_share_review_affected.py` | Kỳ vọng: pass. Thực tế: 1 failed — test đọc dòng audit `SESSION_WRONG_SCAN_MARK` đầu tiên, gặp dòng do `test_share_mark_race` commit thật để lại (`audit_log` không bị TRUNCATE). Chạy riêng: pass. Lỗi cô lập test, không phải lỗi sản phẩm; làm bộ `uv run pytest` đỏ (trái với ghi chú "1724 passed" sau G3). Ngoài ra thấy 1 lần mỗi test (không tái hiện khi chạy riêng): `test_session_lifecycle::test_timeouts_warn_once_then_abandon`, `test_migration_0006_0007::test_0007_downgrade_refused_with_duplicate_codes` — nghi cùng loại dữ liệu commit còn sót. [be-full-after-g4.txt](evidence/g4/be-full-after-g4.txt) | BE `fe9bfe5`, Postgres `aicam_test` | **Fixed** — be `6b65384`, `cc5dddf` (lọc audit theo đối tượng); 2 test chập chờn không tái hiện được tuần tự → khóa một-pytest `16945db` / `ac0a321` / `769ac81` (02a DEC-971) | be |
 
-Phản hồi cho `ai-be-implement` (QA → BE): BUG-G4-1, BUG-G4-2. Không có bug Critical / High mới. Test mới G4 không lộ bug sản phẩm.
+| BUG-G4-3 | Low | TC-04.70 (FR-04.14) | API-21 `CANCEL_SESSION` phiên RETURN: ghi chú 501 ký tự trả 422 lời nhắn pydantic tiếng Anh; ghi chú 500 ký tự có khoảng trắng hai đầu bị từ chối trước trim | Lộ ở lượt sửa G4 bằng `test_g4_fix_cases::test_tc_04_70…` | Kỳ vọng `fields.note = "Nhập ghi chú (5–500 ký tự)."` / Thực tế "String should have at most 500 characters" | BE `5c213ee` trước sửa | **Fixed** — be `cbdc176` (kiểm sau trim ở service; DEC-974) | be |
+
+Phản hồi cho `ai-be-implement` (QA → BE): BUG-G4-1, BUG-G4-2, BUG-G4-3 — **đã sửa ở lượt sửa G4** (§7). Không có bug Critical / High.
 
 **Quan sát (không phải bug, không chặn):**
-- W1: câu "Trình duyệt không phát được video. Bấm Tải video…" luôn hiện dưới video kể cả khi phát được; tệp 39 KB hiện "1 MB" (làm tròn lên). Ảnh chụp: [tc-07-57-w1-chrome.png](evidence/g4/tc-07-57-w1-chrome.png). Đề xuất PO / UX xem lại chữ.
+- W1: câu "Trình duyệt không phát được video. Bấm Tải video…" luôn hiện dưới video kể cả khi phát được (**đã sửa** be `d947159` — chỉ còn là nội dung dự phòng trong `<video>`, 02a DEC-972); tệp 39 KB hiện "1 MB" (làm tròn lên). Ảnh chụp: [tc-07-57-w1-chrome.png](evidence/g4/tc-07-57-w1-chrome.png). Đề xuất PO / UX xem lại chữ.
 - FE vitest lần 1 chạy song song với BE pytest trên cùng máy: 3 test fail vì `findByRole` quá thời gian chờ (thấy ở `ShareLinkDialog.test.tsx:39`); chạy lại riêng 787/787 pass (DEC-958). Test UI nhạy với máy bận — nên tránh chạy song song trên CI yếu.
-- TC-05.82: kỳ vọng trong `04` ("thử lại trong client") lệch thiết kế đã chốt (làm mới token không thử lại — G3-N8). QA sẽ sửa case ở lượt sau (DEC-955).
+- TC-05.82: kỳ vọng trong `04` ("thử lại trong client") lệch thiết kế đã chốt (làm mới token không thử lại — G3-N8). **Đã sửa kỳ vọng và chạy ở lượt sửa G4 → ✅** (DEC-973).
 
 **Bug Phase 3 tìm thấy trước G4 (T-229 QA live / E2E thật, review G3, xác minh G3) — đã sửa, có test hồi quy, pass trên build G4:**
 
@@ -153,7 +156,7 @@ Bug Critical / High còn mở = **0**. Mức trong bảng: QA xếp theo mô t�
 
 ## 3. Case fail / blocked / chưa có bằng chứng
 
-**❌ (1):** TC-09.40 (P1) — BUG-G4-1.
+**❌ (0 sau lượt sửa G4):** TC-09.40 (P1) ❌ ở lượt đầu (BUG-G4-1) → ✅ sau sửa.
 
 **⬜ → ✅ — 20 case đóng bằng test mới (2026-10-08).** Chỉ thêm file test (`ai-cam-be/tests/integration/test_g4_phase3_gaps.py` 12 hàm, `tests/unit/test_g4_phase3_gaps.py` 2 hàm), 22 kết quả pass ([extra-g4-new-tests.txt](evidence/g4/extra-g4-new-tests.txt)), không lộ bug:
 
@@ -175,7 +178,7 @@ Bug Critical / High còn mở = **0**. Mức trong bảng: QA xếp theo mô t�
 
 **⬜ → ✅ bằng công cụ thật thay MAN (DEC-952):** TC-07.57, 07.59 (W1 dựng bằng hàm thật, mở bằng Google Chrome: đủ trường, không lộ, 2 video H.264 phát được — [tc-07-57-w1-browser.txt](evidence/g4/tc-07-57-w1-browser.txt)); TC-N3.13 (Chrome giả lập Fast 4G); TC-KR.13 (QA đọc ops §6); TC-09.40 bước 2 (Microsoft Excel thật → ❌).
 
-**⬜ còn lại (16, không có P1):**
+**⬜ còn lại ở lượt G4 đầu (16, không có P1)** — lượt sửa G4: 12 → ✅, TC-06.70 → ⛔, còn ⬜ **N3.02, N3.11, N3.14** (DEC-974, DEC-977):
 
 | TC | Ưu tiên | Lý do chưa có bằng chứng |
 |---|:---:|---|
@@ -198,7 +201,7 @@ Bug Critical / High còn mở = **0**. Mức trong bảng: QA xếp theo mô t�
 
 Các case này viết được ở mức `INT` / locust trong ≤ 30 phút mỗi case (trừ N3.02, N3.11 cần stack). Không viết ở lượt này vì đều P2 / P3 / NFR không chặn release; đề xuất đưa vào lượt QA trước G5 hoặc backlog Phase 3.1.
 
-**⛔ Chưa test — thiếu tài nguyên (15):**
+**⛔ Chưa test — thiếu tài nguyên (15 + TC-06.70 từ lượt sửa G4 = 16):**
 
 | TC | Thiếu | Bằng chứng giả lập đã có (02a §11 R1..R16) |
 |---|---|---|
@@ -211,6 +214,7 @@ Các case này viết được ở mức `INT` / locust trong ≤ 30 phút mỗi
 | TC-X3.12 | Máy kho | Diễn tập máy dev (R12) |
 | TC-X3.13 | Server kho | `perf_reports.py` máy dev (R13) |
 | TC-X3.14 | Camera thật (T-4) + server kho | Clip camera giả (R14) |
+| TC-06.70 (P3) | Bot Telegram / Zalo thật + mạng kho (Q21) — DEC-977 | Link dựng ở UNIT `test_notify_render` |
 | TC-MG3.19 (P1) | Server kho + image Phase 3 + bản sao DB production thật (R16) | Diễn tập lệnh trên bản sao DB Phase 2 máy dev ĐẠT ([m18](evidence/m18-upgrade-rollback.txt)) — DEC-957 |
 
 ## 4. Phi chức năng
@@ -224,7 +228,7 @@ Các case này viết được ở mức `INT` / locust trong ≤ 30 phút mỗi
 | NFR-38 (N3.05) | đơn ≤ 5 phút, yêu cầu trả ≤ 15 phút | Beat J-04 300 giây, J-13 900 giây + `INT` job | ✅ (cấu hình + INT) |
 | NFR-39 (N3.06) | shop khác đồng bộ mỗi chu kỳ | `INT` 1 giờ đồng hồ giả, 6 shop, 1 luôn timeout | ✅ |
 | NFR-40 RPO / RTO (N3.07) | DB ≤ 6 giờ, bằng chứng ≤ 1 giờ, khôi phục ≤ 60 phút | Lịch + `INT`; diễn tập 2.000 kiện: DB 1,0 giây | ✅ máy dev · ⛔ máy kho |
-| NFR-41 (N3.08, AC-49) | 5/5 không mở được, 0 lần thấy khóa, 2 lệnh `AccessDenied` | MinIO tạm T-280 (`d29fb52`); build G4 skip (DEC-954) | ✅ (build cũ) |
+| NFR-41 (N3.08, AC-49) | 5/5 không mở được, 0 lần thấy khóa, 2 lệnh `AccessDenied` | MinIO tạm T-280 (`d29fb52`); lượt sửa G4 chạy lại trên MinIO tạm riêng: pass (DEC-976) | ✅ |
 | NFR-42 (N3.09, AC-53) | ≥ 256 bit, 403 / 404, không liệt kê, `https`, `NoSuchKey` ≤ 60 giây | MinIO tạm T-280; E2E thật thu hồi ≤ 60 giây (build G3) | ✅ |
 | NFR-43 (N3.10, AC-54) | sự kiện → tin ≤ 3 phút; 0 tin mất sau 2 giờ | `INT` đồng hồ giả: ≤ 3 phút, 0 tin mất. Chưa chạy 100 sự kiện | ✅ |
 | NFR-44 (N3.11, AC-51) | quét p95 không đổi ± 10 % khi tải; ≤ 11 Mbit/s | Tốc độ 43,7 Mbit/s ở giới hạn 40 (DEC-656, MinIO tạm). Quét p95 / live view khi tải chưa đo | ⬜ · ⛔ mạng kho |
@@ -263,14 +267,14 @@ Không chạy ở lượt này: docker, stack dev :8180, QA live, E2E BE thật 
 
 **Điều kiện để chốt G4 (QA đề xuất — DEC-959):**
 1. DEC chấp nhận 15 case ⛔ (14 X3 + TC-MG3.19) như DEC-78 / DEC-367 các phase trước.
-2. BUG-G4-1 (Medium): sửa trước G5 **hoặc** PO chấp nhận có hướng dẫn (Excel → Dữ liệu → Từ văn bản / CSV) và ghi DEC; AC-47 chỉ ✅ sau khi kiểm lại trên Excel ở kho.
-3. Sửa BUG-G4-2 để `uv run pytest` BE xanh lại; chạy lại test MinIO tạm (`test_backup_security_nfr41`, `test_share_security_nfr42`, `test_cloud_minio`) trên build G4 trước G5 (DEC-954).
-4. 16 case ⬜ (không P1) — chấp nhận, lên kế hoạch ở lượt QA trước G5 / Phase 3.1.
+2. ~~BUG-G4-1~~ — **đã sửa** (DEC-970); còn: PO kiểm CSV bằng Excel Windows ở máy kho (AC-47 ⚠️ máy dev — DEC-978).
+3. ~~BUG-G4-2 + chạy lại test MinIO tạm~~ — **đã làm** (DEC-971, DEC-976); `uv run pytest` BE đầy đủ xanh (§7).
+4. 3 case ⬜ NFR (N3.02, N3.11, N3.14 — DEC-977) + 16 ⛔ — người duyệt chấp nhận / lên kế hoạch trước G5.
 
 **Rủi ro còn lại:**
 - **Backlog G3:** BK-6 — không cảnh báo khi bucket sao lưu tắt versioning (DEC-875, cần quyền `s3:GetBucketVersioning`); MS-5 — đơn file trùng mã với đơn sàn có thể tạo đơn thừa / hồ sơ sai shop (DEC-876). Cả hai không mất bằng chứng; Phase 3.1.
 - Adapter TikTok, Shopee returns chỉ kiểm bằng HTTP giả theo tài liệu công khai; sai lệch với API thật chỉ lộ ra khi có partner (RK-16).
-- Test MinIO chạy trên build cũ (T-218 / T-221 / T-280); sửa G3 có chạm `cloud` / `shares` / `backup` (BK-1, BK-4, SH-1..4) — đã có test `MemoryStore` + QA live MinIO trên build G3, nhưng 9 test MinIO tạm chưa chạy lại.
+- ~~Test MinIO chạy trên build cũ~~ — lượt sửa G4 chạy lại 11 test MinIO tạm trên build mới: pass (DEC-976).
 - Số NFR chỉ máy dev; NFR-44 (quét khi đang tải lên) và 02a §8 chưa đo.
 - Nhiều chữ UI mới "chờ PO" (DEC-900..909, 934, 935) — chưa duyệt chữ.
 
@@ -287,10 +291,28 @@ Không chạy ở lượt này: docker, stack dev :8180, QA live, E2E BE thật 
 | Server kho | TC-X3.11..X3.13, MG3.19: báo cáo, RTO, quét khi tải lên, diễn tập nâng cấp bằng image + bản sao DB thật (R16) |
 | Điện thoại | TC-X3.10: W1 + video ngoài mạng kho (AC-52, NFR-46) |
 | Mạng kho / WAN | TC-X3.11, X3.08; NFR-44 |
-| BUG-G4-1 | CSV mở bằng Excel ở máy kho |
+| BUG-G4-1 (đã sửa) | CSV mở bằng Excel Windows ở máy kho (AC-47 ⚠️) |
 
 **Lệnh tái chạy:**
 `cd ai-cam-be && uv run pytest` · `uv run pytest -v tests/integration/test_g4_phase3_gaps.py tests/unit/test_g4_phase3_gaps.py` · `cd ai-cam-fe && pnpm test && pnpm e2e` · QA live / E2E thật: theo `docker/qa.env` (stack `aicam-qa`).
+
+## 7. Lượt sửa G4 (2026-10-08, DEC-970..979)
+
+Sửa theo `ai-dev-fix` (test tái hiện đỏ trước), commit + push từng phần trên `feat/03-expansion-tiktok` (không merge / PR).
+
+| Mục | Sửa / test | Commit | Kết quả |
+|---|---|---|---|
+| BUG-G4-1 (Medium, TC-09.40, AC-47) | CSV API-153 dấu tách `;` (`core.csv_safe.EXCEL_VN_DELIMITER`), giữ BOM + chống formula injection; CSV kỹ thuật `backup-restore` / `backup-verify` giữ `,`; MSW `;` (02a DEC-970, 02b DEC-975, 02 §6.2 API-153) | be `077e0ca`, fe `e893a36` | Unit đỏ trước (3 fail) → xanh; Excel for Mac vùng en_VN thật: tách cột, "3,7%" là số, khớp API-150 — [tc-09-40-excel-after](evidence/g4/tc-09-40-excel-after.txt) |
+| BUG-G4-2 (Low, test) | `test_share_review_affected`, `test_return_session_review`, `test_evidence_remove_br38` lọc audit theo đối tượng (`audit_log` chỉ thêm); 2 test chập chờn không tái hiện tuần tự (DB chỉ còn `audit_log` + `setting` gốc) → khóa một-pytest theo DB test (`single_pytest_run`, PID) (02a DEC-971) | be `6b65384`, `16945db`, `ac0a321`, `769ac81`, `cc5dddf` | Cặp file đỏ → 4 passed; bộ đầy đủ xanh |
+| W1 (quan sát TC-07.57) | Câu "không phát được video" chỉ còn là nội dung dự phòng trong `<video>`, không script (02a DEC-972) | be `d947159` | Test render đỏ trước → xanh |
+| BUG-G4-3 (Low, lộ ở TC-04.70) | API-21 ghi chú kiểm độ dài ở service sau trim, lời nhắn tiếng Việt (04 DEC-974) | be `cbdc176` | Test đỏ → xanh |
+| 12 case ⬜ | `tests/integration/test_g4_fix_cases.py` 12 hàm / 14 kết quả (TC-05.82 kỳ vọng sửa — DEC-973) | be `5c213ee` | 14 passed — [g4-fix-new-tests](evidence/g4/g4-fix-new-tests.txt) |
+| ⬜ còn lại | TC-06.70 → ⛔; N3.02, N3.11, N3.14 giữ ⬜ (DEC-977) | — | — |
+| Test MinIO (DEC-954) | 11 test trên MinIO tạm riêng (cổng 59290, đã xóa) | — | **11 passed** — [be-minio-tests](evidence/g4/be-minio-tests.txt) (DEC-976) |
+| BE đầy đủ | `ruff check` · `ruff format --check` · `mypy` · `lint-imports` · `pytest -q` (be `cc5dddf`) | — | mã thoát 0 cả 5; **1767 passed, 195 skipped**, 9 phút 11 giây — [be-full-final](evidence/g4/be-full-final.txt) (ghi cả 3 lượt đỏ trước đó và nguyên nhân) |
+| FE | `tsc -b` · `eslint src` · `prettier -c src` · `pnpm test` · `pnpm build` (fe `e893a36`) | — | mã thoát 0 cả 5; vitest **787 passed / 85 file** — [fe-final](evidence/g4/fe-final.txt) |
+
+Ghi nhận trung thực: một lượt BE đầy đủ (be `769ac81`) có 1 error ở `test_auth_users_api::test_station_account_on_dashboard_is_wrong_client` (không lưu traceback); chạy riêng pass, 2 lượt đầy đủ sau không lặp lại — chưa xác định nguyên nhân. Không chạy lại QA live / E2E BE thật / E2E mock ở lượt này (không dùng stack); thay đổi sản phẩm ở lượt sửa: CSV API-153, API-21 ghi chú, W1 — có test INT / unit / Excel thật.
 
 ## Chốt G4
 
@@ -298,11 +320,11 @@ Checklist đầy đủ (✓ / ✗ kèm ghi chú) ở [`04` mục "Chốt G4"](04
 
 | Điều kiện | QA |
 |---|:---:|
-| Mọi AC và FR mức M có ≥ 1 TC pass, có bằng chứng | ✗ (AC-47 ❌ BUG-G4-1; 6 AC ⚠️; mọi FR mức M có ≥ 1 TC ✅) |
-| Ma trận quyền đã chạy | ✓ (21/22 ✅, P3.19 ⬜ P2) |
+| Mọi AC và FR mức M có ≥ 1 TC pass, có bằng chứng | ✓ (sau lượt sửa: 17 ✅ · 6 ⚠️ · 0 ❌; mọi FR mức M có ≥ 1 TC ✅) |
+| Ma trận quyền đã chạy | ✓ (22/22 ✅) |
 | NFR có ngưỡng đã đo | ✗ (3 ⬜; 5 chỉ máy dev) |
-| Bug Critical/High = 0 | ✓ |
+| Bug Critical/High = 0 | ✓ (mọi bug G4 đã sửa) |
 | Regression vùng bị chạm đã chạy | ✓ |
-| Migration lên / xuống / lên + nâng cấp lại | ✓ (MG3.19 ⛔ server kho) |
+| Migration lên / xuống / lên + nâng cấp lại | ✓ (19 ✅; MG3.19 ⛔ server kho) |
 
 QA chưa tick G4 trong `00-status`. Người điều phối quyết định bước tiếp.

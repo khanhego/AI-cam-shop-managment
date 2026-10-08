@@ -1,0 +1,31 @@
+$ cd ai-cam-be && uv run ruff check . ; uv run ruff format --check . ; uv run mypy ; uv run lint-imports ; uv run pytest -q -rfE   (BE cc5dddf, 2026-10-08 11:53, không tiến trình pytest / vitest nào khác)
+All checks passed!
+ruff EXIT=0
+391 files already formatted
+format EXIT=0
+Success: no issues found in 209 source files
+mypy EXIT=0
+
+core không phụ thuộc module nghiệp vụ KEPT
+module nghiệp vụ không import entrypoints KEPT
+cloud không import module nghiệp vụ (DEC-463) KEPT
+
+Contracts: 3 kept, 0 broken.
+lint-imports EXIT=0
+........[2m2026-10-08T06:07:09.838941Z[0m [[32m[1minfo     [0m] [1mws_closed                     [0m [36mpath[0m=[35mdashboard[0m [36muser_id[0m=[35m1c104395-20d6-4529-8e80-0e69c0b36c0a[0m
+=============================== warnings summary ===============================
+.venv/lib/python3.12/site-packages/fastapi/testclient.py:1
+  /Users/admin/KhanhCode/AI-cam-shop-managment/ai-cam-be/.venv/lib/python3.12/site-packages/fastapi/testclient.py:1: StarletteDeprecationWarning: Using `httpx` with `starlette.testclient` is deprecated; install `httpx2` instead.
+    from starlette.testclient import TestClient as TestClient  # noqa
+
+-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
+1767 passed, 195 skipped, 1 warning in 551.84s (0:09:11)
+pytest EXIT=0
+
+# Skip 195: QA live cần stack (tests/qa), MinIO tạm (11 — đã chạy riêng: be-minio-tests.txt), RUN_PERF, ffmpeg drawtext.
+# Lịch sử lượt sửa G4 (trung thực):
+# - Lượt 1 (BE 5c213ee): pytest dừng mã 3 ngay sau tests/contract — khóa một-pytest từ chối fixture nhập lại cùng tiến trình → sửa be 769ac81 (PID trong tệp khóa).
+# - Lượt 2 (769ac81): 1 failed (test_return_session_review::test_review_errors), 1 error (test_auth_users_api::test_station_account_on_dashboard_is_wrong_client), 1765 passed. Chạy riêng 2 test: 2 passed.
+# - Lượt 3 (769ac81, chạy lại nguyên vẹn): 2 failed (test_return_session_review ×2 — đọc audit toàn bảng, dính dòng audit commit thật của TC-08.58 mới); error test_auth KHÔNG lặp lại (không tái hiện, không có traceback — ghi nhận 1 lần).
+#   Tái hiện đỏ: test_tc_08_58 rồi test_return_session_review + test_evidence_remove_br38 → 3 failed → lọc audit theo đối tượng (be cc5dddf) → 14 passed.
+# - Lượt 4 (cc5dddf, ở trên): EXIT=0 toàn bộ.

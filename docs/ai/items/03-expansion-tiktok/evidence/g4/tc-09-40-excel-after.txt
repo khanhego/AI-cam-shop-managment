@@ -1,0 +1,65 @@
+# TC-09.40 bước 2 sau sửa BUG-G4-1 (DEC-970): mở CSV API-153 report=returns bằng Microsoft Excel thật trên máy dev
+# Build BE 077e0ca (dấu tách ';'). Máy: macOS, AppleLocale=en_VN, Microsoft Excel for Mac 15.34. Ngày 2026-10-08 10:55.
+# CSV lấy từ API-153 thật (ASGI + Postgres aicam_test), bộ dữ liệu _returns_dataset của test_reports_api (test tạm, đã xóa, không commit);
+# cùng lúc lấy API-150 (số trên màn) để so. Cách mở như lượt G4: 'open -a "Microsoft Excel" <tệp>' (như bấm đúp), AppleScript đọc 'string value' ô A1..G40.
+# 5 byte đầu tệp (BOM + 'B'):
+00000000: efbb bf42 c3                             ...B.
+# 4 dòng đầu tệp thô:
+﻿Báo cáo hàng hoàn
+Kỳ;06/09/2026 – 05/10/2026
+Sàn;Shopee
+Shop;Áo Đẹp
+
+# Excel đọc được (cột A | B | C | D | E | F | G):
+workbooks=1
+name=bao-cao-hang-hoan-2026-09-06_2026-10-05.csv
+1: Báo cáo hàng hoàn |  |  |  |  |  |  | 
+2: Kỳ | 06/09/2026 – 05/10/2026 |  |  |  |  |  | 
+3: Sàn | Shopee |  |  |  |  |  | 
+4: Shop | Áo Đẹp |  |  |  |  |  | 
+5:  |  |  |  |  |  |  | 
+6: Chỉ số |  |  |  |  |  |  | 
+7: Chỉ số | Giá trị | Tử số | Mẫu số |  |  |  | 
+8: Tỷ lệ hoàn | 3,70% | 26 | 700 |  |  |  | 
+9: Tỷ lệ có vấn đề | 20,70% | 6 | 29 |  |  |  | 
+10: Chỉ hoàn tiền | 6 |  |  |  |  |  | 
+11: Chỉ hoàn tiền / kiện bàn giao | 0,90% |  |  |  |  |  | 
+12: Đang về (hiện tại) | 30 |  |  |  |  |  | 
+13:  |  |  |  |  |  |  | 
+14: Theo loại hồ sơ |  |  |  |  |  |  | 
+15: Loại | Số hồ sơ | Tỷ lệ |  |  |  |  | 
+16: Khách trả hàng | 16 | 61,50% |  |  |  |  | 
+17: Giao thất bại | 10 | 38,50% |  |  |  |  | 
+18: Chỉ hoàn tiền | 6 | — |  |  |  |  | 
+19:  |  |  |  |  |  |  | 
+20: Lý do khách × kết luận kho |  |  |  |  |  |  | 
+21: Lý do | Nguyên vẹn | Hư hỏng | Thiếu hàng | Sai hàng / bị tráo | Hộp rỗng | Khác | 
+22: Hàng bị hư | 4 | 3 | 0 | 0 | 3 | 0 | 
+23: Không có lý do | 19 | 0 | 0 | 0 | 0 | 0 | 
+24:  |  |  |  |  |  |  | 
+25: Top sản phẩm bị trả |  |  |  |  |  |  | 
+26: SKU | Sản phẩm | Phân loại | Đã gửi | Yêu cầu trả | Tỷ lệ | Có vấn đề | 
+27: AT-DEN-L | Áo thun basic | Đen / L | 700 | 32 | 4,60% | 0 | 
+28:  |  |  |  |  |  |  | 
+29: Theo sàn / shop |  |  |  |  |  |  | 
+30: Sàn | Shop | Kiện bàn giao | Hồ sơ hàng hoàn | Tỷ lệ |  |  | 
+31: Shopee | Áo Đẹp | 700 | 26 | 3,70% |  |  | 
+32:  |  |  |  |  |  |  | 
+33: Biểu đồ — theo ngày |  |  |  |  |  |  | 
+34: Từ ngày | Kiện đóng gói | Hồ sơ hàng hoàn | Hồ sơ khiếu nại |  |  |  | 
+35: 6/9/26 | 0 | 0 | 0 |  |  |  | 
+36: 7/9/26 | 0 | 0 | 0 |  |  |  | 
+37: 8/9/26 | 0 | 0 | 0 |  |  |  | 
+38: 9/9/26 | 0 | 0 | 0 |  |  |  | 
+39: 10/9/26 | 0 | 0 | 0 |  |  |  | 
+40: 11/9/26 | 0 | 0 | 0 |  |  |  | 
+B8 value (kiểu số?)=0,037 ; class=real
+C8 value=26,0 ; class=real
+
+
+# API-150 cùng bộ lọc (số trên màn D20): return_rate 26/700 = 0.0371 → '3,7%'; issue_rate 6/29 = 0.2069 → '20,7%'; refund_only 6, rate_of_handed_over 0.0086 → '0,9%'; expected_now 30;
+#   by_kind BUYER_RETURN 16 (61,5%), FAILED_DELIVERY 10 (38,5%), REFUND_ONLY 6 (—); series 30 ngày từ 2026-09-06.
+# Ô ngày A35 = 'Sunday, 6 September 2026', A40 = 'Friday, 11 September 2026' (Excel đọc dd/mm đúng); 64 dòng dùng.
+
+# KẾT LUẬN: ĐẠT — tiếng Việt đúng (BOM nhận), mỗi giá trị một ô (tách theo ';'), tỷ lệ '3,7%' Excel nhận thành số 0,037 (hiện 3,70%), số đếm là số; khớp API-150.
+# Excel đã đóng tệp không lưu, thoát; tệp tạm ~/Documents/aicam-g4-fix-tmp đã xóa. Chưa kiểm Excel Windows vi-VN (máy kho) — PO xác nhận ở kho.

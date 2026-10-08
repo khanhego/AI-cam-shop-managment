@@ -1,0 +1,20 @@
+# Lượt sửa G4 (DEC-976): chạy lại 11 test cần MinIO (skip ở lượt G4 — DEC-954) trên build sửa G4, BE 5c213ee, 2026-10-08 11:18
+# MinIO TẠM riêng (không phải stack aicam-dev :59000): container aicam-g4fix-minio (pgsty/minio:latest, image DEC-652) trên network tạm aicam-g4fix-net, cổng host 59290;
+# khởi tạo bằng chính docker/minio/init.sh + docs/s3-policy.example.json (bucket aicam-test-backup versioning + lifecycle, aicam-test-share, user ứng dụng aicam-g4fix-app với chính sách không xóa phiên bản).
+# pg_dump/pg_restore qua tests/integration/bin/docker-* (container postgres:16-alpine --rm) vào DB aicam_test. Xong: xóa container + network.
+$ TEST_S3_ENDPOINT=http://localhost:59290 TEST_S3_ACCESS_KEY=aicam-g4fix-app TEST_S3_SECRET_KEY=*** TEST_S3_BUCKET=aicam-test-backup TEST_S3_SHARE_BUCKET=aicam-test-share TEST_S3_ROOT_KEY=g4fixroot TEST_S3_ROOT_SECRET=*** RUN_PERF=1 \
+  uv run pytest -v -rs tests/integration/test_backup_security_nfr41.py tests/integration/test_share_security_nfr42.py tests/integration/test_cloud_minio.py tests/integration/test_perf_backup_throttle.py
+tests/integration/test_backup_security_nfr41.py::test_backup_copies_useless_without_key_and_key_never_stored PASSED [  9%]
+tests/integration/test_backup_security_nfr41.py::test_j23_schema_guard_real_revision[0005] PASSED [ 18%]
+tests/integration/test_backup_security_nfr41.py::test_j23_schema_guard_real_revision[0008] PASSED [ 27%]
+tests/integration/test_share_security_nfr42.py::test_token_256_bit_unique PASSED [ 36%]
+tests/integration/test_share_security_nfr42.py::test_link_open_tamper_list_revoke PASSED [ 45%]
+tests/integration/test_cloud_minio.py::test_put_get_head_list_delete_marker PASSED [ 54%]
+tests/integration/test_cloud_minio.py::test_app_key_cannot_delete_versions_or_change_versioning PASSED [ 63%]
+tests/integration/test_cloud_minio.py::test_probe_and_wrong_secret PASSED [ 72%]
+tests/integration/test_cloud_minio.py::test_presign_get_reads_object PASSED [ 81%]
+tests/integration/test_perf_backup_throttle.py::test_upload_rate_close_to_limit[40-50] PASSED [ 90%]
+tests/integration/test_perf_backup_throttle.py::test_upload_rate_close_to_limit[80-100] PASSED [100%]
+============================= 11 passed in 25.15s ==============================
+EXIT=0
+# Dọn: docker rm -f aicam-g4fix-minio; docker network rm aicam-g4fix-net — đã xóa (docker ps -a / network ls không còn g4fix).

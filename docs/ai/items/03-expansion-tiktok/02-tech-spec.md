@@ -656,7 +656,7 @@ BR-41: `packed` = phiên PACK `COMPLETED` có `ended_at` trong kỳ (phiên đó
 
 <details><summary><b>API-153</b> — GET /reports/{report}/export?from&to&platform&shop_id&station_id</summary>
 
-`report` = `returns` | `claims` | `productivity`. `200 text/csv; charset=utf-8`, có BOM, `Content-Disposition: attachment; filename="bao-cao-hang-hoan-2026-09-06_2026-10-05.csv"` (`bao-cao-khieu-nai-…`, `bao-cao-nang-suat-…`). Nội dung: mọi bảng của tab, mỗi bảng bắt đầu bằng một dòng tiêu đề tiếng Việt, cách nhau một dòng trống; tỷ lệ ghi `4,0%`, số tiền nguyên. Audit `REPORT_EXPORT` `{report, from, to, platform, shop_id, station_id}`. Lỗi như API-150; `report` lạ → 404; quyền theo API tương ứng (CSKH + `productivity` → 403).
+`report` = `returns` | `claims` | `productivity`. `200 text/csv; charset=utf-8`, có BOM, `Content-Disposition: attachment; filename="bao-cao-hang-hoan-2026-09-06_2026-10-05.csv"` (`bao-cao-khieu-nai-…`, `bao-cao-nang-suat-…`). Nội dung: mọi bảng của tab, mỗi bảng bắt đầu bằng một dòng tiêu đề tiếng Việt, cách nhau một dòng trống; tỷ lệ ghi `4,0%`, số tiền nguyên. (G4 — 02a DEC-970) Dấu tách cột **`;`** (Excel vùng vi-VN / en-VN dùng `,` làm dấu thập phân nên bấm đúp mở tệp tách cột theo `;`; dấu phẩy dồn cả dòng vào cột A — BUG-G4-1); vẫn UTF-8 có BOM, CRLF, ô chuỗi bắt đầu `= + - @` tab / CR thêm `'` (chống công thức); tên tệp, `Content-Type` không đổi. Audit `REPORT_EXPORT` `{report, from, to, platform, shop_id, station_id}`. Lỗi như API-150; `report` lạ → 404; quyền theo API tương ứng (CSKH + `productivity` → 403).
 </details>
 
 <details><summary><b>API-164</b> — GET /shares/options?claim_id= | session_id=</summary>
