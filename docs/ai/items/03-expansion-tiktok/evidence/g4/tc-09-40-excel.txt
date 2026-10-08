@@ -1,0 +1,32 @@
+# TC-09.40 bước 2 (MAN thay bằng tự động): mở CSV API-153 report=returns bằng Microsoft Excel thật trên máy dev
+# Máy: macOS, AppleLocale=en_VN (ngôn ngữ en-VN, vi-VN), Microsoft Excel for Mac 15.34. Ngày 2026-10-08 09:57.
+# CSV lấy từ API-153 thật (ASGI + Postgres aicam_test) bằng bộ dữ liệu của test_reports_api::test_export_csv_returns_with_audit (test tạm, đã xóa, không commit).
+# Cách mở: 'open -a "Microsoft Excel" <tệp>' (như bấm đúp), rồi AppleScript đọc ô A1..E16 của sheet đang mở.
+# 5 byte đầu tệp (BOM + 'B'):
+00000000: efbb bf42 c3                             ...B.
+# 3 dòng đầu tệp thô:
+﻿Báo cáo hàng hoàn
+Kỳ,06/09/2026 – 05/10/2026
+Sàn,Shopee
+
+# Excel đọc được (cột A | B | C | D | E):
+workbooks=1
+name=bao-cao-hang-hoan-2026-09-06_2026-10-05.csv
+1: Báo cáo hàng hoàn |  |  |  |  | 
+2: Kỳ,06/09/2026 – 05/10/2026 |  |  |  |  | 
+3: Sàn,Shopee |  |  |  |  | 
+4: Shop,Áo Đẹp |  |  |  |  | 
+5:  |  |  |  |  | 
+6: Chỉ số |  |  |  |  | 
+7: Chỉ số,Giá trị,Tử số,Mẫu số |  |  |  |  | 
+8: Tỷ lệ hoàn,"3,7%",26,700 |  |  |  |  | 
+9: Tỷ lệ có vấn đề,"20,7%",6,29 |  |  |  |  | 
+10: Chỉ hoàn tiền,6,, |  |  |  |  | 
+11: Chỉ hoàn tiền / kiện bàn giao,"0,9%",, |  |  |  |  | 
+12: Đang về (hiện tại),30,, |  |  |  |  | 
+13:  |  |  |  |  | 
+14: Theo loại hồ sơ |  |  |  |  | 
+15: Loại,Số hồ sơ,Tỷ lệ |  |  |  |  | 
+16: Khách trả hàng,16,"61,5%" |  |  |  |  | 
+
+# KẾT LUẬN: tiếng Việt đúng (BOM được nhận); NHƯNG mỗi dòng nằm trọn trong cột A — Excel không tách cột theo dấu phẩy với vùng en_VN (nghi do vùng VN dùng ',' làm dấu thập phân nên Excel lấy ';' làm dấu tách — chưa kiểm trên Excel Windows vi-VN). => TC-09.40 bước 2 / AC-47 phần 'CSV mở bằng Excel … số khớp màn' KHÔNG ĐẠT trên máy này — BUG-G4-1.

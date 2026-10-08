@@ -1,0 +1,30 @@
+$ uv run lint-imports  (TC-R3.12)
+Analyzed 202 files, 1065 dependencies.
+--------------------------------------
+
+core không phụ thuộc module nghiệp vụ KEPT
+module nghiệp vụ không import entrypoints KEPT
+cloud không import module nghiệp vụ (DEC-463) KEPT
+
+Contracts: 3 kept, 0 broken.
+EXIT=0
+
+$ grep chữ trạng thái sàn trong lõi (TC-05.91 bước 2): grep -rnE 'AWAITING_SHIPMENT|IN_TRANSIT|ON_HOLD|IN_CANCEL|READY_TO_SHIP' src/aicam --include=*.py | grep -v 'modules/platforms/' | grep -v alembic
+src/aicam/entrypoints/seed_returns.py:131:        status = "COMPLETED" if demo.final == "DELIVERED" else "READY_TO_SHIP"  # chữ Shopee (dữ liệu mock)
+src/aicam/entrypoints/seed_returns.py:193:    if missing is not None and await claims.find_open(session, missing.id, "LOST_IN_TRANSIT") is None:
+src/aicam/entrypoints/seed_returns.py:199:                type="LOST_IN_TRANSIT",
+src/aicam/modules/reconciliation/rules.py:115:            "CANCELLED",  # G3 C4: IN_CANCEL → CANCELLED, PACKED → CANCELLED_AFTER_PACK cùng một đợt
+src/aicam/modules/reconciliation/rules.py:210:                # hủy → để riêng chờ sàn quyết, không cảnh báo — như Phase 2 với `IN_CANCEL`, DEC-519).
+src/aicam/modules/notify/render.py:29:    "LOST_IN_TRANSIT": "Thất lạc vận chuyển",
+src/aicam/modules/orders/service.py:208:    - `CANCEL_REQUESTED` (người mua xin hủy, Shopee `IN_CANCEL`) → **không** hủy kiện; kiện `PACKING` → cờ
+src/aicam/modules/orders/cancel_revert.py:1:"""Kiện hủy oan (BR-21 v0.4, DEC-519 — T-285): Phase 2 coi Shopee `IN_CANCEL` (nay nhóm `CANCEL_REQUESTED`) là
+src/aicam/modules/reports/csv_export.py:36:    "LOST_IN_TRANSIT": "Thất lạc",
+src/aicam/modules/claims/models.py:30:    "LOST_IN_TRANSIT",
+src/aicam/modules/claims/schemas.py:14:    "DAMAGED", "MISSING_ITEM", "WRONG_ITEM", "EMPTY_BOX", "OTHER", "BUYER_CLAIM", "LOST_IN_TRANSIT"
+số dòng ngoài platforms/:       11
+
+$ RUN_PERF=1 uv run pytest -s tests/integration/test_lookup_parallel.py::test_perf_ac43_100_scans  (TC-N3.01, máy dev)
+AC-43 100 scans: p50=2.054s p95=2.103s max=2.305s
+.
+1 passed in 208.47s (0:03:28)
+# Đọc 11 dòng: 0 dòng là logic lõi đọc chữ trạng thái sàn — 5 dòng chú thích (rules.py, orders/service.py, cancel_revert.py), 5 dòng LOST_IN_TRANSIT (loại hồ sơ khiếu nại, trùng chữ), 1 dòng entrypoints/seed_returns.py dựng dữ liệu mock. Test AST test_no_platform_status_in_core.py pass (be-unit-contract.txt).
