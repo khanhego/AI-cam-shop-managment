@@ -1,0 +1,57 @@
+# G5 — sửa cuối trước chốt G5 (item 03), 2026-10-08
+# Nhánh feat/03-expansion-tiktok. Theo ai-dev-fix: test tái hiện đỏ trước rồi sửa.
+#
+# Commit:
+#   fe 41af982  fix(BUG-G5-P3-1) D20 "Theo sàn / shop" dòng shop null → "(Không có shop)", không link (DEC-1000)
+#               đỏ trước: 3 test fail, ô hiện "undefined · null15213,3%" (Hàng hoàn) / "undefined · null1000 đ" (Khiếu nại)
+#   be 107d9a5  fix(L26) BR-40 xét theo yêu cầu, loại LEGACY_HOLD / KN của yêu cầu khác (DEC-1001)
+#               đỏ trước: test_refund_pending_l26 — pending_only trả set() thay vì 3 hồ sơ; cột claim hiện KN-000001 (LEGACY_HOLD)
+#   fe f52792f  fix(L27) D23 câu hệ quả mặc định FR-02.18 (mới, chờ PO) (DEC-1002)
+#               đỏ trước: test FR-02.18 không tìm thấy câu
+#   be 07aa425  fix(OBS-G5-P3-3) /healthz version 0.3.0 (DEC-1003)
+#               đỏ trước: test_healthz_returns_ok (0.1.0 != 0.3.0)
+#   be 559071b  fix(OBS-G5-P3-3) openapi.json info.version 0.3.0 (lượt full đầu: test_openapi_snapshot_up_to_date fail → export lại)
+#
+# Test BE dùng DB aicam_test / Redis db 15, một pytest một lúc; FE chạy sau khi pytest xong.
+# Lượt full BE đầu (07:31:40Z → 07:39:09Z): 1 failed (snapshot openapi), 1768 passed, 195 skipped → sửa 559071b → chạy lại bên dưới.
+
+## BE (ai-cam-be)
+be HEAD 559071b
+== ruff check .
+All checks passed!
+EXIT=0
+== ruff format --check .
+392 files already formatted
+EXIT=0
+== mypy
+Success: no issues found in 209 source files
+EXIT=0
+== lint-imports
+cloud không import module nghiệp vụ (DEC-463) KEPT
+
+Contracts: 3 kept, 0 broken.
+EXIT=0
+== pytest -q (full)
+2026-10-08T07:39:40Z
+SKIPPED [1] tests/qa/test_m9_live.py:269: đặt QA_BASE_URL để chạy QA trên stack thật
+1769 passed, 195 skipped, 1 warning in 438.60s (0:07:18)
+EXIT=0
+2026-10-08T07:47:09Z
+
+## FE (ai-cam-fe)
+fe HEAD f52792f
+== tsc -b
+EXIT=0
+== eslint src
+EXIT=0
+== prettier -c src
+All matched files use Prettier code style!
+EXIT=0
+== pnpm test
+ Test Files  85 passed (85)
+      Tests  788 passed (788)
+EXIT=0
+== pnpm build
+
+✓ built in 413ms
+EXIT=0

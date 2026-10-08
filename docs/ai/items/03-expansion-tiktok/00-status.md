@@ -8,7 +8,7 @@
 | Quy mô | M |
 | Component bị chạm | ai-cam-be (be), ai-cam-fe (fe: admin; station nếu L11 cần) |
 | Nhánh | `feat/03-expansion-tiktok` ở cả 3 repo, tạo từ `main` sau merge Phase 2 (PR #2) |
-| Last update | 2026-10-08 · Ops (G5 staging local — 05-release.md, DEC-991..997; chờ duyệt G5) |
+| Last update | 2026-10-08 · BE + FE (sửa trước G5: BUG-G5-P3-1, L26, L27, `/healthz` 0.3.0 — DEC-1000..1003) · 2026-10-08 · Ops (G5 staging local — 05-release.md, DEC-991..997; chờ duyệt G5) |
 
 Phạm vi: [SRS hệ thống §13.2](../../system/SRS.md) giai đoạn 3 "Mở rộng" — **chỉ TikTok Shop, không Lazada** (quyết định user 2026-10-05); báo cáo M09 (FR-09.02..04), sao lưu cloud, chia sẻ link, thông báo Zalo / Telegram (FR-06.04); kèm hardening L11, L13, L15 từ [06-business-qa Phase 2](../02-returns-reconciliation/06-business-qa.md). Phần cần tài nguyên ngoài (TikTok Shop partner thật, bucket cloud thật, bot Zalo / Telegram thật, camera thật, server kho) làm bằng adapter mock + ghi "chưa test — thiếu tài nguyên".
 Số item: 03 (`docs/ai/items/` có 01, 02; remote 3 repo có `main`, `feat/01-…`, `feat/02-…` — 2026-10-06).
@@ -23,7 +23,7 @@ Số item: 03 (`docs/ai/items/` có 01, 02; remote 3 repo có `main`, `feat/01-�
 | Plan | ✅ | 2026-10-07 | khanhtt (PM, tự quyết theo ủy quyền user — DEC-534) | [03-plan.md](03-plan.md): 74 task (52 BE · 6 FE station · 16 FE admin), 117 ngày công, 8 milestone M11–M18, đường găng 17,5 ngày (T-201 → 202 → 204 → 215 → 279 → 281 → 227 → 276 → 280 → 229), xong dự kiến 2027-03-19 (1 dev, chưa trừ Tết); mọi FR mức M có task; ticket chưa tạo (tracker `none` — phải hỏi user trước khi tạo) |
 | G3 Build | ✅ có điều kiện | 2026-10-08 | khanhtt (điều phối, tự quyết theo ủy quyền user — DEC-950) | 5 reviewer (bằng chứng/migration, sao lưu, bảo mật link/thông báo, nhiều shop/TikTok/báo cáo, FE) → sửa BE DEC-850..877, FE DEC-900..910 → xác minh (Đạt có điều kiện) → sửa G3V-1..3 (DEC-932..935). QA live 182/182, E2E BE thật 75 + 1 skip (stack `aicam-qa`, DEC-941). Backlog: BK-6 (DEC-875), MS-5 (DEC-876) |
 | G4 Kiểm thử | ✅ có điều kiện | 2026-10-08 | khanhtt (điều phối, tự quyết theo ủy quyền user — DEC-990) | 378 case: ✅ 359 · ❌ 0 · ⛔ 16 · ⬜ 3 (NFR cần stack/máy kho); P1 210: ✅ 209 · ⛔ 1 (MG3.19). AC 17 ✅ · 6 ⚠️. Bug mở 0 ([04a](04a-test-report.md)) |
-| G5 Release | ⬜ | | | Ops đề xuất ✅ có điều kiện (DEC-997) — [05-release.md](05-release.md): staging local đạt; BUG-G5-P3-1 (Low, FE) chưa sửa; chờ chủ sản phẩm duyệt |
+| G5 Release | ⬜ | | | Ops đề xuất ✅ có điều kiện (DEC-997) — [05-release.md](05-release.md): staging local đạt; BUG-G5-P3-1 (Low, FE) **đã sửa** (DEC-1000), kèm L26 (DEC-1001), L27 chữ D23 (DEC-1002), `/healthz` 0.3.0 (DEC-1003) — [evidence/g5/08-final-fixes.txt](evidence/g5/08-final-fixes.txt); chờ chủ sản phẩm duyệt |
 
 ## Solo pipeline
 | # | Bước | Trạng thái | Ngày | Ghi chú |
@@ -49,7 +49,6 @@ Số item: 03 (`docs/ai/items/` có 01, 02; remote 3 repo có `main`, `feat/01-�
 | Owner tiếp | Việc tiếp | Skill |
 |---|---|---|
 | Chủ sản phẩm | Duyệt **G5** theo [05-release.md](05-release.md) §10 (Ops đề xuất ✅ có điều kiện — DEC-997) | `ai-ops-release` (duyệt) |
-| Dev FE | BUG-G5-P3-1 (Low): D20 "Theo sàn / shop" hiện "undefined · null" cho kiện không shop | `ai-dev-fix` |
 
 ## Phản hồi giữa các vai
 | Từ | Tới | Nội dung | Trạng thái |
@@ -65,6 +64,7 @@ Số item: 03 (`docs/ai/items/` có 01, 02; remote 3 repo có `main`, `feat/01-�
 | QA | BE, FE | (1) Biên BR-37: server "≤ 60 giây" cho hủy ở 60,0 giây (02a §4 API-12), FE `cancelRule` ẩn nút từ 60,0 giây (02b-station §13) — QA kiểm server theo SRS (TC-04.61), chấp nhận FE ẩn sớm 1 nhịp (DEC-538); xác nhận hoặc thống nhất khi implement T-213 / T-234; (2) Dữ liệu `seed-demo` Phase 3 trong 04 §1 là dự kiến (mã fixture TikTok `TTTST…`, tên shop "TST Shop A", "TST B", `tst_cskh2`, lệnh gọi task Celery, `qa-reset.sh` dọn MinIO) — xác nhận / báo lại khi T-211, T-229 xong | Mở |
 | FE | Architect, BE (T-224) | M16 (DEC-702): API-31 / 132 `shares[]` thiếu `revoke_pending` mà 01 EX-S7 cần "Đang thu hồi — chờ Internet" ở D4 / D17 — đề nghị thêm trường vào `shares[]`; FE đã đọc `revoke_pending?` (tùy chọn), MSW trả | Đóng 2026-10-07 — BE đã có trường từ T-224 (`be 4931955`, DEC-666), chốt contract 02 §6.2 + test (`be` T-224 test, DEC-678) |
 | FE | Architect, BE (T-226) | M17 (DEC-760, 763): (1) chốt shape `last_error` của kênh API-170 là `{code, message, at}`; (2) `events[].label` ngắn một dòng; (3) D22 không có ô token bot / OA (DEC-408) — token Zalo OA lưu DB chỉ để làm mới | **Đóng** 2026-10-07 — BE T-226 (DEC-730): `last_error` object `{code, message, at, provider_code}` ghi vào 02 §6.2 API-170 + schema + contract test; nhãn ngắn theo 01 §7.5 từ `notify/catalog.py`; API-171 / 172 không có trường bí mật, token Zalo do server tự làm mới |
+| BE | PO | (L26 — DEC-1001) 01 BR-40 ghi "đơn chưa có hồ sơ khiếu nại chưa đóng"; code nay xét theo **yêu cầu**: KN gắn đúng hồ sơ hàng hoàn, hoặc KN chưa gắn hồ sơ nào tạo từ lúc sàn báo; không tính `LEGACY_HOLD` / KN của yêu cầu khác. Đề nghị sửa chữ BR-40 + AC-57 cho khớp khi cập nhật 01 | Mở — không chặn |
 
 ## Lịch sử
 | Ngày | Vai | Việc |
@@ -84,6 +84,7 @@ Số item: 03 (`docs/ai/items/` có 01, 02; remote 3 repo có `main`, `feat/01-�
 | 2026-10-07 | Dev, Flow | Bước 8c: tài liệu nghiệp vụ lát 11–18. Ghi chú cho G3 (DEC-650 dải điều phối): (1) 02a §11 nhắc `test_downgrade_phase2_jobs` chưa có trong code; (2) `evidence/m15-restore-drill.txt` thiếu dòng log bước sửa tệp sau khôi phục; (3) ví dụ JSON API-150 ở 02 lệch công thức BR-41 (DEC-571); (4) D20 chưa lọc 'Có vấn đề' / SKU (DEC-611 mở); (5) phiên có clip Thiếu tệp vẫn có thể là phiên chính nhưng không đưa vào link được — cần quyết ở G3 |
 | 2026-10-08 | BE | Sửa review G3 Phase 3 (phần BE) trên `feat/03-expansion-tiktok` (be `db65062`..): bắt buộc G3-MS-1..4, RP-1, BK-1 (HIGH), BK-2, BK-3, BK-9, NT-1 (major), NT-3, EV-1, EV-3, EV-4 (giữ BR-39 + `primary_unavailable`), kiểm G3-FE-1 (API-160 nguồn phiên **không** chặn → sửa 409 `SESSION_EXCLUDED`); nên sửa: EV-2, EV-5, NT-2, SH-1..4, BK-4, BK-5, BK-7, BK-8, MS-6 đã sửa; BK-6, MS-5 → backlog. DEC-850..877 (02a); 02 §6.2 chỉ thêm (API-32 / 106 / 132 / 160 / 164 / 186, ví dụ API-150); ops §6.2 / §10 (mã thoát restore 4 / 5, `--list`, `aicam notify-reset-zalo-token`). **Chưa test** với TikTok / S3 / Zalo thật; diễn tập khôi phục không chạy lại |
 | 2026-10-08 | Ops | G5 staging local (`ai-ops-release`): project `aicam-staging` (compose production + MinIO / s3proxy / camera giả trong project); Phase 2 (`main`) có dữ liệu → nâng cấp ops §7.2 (0006 / 0007, `fix-cancel-requests` 2 kiện) → bật dần S3 → smoke 47/47 API, FE 0 lỗi console / CSP, W1 → `pg_restore` 38/38 → lùi (từ chối link / đơn ngoài, cờ tách, EV-1) → Phase 2 chạy → nâng cấp lại (bằng chứng y nguyên) → log 0 secret → dọn. BUG-G5-P3-1 (Low, FE) báo lại; sửa ops.md §7.2 (BE `170b4f3`, OBS-G5-P3-1/2). DEC-991..997. **Không tick G5** — chờ duyệt |
+| 2026-10-08 | BE, FE | Sửa trước chốt G5 (`ai-dev-fix`, test đỏ trước): BUG-G5-P3-1 D20 dòng shop null → "(Không có shop)" (fe `41af982`, DEC-1000); L26 BR-40 theo yêu cầu, loại `LEGACY_HOLD` (be `107d9a5`, DEC-1001); L27 câu hệ quả FR-02.18 ở D23 (fe `f52792f`, DEC-1002); `/healthz` 0.3.0 (be `07aa425`, `559071b`, DEC-1003). Kiểm cuối: BE ruff / format / mypy / lint-imports 0, pytest full 1769 passed · 195 skipped (EXIT=0); FE tsc / eslint / prettier 0, vitest 788 passed (85 tệp), build 0. Kiểm cuối BE + FE → [evidence/g5/08-final-fixes.txt](evidence/g5/08-final-fixes.txt) |
 
 ## Quyết định (DEC)
 | ID | Vấn đề | Quyết định | Lý do | Người | Ngày |
@@ -236,3 +237,7 @@ Số item: 03 (`docs/ai/items/` có 01, 02; remote 3 repo có `main`, `feat/01-�
 | DEC-995 | BUG-G5-P3-1 (D20 "undefined · null") là code FE | Không sửa ở G5, báo lại; Low; không chặn G5 staging, chặn go-live | Luật dừng khi lỗi code sản phẩm | khanhtt (Ops, tự quyết theo ủy quyền user) | 2026-10-08 |
 | DEC-996 | Khôi phục cloud khi stack đang chạy | `backup-restore` / `backup-verify` với `DATABASE_URL` DB tạm + `VIDEO_ROOT` volume tạm, xoá ngay sau | Không ghi vào DB / video đang chạy | khanhtt (Ops, tự quyết theo ủy quyền user) | 2026-10-08 |
 | DEC-997 | Đề xuất G5 | **G5 ✅ có điều kiện** (staging local đạt; điều kiện: sửa BUG-G5-P3-1, 05 §8 trước deploy kho, diễn tập §7.2 trên server kho). Ops **không tick** — chủ sản phẩm duyệt | Rollback / khôi phục chạy thật; lỗi mới chỉ Low | khanhtt (Ops) | 2026-10-08 |
+| DEC-1000 | BUG-G5-P3-1 D20 "undefined · null" | Dòng shop null → "(Không có shop)" (chữ CSV BE), không link; kiểu `by_shop` nullable; MSW + test (fe `41af982`) — 02b-admin DEC-1000 | Khớp CSV, không chữ mới | khanhtt (FE, tự quyết theo ủy quyền user) | 2026-10-08 |
+| DEC-1001 | L26 (Major): BR-40 xét theo đơn | Xét theo yêu cầu: KN chưa đóng, không `LEGACY_HOLD`, gắn đúng hồ sơ hàng hoàn hoặc chưa gắn và tạo từ lúc sàn báo; API-110 `claim` cùng luật (be `107d9a5`) — 02a §5 BR-40, DEC-1001 | Đúng mục đích BR-40 (yêu cầu này đã có người phản đối); giữ ví dụ "tạo KN → rời D2" cho cả đường D4 | khanhtt (BE, tự quyết theo ủy quyền user) | 2026-10-08 |
+| DEC-1002 | L27: D23 không nói hệ quả mặc định sao lưu | Thêm câu giải thích dưới công tắc FR-02.18 (mới, chờ PO), `aria-describedby` (fe `f52792f`) — 02b-admin DEC-1002 | Chủ shop quyết định bật FR-02.18 cần biết đánh đổi | khanhtt (FE, tự quyết theo ủy quyền user) | 2026-10-08 |
+| DEC-1003 | OBS-G5-P3-3: `/healthz` vẫn 0.1.0 | `__version__` + `pyproject` = 0.3.0, test khóa (be `07aa425`, `openapi.json` `559071b`); tag `v0.3.0` khi merge `main` (điều phối) — 02a DEC-1003 | Hậu kiểm phân biệt bản | khanhtt (BE, tự quyết theo ủy quyền user) | 2026-10-08 |
