@@ -23,7 +23,7 @@ Số item: 03 (`docs/ai/items/` có 01, 02; remote 3 repo có `main`, `feat/01-�
 | Plan | ✅ | 2026-10-07 | khanhtt (PM, tự quyết theo ủy quyền user — DEC-534) | [03-plan.md](03-plan.md): 74 task (52 BE · 6 FE station · 16 FE admin), 117 ngày công, 8 milestone M11–M18, đường găng 17,5 ngày (T-201 → 202 → 204 → 215 → 279 → 281 → 227 → 276 → 280 → 229), xong dự kiến 2027-03-19 (1 dev, chưa trừ Tết); mọi FR mức M có task; ticket chưa tạo (tracker `none` — phải hỏi user trước khi tạo) |
 | G3 Build | ✅ có điều kiện | 2026-10-08 | khanhtt (điều phối, tự quyết theo ủy quyền user — DEC-950) | 5 reviewer (bằng chứng/migration, sao lưu, bảo mật link/thông báo, nhiều shop/TikTok/báo cáo, FE) → sửa BE DEC-850..877, FE DEC-900..910 → xác minh (Đạt có điều kiện) → sửa G3V-1..3 (DEC-932..935). QA live 182/182, E2E BE thật 75 + 1 skip (stack `aicam-qa`, DEC-941). Backlog: BK-6 (DEC-875), MS-5 (DEC-876) |
 | G4 Kiểm thử | ✅ có điều kiện | 2026-10-08 | khanhtt (điều phối, tự quyết theo ủy quyền user — DEC-990) | 378 case: ✅ 359 · ❌ 0 · ⛔ 16 · ⬜ 3 (NFR cần stack/máy kho); P1 210: ✅ 209 · ⛔ 1 (MG3.19). AC 17 ✅ · 6 ⚠️. Bug mở 0 ([04a](04a-test-report.md)) |
-| G5 Release | ⬜ | | | Ops đề xuất ✅ có điều kiện (DEC-997) — [05-release.md](05-release.md): staging local đạt; BUG-G5-P3-1 (Low, FE) **đã sửa** (DEC-1000), kèm L26 (DEC-1001), L27 chữ D23 (DEC-1002), `/healthz` 0.3.0 (DEC-1003) — [evidence/g5/08-final-fixes.txt](evidence/g5/08-final-fixes.txt); chờ chủ sản phẩm duyệt |
+| G5 Release | ✅ có điều kiện | 2026-10-08 | khanhtt (điều phối, tự quyết theo ủy quyền user — DEC-1010) | Staging local ([05-release](05-release.md)): nâng cấp Phase 2→3 có dữ liệu, smoke 47/47, khôi phục cloud + pg 38/38, lùi + nâng cấp lại; BUG-G5-P3-1, L26, L27, version 0.3.0 đã sửa (BE 1769 / FE 788 xanh). Chưa deploy kho (§8) |
 
 ## Solo pipeline
 | # | Bước | Trạng thái | Ngày | Ghi chú |
@@ -43,7 +43,7 @@ Số item: 03 (`docs/ai/items/` có 01, 02; remote 3 repo có `main`, `feat/01-�
 | 9 | Commit / PR | ✅ | 2026-10-08 | Commit + push từng task trên `feat/03-expansion-tiktok` (3 repo); PR + merge cuối phase |
 | 10 | Review code | ✅ | 2026-10-08 | **G3 ✅ có điều kiện** (DEC-950) |
 | 11 | Chạy test | ✅ | 2026-10-08 | G4 ✅ có điều kiện (DEC-990) |
-| 12 | Release | ▶ | 2026-10-08 | G5 staging local xong ([05-release.md](05-release.md)): nâng cấp P2→P3 có dữ liệu, smoke 47/47 API + FE 0 lỗi, khôi phục 38/38, lùi + nâng cấp lại bằng chứng y nguyên; chờ duyệt G5 |
+| 12 | Release | ✅ | 2026-10-08 | G5 ✅ DEC-1010 — pipeline item 03 xong |
 
 ## NOW
 | Owner tiếp | Việc tiếp | Skill |
@@ -241,3 +241,4 @@ Số item: 03 (`docs/ai/items/` có 01, 02; remote 3 repo có `main`, `feat/01-�
 | DEC-1001 | L26 (Major): BR-40 xét theo đơn | Xét theo yêu cầu: KN chưa đóng, không `LEGACY_HOLD`, gắn đúng hồ sơ hàng hoàn hoặc chưa gắn và tạo từ lúc sàn báo; API-110 `claim` cùng luật (be `107d9a5`) — 02a §5 BR-40, DEC-1001 | Đúng mục đích BR-40 (yêu cầu này đã có người phản đối); giữ ví dụ "tạo KN → rời D2" cho cả đường D4 | khanhtt (BE, tự quyết theo ủy quyền user) | 2026-10-08 |
 | DEC-1002 | L27: D23 không nói hệ quả mặc định sao lưu | Thêm câu giải thích dưới công tắc FR-02.18 (mới, chờ PO), `aria-describedby` (fe `f52792f`) — 02b-admin DEC-1002 | Chủ shop quyết định bật FR-02.18 cần biết đánh đổi | khanhtt (FE, tự quyết theo ủy quyền user) | 2026-10-08 |
 | DEC-1003 | OBS-G5-P3-3: `/healthz` vẫn 0.1.0 | `__version__` + `pyproject` = 0.3.0, test khóa (be `07aa425`, `openapi.json` `559071b`); tag `v0.3.0` khi merge `main` (điều phối) — 02a DEC-1003 | Hậu kiểm phân biệt bản | khanhtt (BE, tự quyết theo ủy quyền user) | 2026-10-08 |
+| DEC-1010 | Chốt G5 item 03 (staging local) | **G5 ✅ có điều kiện**: staging local đạt (05 §10); lỗi G5 và L26/L27 đã sửa; điều kiện deploy kho = 05 §8 (Q13 + L14, Q18/Q19 + L24/L25, Q20 + NĐ 13, Q21, T-3, T-4, server kho, điện thoại, WAN, Excel Windows vi-VN, BK-6, MS-5, FR-02.18 chủ shop quyết, diễn tập §7.2 trên server kho với bản sao DB production). Q&A nghiệp vụ Phase 3 Final — không CRITICAL | Luật user: release = staging local, ghi chưa test | khanhtt (điều phối, tự quyết theo ủy quyền user) | 2026-10-08 |
