@@ -67,3 +67,7 @@ Chọn **adapter + polling**: interface `PlatformAdapter` (auth, refresh, `list_
 | Shopee có push / webhook không, rate limit bao nhiêu | Chờ spike S1 và kết quả đăng ký (T-3) (cần xác nhận) |
 | Shop có dùng phần mềm bán hàng trung gian không (Q4) | Cần xác nhận với chủ shop |
 | Xem lại khi | Nghiệp vụ cần trạng thái sàn trễ < 5 phút; hoặc polling chạm rate limit của sàn; hoặc đã có tunnel ổn định → bật webhook làm đường chính, polling làm bù |
+
+## Liên quan
+
+- 2026-10-06 (item 03): [ADR-011](ADR-011-multi-platform-shops-status-groups.md) bổ sung — nhiều sàn / nhiều shop, nhóm trạng thái chung, job một task / shop. Polling vẫn là nền.

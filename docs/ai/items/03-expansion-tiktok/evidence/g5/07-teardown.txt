@@ -1,0 +1,66 @@
+# Bước 7: dọn — 2026-10-08T14:12:24+07:00
+## trước: df -h /
+/dev/disk3s1s1   460Gi    11Gi    23Gi    34%    453k  242M    0%   /
+## aicam-dev trước (chỉ đọc): 13 container chạy; volume: 4
+## docker compose -p aicam-staging down -v --remove-orphans (dc3 = compose sản phẩm + staging-extra.yml)
+   1 Container aicam-staging-api-1 Removed 
+   1 Container aicam-staging-backup-1 Removed 
+   1 Container aicam-staging-beat-1 Removed 
+   1 Container aicam-staging-caddy-1 Removed 
+   1 Container aicam-staging-camsrc-1 Removed 
+   1 Container aicam-staging-fake-cam1-1 Removed 
+   1 Container aicam-staging-fake-cam2-1 Removed 
+   1 Container aicam-staging-mediamtx-1 Removed 
+   1 Container aicam-staging-migrate-1 Removed 
+   1 Container aicam-staging-minio-1 Removed 
+   1 Container aicam-staging-minio-init-1 Removed 
+   1 Container aicam-staging-postgres-1 Removed 
+   1 Container aicam-staging-redis-1 Removed 
+   1 Container aicam-staging-s3proxy-1 Removed 
+   1 Container aicam-staging-vision-1 Removed 
+   1 Container aicam-staging-volume-init-1 Removed 
+   1 Container aicam-staging-worker-1 Removed 
+   1 Container aicam-staging-worker-backup-1 Removed 
+   1 Container aicam-staging-worker-export-1 Removed 
+   1 Container aicam-staging-worker-notify-1 Removed 
+   1 Container aicam-staging-worker-sync-1 Removed 
+   1 Container aicam-staging-worker-sync-long-1 Removed 
+   1 Network aicam-staging_aicam Removed 
+   1 Volume aicam-staging_caddy_config Removed 
+   1 Volume aicam-staging_caddy_data Removed 
+   1 Volume aicam-staging_imports Removed 
+   1 Volume aicam-staging_minio Removed 
+   1 Volume aicam-staging_pgdata Removed 
+   1 Volume aicam-staging_redisdata Removed 
+   1 Volume aicam-staging_s3proxy_data Removed 
+   1 Volume aicam-staging_video Removed 
+-- còn lại của aicam-staging: container=0 volume=0 network=0
+## image staging (chỉ tag của G5 này)
+   xoá aicam-be:staging-p2
+   xoá aicam-be:staging-p3
+   xoá aicam-fakecam:staging
+   (chỉ "docker image prune -f --filter label=com.docker.compose.project=aicam-staging" — ảnh treo của project staging; không prune toàn máy)
+## worktree Phase 2
+   xoá worktree BE
+   xoá worktree FE
+   worktree BE còn: 2 (repo chính + .aicam-m14-build có từ trước — không phải của G5 này)
+## volume ẩn danh: 11 (trước G5: 10 — đếm lại theo danh sách lúc đầu). 1 volume mới tạo 13:29:59 (lúc dc2 up — container `backup` image postgres có VOLUME /var/lib/postgresql/data), rỗng (4 KB), không container nào dùng → xoá `docker volume rm 8356b53f…` → còn 10 như trước
+## thư mục tạm /Users/admin/KhanhCode/.aicam-g5-tmp (env p2/p3/p3b, khóa sao lưu, pw.json, 5 bản sao lưu staging, worktree, log): đã xoá
+## sau: df -h /
+/dev/disk3s1s1   460Gi    11Gi    23Gi    34%    453k  242M    0%   /
+## stack dev aicam-dev (không đụng): 13 container chạy; volume aicam-dev_*: aicam-dev_imports aicam-dev_minio aicam-dev_pgdata aicam-dev_video 
+aicam-dev-api-1 Up 19 hours (healthy)
+aicam-dev-beat-1 Up 19 hours
+aicam-dev-fake-cam1-1 Up 19 hours
+aicam-dev-fake-cam2-1 Up 19 hours
+aicam-dev-mediamtx-1 Up 19 hours
+aicam-dev-minio-1 Up 19 hours (healthy)
+aicam-dev-postgres-1 Up 3 days (healthy)
+aicam-dev-redis-1 Up 3 days (healthy)
+aicam-dev-vision-1 Up 19 hours
+aicam-dev-worker-1 Up 19 hours
+aicam-dev-worker-backup-1 Up 19 hours
+aicam-dev-worker-export-1 Up 19 hours
+aicam-dev-worker-sync-1 Up 19 hours
+## FE dev: 5190 → 200, 5191 → 200 (không gọi :8180)
+## máy: Now drawing from 'Battery Power' (lúc đầu cắm sạc; chuyển sang pin trong lúc chạy, nắp mở suốt — lượt hợp lệ) · nắp: "AppleClamshellState" = No

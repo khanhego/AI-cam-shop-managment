@@ -1,0 +1,20 @@
+$ cd ai-cam-fe && npx tsc -b ; npx eslint src ; npx prettier -c src ; pnpm test ; pnpm build   (FE e893a36, 2026-10-08 13:11, không chạy song song pytest)
+tsc EXIT=0
+eslint EXIT=0
+Checking formatting...
+All matched files use Prettier code style!
+prettier EXIT=0
+   Duration  27.33s (tests 55%, environment 25%, setup 13%, transform 3%, import 2%)
+
+Environment  jsdom was created 85 times · 69.86s total, 25% of tracked time
+             create it once per worker with pool: 'vmThreads' (keeps per-file isolation) or isolate: false (shares it across files)
+             learn more: https://vitest.dev/guide/improving-performance#test-environments
+
+vitest EXIT=0
+dist/assets/ui-BHWtUgpz.js                                         126.48 kB │ gzip: 42.73 kB │ map:   639.89 kB
+dist/assets/index-iq25vX33.js                                      230.88 kB │ gzip: 73.06 kB │ map: 1,117.06 kB
+
+✓ built in 436ms
+build EXIT=0
+ Test Files  85 passed (85)
+      Tests  787 passed (787)

@@ -9,7 +9,7 @@
 | Trạng thái | Approved — làm nền cho item 01 (G2 2026-10-04) |
 | Đầu vào | [SRS.md](SRS.md) · ADR: [decisions/](decisions/) · áp dụng: [02-tech-spec item 01](../items/01-packing-mvp/02-tech-spec.md) |
 | Repo | `ai-cam-be` (backend + worker), `ai-cam-fe` (station app + dashboard), repo gốc chứa tài liệu |
-| Last update | 2026-10-05 (§14.2 theo compose production T-19, DEC-135 / DEC-136 item 01; §12 `unless-stopped`) |
+| Last update | 2026-10-06 (item 03 bước 3: §2, §6.2, §7.3, §8.2, §10, §16 theo DEC-406 + ADR-010, ADR-011 — Proposed tới G2 item 03) · 2026-10-05 (§14.2 theo compose production T-19, DEC-135 / DEC-136 item 01; §12 `unless-stopped`) |
 
 > **TL;DR** — Modular monolith Python 3.12 / FastAPI (tiến trình `api`, `worker`, `beat`, `vision`) + MediaMTX + PostgreSQL 16 + Redis 7 + Caddy, chạy tại kho bằng Docker Compose; FE một app React cho `/station` (Chromium kiosk) và `/admin`.
 > Quyết định chính (ADR-001..008): on-premise, cloud chỉ sao lưu; ghi liên tục fMP4 segment 60 giây, cắt clip `-c copy`; logic phiên trong `api` để quét ≤ 1 giây; Cam 2 đọc mã bằng zxing-cpp; sàn qua adapter + polling; clip gốc bất biến + SHA-256.
@@ -96,7 +96,7 @@ Hệ thống X là một **modular monolith Python (FastAPI)** cùng các tiến
 | Lint / format | BE: ruff + mypy. FE: ESLint + Prettier | |
 | Đóng gói / chạy | Docker + Docker Compose trên Ubuntu Server 24.04 LTS | |
 | Reverse proxy | Caddy (TLS nội bộ, phục vụ FE tĩnh, proxy `/api`, `/ws`) | 2.x |
-| Lưu video | NAS (NFS mount) RAID 1; sao lưu clip lên object storage S3-compatible | |
+| Lưu video | NAS (NFS mount) RAID 1; sao lưu **chỉ bằng chứng cần giữ** (BR-33) + DB, mã hóa tại kho, lên object storage S3-compatible (item 03, DEC-406, ADR-010) | |
 | Truy cập từ xa | Tailscale hoặc Cloudflare Tunnel (không mở port) | |
 | Giám sát | Prometheus + Grafana (tùy chọn), Sentry (tùy chọn) | |
 
@@ -337,7 +337,7 @@ Khi phiên đóng, `api` đẩy job `media.build_session_clips(session_id)`:
 4. Ghi vào `/data/video/clips/YYYY/MM/DD/{session_id}_{cam}.mp4`, đặt quyền chỉ đọc.
 5. Tính SHA-256, lưu bảng `clip`.
 6. Nếu một phần khoảng thời gian thiếu segment (camera mất tín hiệu), gắn cờ `video_incomplete`.
-7. Đẩy job sao lưu lên S3 (queue thấp ưu tiên).
+7. (Item 03, DEC-406) Không đẩy sao lưu theo từng clip: clip chỉ lên cloud khi thành bằng chứng cần giữ — J-21 quét theo SQL bảo vệ ADR-009 mỗi 10 phút, J-22 tải lên (mã hóa, queue `backup`). Tùy chọn "sao lưu mọi clip đóng gói" (FR-02.18, mặc định tắt) đưa thêm clip PACK vào cùng hàng chờ.
 
 Nếu phiên đóng khi segment hiện tại chưa ghi xong, job tự hẹn lại sau khi segment kết thúc (tối đa 60 giây, khớp NFR-03).
 
@@ -422,7 +422,8 @@ Giống 7.1, khác ở:
 | `reconciliation.run_rules` | 30 phút | Chạy BR-10..14, tạo / tự đóng cảnh báo |
 | `media.index_segments` | 1 phút | Lập chỉ mục segment mới |
 | `media.enforce_retention` | Hằng ngày 02:00 | Xóa video thô / clip quá hạn (trừ clip gắn khiếu nại mở) |
-| `media.backup_pending` | 10 phút | Đẩy clip chưa sao lưu lên S3 |
+| ~~`media.backup_pending`~~ → `backup.*` (item 03, DEC-406) | J-20 DB 01:00 / 07:00 / 13:00 / 19:00 giờ VN; J-21 10 phút; J-22 5 phút; J-23 03:00 | DB + file nhập mỗi 6 giờ; **chỉ bằng chứng cần giữ** (BR-33) ≤ 1 giờ; xóa bản cloud ≤ 24 giờ sau khi J-02 xóa tại kho; mã hóa tại kho (ADR-010) |
+| `shares.*`, `notify.*` (item 03) | J-24 theo yêu cầu, J-25 5 phút; J-26 30 giây, J-27 15 giây, J-28 18:00 | Link chia sẻ (dựng, xóa khi hết hạn / thu hồi); thông báo Telegram / Zalo OA |
 | `stations.check_health` | 10 giây | Kiểm tra camera qua API MediaMTX, phát cảnh báo |
 
 Nếu sàn hỗ trợ push/webhook thì endpoint `POST /api/v1/webhooks/{platform}` nhận sự kiện và đẩy job đồng bộ một đơn. Webhook cần được truy cập từ Internet, nên chỉ bật khi đã có tunnel; polling luôn là phương án nền.
@@ -463,7 +464,7 @@ Nếu sàn hỗ trợ push/webhook thì endpoint `POST /api/v1/webhooks/{platfor
 
 - DB chỉ lưu đường dẫn tương đối, gốc `/data/video` cấu hình qua env.
 - Bản xuất chỉ giữ 24 giờ: tạo lại được bất cứ lúc nào khi clip gốc còn; người dùng tải về máy ngay (DEC-58 trong [02-tech-spec item 01](../items/01-packing-mvp/02-tech-spec.md), 2026-10-05 — trước đó ghi 30 ngày).
-- Backup DB: `pg_dump` hằng ngày lên NAS + S3, giữ 30 bản.
+- Backup DB: `pg_dump` local hằng ngày 01:00, giữ 14 ngày (`docker/backup/pg-backup.sh`); từ item 03 thêm bản cloud mã hóa mỗi 6 giờ — giữ 30 ngày + bản ngày 1 mỗi tháng trong 12 tháng (FR-02.14, ADR-010).
 
 ### 8.3 Ước tính dung lượng
 
@@ -528,6 +529,7 @@ class PlatformAdapter(Protocol):
 ```
 
 - Mỗi adapter tự lo ký request, rate limit, phân trang, và chuyển dữ liệu về model chung `PlatformOrder`, `PlatformReturn`.
+- (Item 03, ADR-011) Nhiều sàn / nhiều shop cùng lúc: adapter chọn theo `shop.platform`; adapter trả **nhóm trạng thái chung** (`platform_status_group` đơn 8 nhóm, yêu cầu trả 5 nhóm) cạnh chữ gốc — lõi chỉ đọc nhóm; `exchange_code` trả danh sách shop (TikTok một lần ủy quyền nhiều shop); job một task / shop.
 - Lõi nghiệp vụ chỉ dùng model chung. Bảng ánh xạ trạng thái (SRS 7.2) nằm trong `map_status` của từng adapter.
 - Shopee Open Platform v2 ký request bằng HMAC-SHA256 trên `partner_id + path + timestamp (+ access_token + shop_id)`; chi tiết endpoint xác minh ở spike S1.
 
@@ -648,7 +650,9 @@ Phiên bản theo SemVer, BE và FE gắn tag độc lập; `compose.yml` ghim c
 | ADR-006 | Một app React cho cả station và dashboard, station chạy Chromium kiosk | Accepted (2026-10-04, qua G2 item 01) |
 | ADR-007 | Sàn tích hợp qua adapter, polling là nền, webhook là bổ sung | Accepted (2026-10-04, qua G2 item 01) |
 | ADR-008 | Clip gốc bất biến + SHA-256; overlay chỉ trên bản xuất; bật OSD thời gian của camera | Accepted (2026-10-04, qua G2 item 01) |
-| ADR-009 | Bằng chứng giữ theo hồ sơ khiếu nại chưa đóng và hồ sơ hàng hoàn chưa kết thúc, thay cờ "giữ clip" | Accepted (2026-10-05, item 02 sau review G2 lượt 1) |
+| ADR-009 | Bằng chứng giữ theo hồ sơ khiếu nại chưa đóng và hồ sơ hàng hoàn chưa kết thúc, thay cờ "giữ clip" | Accepted (2026-10-05, item 02 sau review G2 lượt 1); bổ sung 2026-10-06 (bỏ bằng chứng — L15, item 03, Proposed) |
+| ADR-010 | Một kho lưu S3-compatible dùng chung cho sao lưu mã hóa tại kho và link chia sẻ, chỉ gọi ra ngoài | Proposed (2026-10-06, item 03) |
+| ADR-011 | Nhiều sàn, nhiều shop: adapter theo sàn của shop, nhóm trạng thái chung, mã đơn duy nhất trong shop | Proposed (2026-10-06, item 03) |
 
 Mỗi ADR có file riêng trong [decisions/](decisions/).
 

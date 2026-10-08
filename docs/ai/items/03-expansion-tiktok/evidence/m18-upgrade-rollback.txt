@@ -1,0 +1,151 @@
+# M18 / T-230 — diễn tập nâng cấp / lùi Phase 2 ⇄ Phase 3 trên BẢN SAO DB Phase 2 (02a §3, 02 §10, ops §7.2)
+# Máy dev MacBook (Apple Silicon), 2026-10-07. Postgres 16 container tạm aicam-m18-pg :55632, Redis tạm aicam-m18-redis
+# :56479 (đã xóa cả container + volume sau diễn tập). KHÔNG dùng stack dev aicam-dev.
+# Code Phase 2 = `main` f7010d3 (git worktree tạm, venv riêng); code Phase 3 = ai-cam-be feat/03-expansion-tiktok edc575c.
+# Lệnh: DRILL_PG=… DRILL_REDIS=… DRILL_P2=<worktree main> uv run python scripts/upgrade_drill.py --out <tệp này>
+# Dữ liệu Phase 2 do code Phase 2 tạo (`seed-demo` + scripts/drill_phase2.py: clip / ảnh / phiên mở hoàn 4 loại /
+# hồ sơ mở + đã đóng / kiện hủy oan do `upsert_platform_order` Phase 2 với IN_CANCEL), rồi pg_dump → pg_restore = bản sao.
+# Phạm vi KHÔNG phủ (ghi rõ): không có tệp video / ảnh trên đĩa (chỉ DB + luật bảo vệ — tệp không bị migration đụng);
+# khối lượng nhỏ (43 kiện — thời gian trên 1 triệu đơn đo riêng ở T-201 / T-289: ~22 giây); bản sao DB production thật:
+# chưa có (02a §11 R16) — chạy lại trước go-live; chạy bằng lệnh alembic / aicam trực tiếp (không qua `docker compose
+# run migrate` của image — image Phase 3 build tại kho chưa có).
+# Kết quả: ĐẠT — 0 dòng KHÔNG ĐẠT; bằng chứng (clip, ảnh, phiên, hồ sơ, claim_evidence) không mất / không đổi ở mọi bước.
+
+[13:10:44Z] # T-230 diễn tập nâng cấp / lùi Phase 2 ⇄ Phase 3 — Postgres tạm localhost:55632, Redis tạm redis://localhost:56479/0, code Phase 2 = worktree main /private/tmp/claude-501/-Users-admin-KhanhCode-AI-cam-shop-managment/e0a20f5e-6330-432a-9f3d-17819a1b4492/scratchpad/aicam-main. KHÔNG dùng stack dev aicam-dev.
+[13:10:44Z] == Bước 0 — DB Phase 2 dựng bằng CODE PHASE 2 (main) rồi tạo BẢN SAO bằng pg_dump / pg_restore ==
+[13:10:45Z] $ alembic upgrade head
+[13:10:46Z]     INFO  [alembic.runtime.migration] Running upgrade  -> 0001, initial
+[13:10:46Z]     INFO  [alembic.runtime.migration] Running upgrade 0001 -> 0002, clip: deleted_at, timeline (T-14, DEC-102)
+[13:10:46Z]     INFO  [alembic.runtime.migration] Running upgrade 0002 -> 0003, returns_recon_claims — schema Phase 2 (02a §3, T-101)
+[13:10:46Z]     INFO  [alembic.runtime.migration] Running upgrade 0003 -> 0004, hold_to_claims — clip đang "giữ" → hồ sơ khiếu nại `LEGACY_HOLD` (02a §3 Migration 0004, ADR-009, T-111)
+[13:10:46Z]     INFO  [alembic.runtime.migration] Running upgrade 0004 -> 0005, return_lookup_indexes — index `text_pattern_ops` cho API-104 tìm tiền tố (T-118, DEC-334)
+[13:10:46Z]   → mã thoát 0 (1.2 giây)
+[13:10:48Z]   seed Phase 2: {'seed_lines': 20, 'cancelled_by_phase2': {'SPXTST0000019': 'CANCELLED', 'SPXTST0000020': 'CANCELLED_AFTER_PACK', 'SPXTST0000021': 'CANCELLED'}, 'shop_a': '8e9d4428-8d71-4173-b74a-80b4f652896d'}
+[13:10:48Z] $ pg_dump -Fc -d aicam_p2_src > phase2.dump → mã 0, 101,396 byte
+[13:10:49Z] $ pg_restore --no-owner -d aicam_p2_copy < phase2.dump → mã 0
+[13:10:49Z]   ĐẠT — bản sao DB Phase 2 tạo được
+[13:10:51Z]   ĐẠT — bản sao khớp DB gốc từng bảng (md5 to_jsonb)
+[13:10:51Z]   dữ liệu bản sao: {'shop': 1, 'order': 39, 'package': 43, 'session': 13, 'clip': 23, 'snapshot': 2, 'return_case': 5, 'claim': 3, 'claim_evidence': 5}
+[13:10:51Z] == Bước 1 — mốc trước nâng cấp (bản sao, schema 0005) ==
+[13:10:52Z]   bằng chứng: {clip: 23, snapshot: 2, session: 13, claim: 3, claim_evidence: 5}
+[13:10:52Z]   J-02 Phase 2 (giữ 5 ngày) ứng viên xóa: 4 clip, 0 ảnh
+[13:10:52Z]   J-06 Phase 2 gửi sàn 3 kiện: ['2410TST00010', '2410TST00011', '2410TST00052']
+[13:10:53Z]   kiện hủy do code Phase 2 (IN_CANCEL x2, CANCELLED x1): [('SPXTST0000019', 'CANCELLED'), ('SPXTST0000020', 'CANCELLED_AFTER_PACK'), ('SPXTST0000021', 'CANCELLED')]
+[13:10:53Z] == Bước 2 — ops §7.2 bước 3: dừng api vision worker worker-sync worker-sync-long worker-export worker-backup worker-notify beat ==
+[13:10:53Z]   ĐẠT — không còn kết nối khác vào DB (đếm 0)
+[13:10:53Z] == Bước 3 — nâng cấp bằng code Phase 3: alembic upgrade head ==
+[13:10:53Z] $ alembic current
+[13:10:53Z]     0005
+[13:10:53Z]   → mã thoát 0 (0.6 giây)
+[13:10:53Z] $ alembic upgrade head
+[13:10:54Z]     INFO  [alembic.runtime.migration] Running upgrade 0005 -> 0006, phase3_schema — schema Phase 3 (02a §3 Migration 0006, T-201)
+[13:10:54Z]     WARNI [alembic.runtime.migration] backfill_review_needed [{"claim_code": "KN-000001", "session_id": "6db5417b-1157-46cc-a6ce-1082306ea3d8", "started_at": "2026-10-04T13:10:47.990589+00:00"}]
+[13:10:54Z]     WARNI [alembic.runtime.migration] 0006: 2 kiện có thể bị hủy oan (đơn nay không ở nhóm Đã hủy) — chạy `aicam fix-cancel-requests` (dry-run rồi --apply): SPXTST0000019 (CANCELLED, đơn 2410TST00019 CANCEL_REQUESTED), SPXTST0000020 (CANCELLED_AFTER_PACK, đơn 2410TST00020 CANCEL_REQUESTED)
+[13:10:54Z]     INFO  [alembic.runtime.migration] 0006: backfill {"order_group": 39, "order_unknown": {}, "return_group": 4, "return_shop": 4, "shop_grant_ref": 1, "claim_submitted_audit": 0, "claim_result_audit": 0, "claim_submitted_fallback": 1, "claim_result_fallback": 0, "session_cols_3b": 0, "prior_rows": 2, "prior_claims": 1, "prior_review_needed": 1, "cancel_revert_candidates": 2, "seconds": 0.3}
+[13:10:54Z]     INFO  [alembic.runtime.migration] Running upgrade 0006 -> 0007, order_unique_per_shop — mã đơn / mã yêu cầu trả unique theo shop (02a §3 Migration 0007, BR-29, T-202)
+[13:10:54Z]   → mã thoát 0 (0.8 giây)
+[13:10:54Z]   upgrade 0005 → 0007: 0.8 giây
+[13:10:54Z]   ĐẠT — alembic upgrade head mã 0
+[13:10:54Z]   ĐẠT — alembic_version = 0007 ([('0007',)])
+[13:10:54Z] $ alembic check
+[13:10:55Z]     No new upgrade operations detected.
+[13:10:55Z]     INFO  [alembic.ddl.postgresql] Detected sequence named 'setting_id_seq' as owned by integer column 'setting(id)', assuming SERIAL and omitting
+[13:10:55Z]   → mã thoát 0 (0.6 giây)
+[13:10:55Z]   ĐẠT — alembic check: model khớp schema
+[13:10:55Z] $ VACUUM ANALYZE "order"; VACUUM ANALYZE return_case
+[13:10:55Z] == Bước 4 — ops §7.2 bước 1b: aicam fix-cancel-requests (chạy thử → --apply → chạy lại) ==
+[13:10:56Z] $ aicam fix-cancel-requests
+[13:10:56Z]     SẼ TRẢ LẠI SPXTST0000019 · đơn 2410TST00019 (Áo Đẹp (Phase 2), nhóm CANCEL_REQUESTED) · CANCELLED → NEW
+[13:10:56Z]     SẼ TRẢ LẠI SPXTST0000020 · đơn 2410TST00020 (Áo Đẹp (Phase 2), nhóm CANCEL_REQUESTED) · CANCELLED_AFTER_PACK → PACKED
+[13:10:56Z]     Tổng: 2 kiện hủy có đơn chưa hủy trên sàn — chạy thử (thêm --apply để ghi): sẽ trả lại 2, bỏ qua 0.
+[13:10:56Z]   → mã thoát 0 (0.6 giây)
+[13:10:56Z]   ĐẠT — chạy thử liệt kê đúng 2 kiện hủy oan
+[13:10:57Z]   ĐẠT — chạy thử không ghi gì (md5 từng bảng không đổi)
+[13:10:57Z] $ aicam fix-cancel-requests --apply
+[13:10:58Z]     2026-10-07 20:10:58 [info     ] package_cancel_reverted        from_status=CANCELLED package_id=01a1167c-ea12-73d6-8733-4cec1594cb4a to_status=NEW trigger=COMMAND
+[13:10:58Z]     2026-10-07 20:10:58 [info     ] package_cancel_reverted        from_status=CANCELLED_AFTER_PACK package_id=01a1167c-ea17-71ed-9ecd-3009d9e380a2 to_status=PACKED trigger=COMMAND
+[13:10:58Z]     ĐÃ TRẢ LẠI SPXTST0000019 · đơn 2410TST00019 (Áo Đẹp (Phase 2), nhóm CANCEL_REQUESTED) · CANCELLED → NEW
+[13:10:58Z]     ĐÃ TRẢ LẠI SPXTST0000020 · đơn 2410TST00020 (Áo Đẹp (Phase 2), nhóm CANCEL_REQUESTED) · CANCELLED_AFTER_PACK → PACKED
+[13:10:58Z]     Tổng: 2 kiện hủy có đơn chưa hủy trên sàn — áp dụng: trả lại 2, bỏ qua 0, lỗi 0.
+[13:10:58Z]   → mã thoát 0 (0.6 giây)
+[13:10:58Z]   ĐẠT — --apply trả lại 2 kiện, mã 0
+[13:10:58Z] $ aicam fix-cancel-requests
+[13:10:58Z]     Tổng: 0 kiện hủy có đơn chưa hủy trên sàn — chạy thử (thêm --apply để ghi): sẽ trả lại 0, bỏ qua 0.
+[13:10:58Z]   → mã thoát 0 (0.5 giây)
+[13:10:58Z]   ĐẠT — chạy lại: không còn kiện nào (idempotent)
+[13:10:58Z]   ĐẠT — kiện: IN_CANCEL → trả lại, CANCELLED thật giữ nguyên ({'SPXTST0000021': 'CANCELLED', 'SPXTST0000019': 'NEW', 'SPXTST0000020': 'PACKED'})
+[13:10:59Z]   ĐẠT — audit PACKAGE_CANCEL_REVERT = 2 (2)
+[13:10:59Z] == Bước 5 — kiểm bằng chứng sau nâng cấp (cột Phase 2) ==
+[13:10:59Z]   ĐẠT — clip: 23 dòng y hệt trước nâng cấp
+[13:10:59Z]   ĐẠT — snapshot: 2 dòng y hệt trước nâng cấp
+[13:10:59Z]   ĐẠT — session: 13 dòng y hệt trước nâng cấp
+[13:10:59Z]   ĐẠT — claim: 3 hồ sơ y hệt, trừ `version` + 1 đúng ở hồ sơ được 4b thêm bằng chứng (['KN-000001']) — khóa lạc quan cho người đang mở hồ sơ
+[13:10:59Z]   ĐẠT — claim_evidence: mọi dòng cũ còn nguyên
+[13:10:59Z]   claim_evidence thêm 2 dòng do 4b (BR-39): [('DRILL-R2', 'ABANDONED', None), ('DRILL-R3', 'CANCELLED', 'SUPERVISOR')]
+[13:10:59Z]   ĐẠT — 4b thêm phiên bỏ dở + phiên Supervisor hủy, KHÔNG thêm phiên hủy quét nhầm
+[13:10:59Z] == Bước 6 — vận hành Phase 3 (dữ liệu chỉ Phase 3 có) ==
+[13:10:59Z]   + shop Shopee thứ 2 (mới hơn) + shop TikTok; đơn TikTok x2 (kiện PACKED, HANDED_OVER), đơn shop Shopee mới (kiện PACKED); link ACTIVE; kênh Telegram; bỏ 1 bằng chứng phiên (BR-38)
+[13:10:59Z]   kiện có đơn theo shop: [('SHOPEE Áo Mới (Phase 3)', 1), ('SHOPEE Áo Đẹp (Phase 2)', 42), ('TIKTOK Áo Đẹp TikTok', 2)]
+[13:11:00Z] == Bước 7 — lùi về Phase 2 bằng code Phase 3 (alembic downgrade 0005) ==
+[13:11:00Z] $ alembic downgrade 0005
+[13:11:01Z]     raise RuntimeError(
+[13:11:01Z]     RuntimeError: Không downgrade 0006: còn 1 link chia sẻ đang tạo / đang hoạt động (01960000-0000-7000-8000-00000000a001 (ACTIVE)) — bản Phase 2 không thu hồi / hết hạn được. Thu hồi ở màn Link chia sẻ rồi chạy lại; chấp nhận để link sống tới khi bản cloud tự hết hạn thì đặt AICAM_DOWNGRADE_ALLOW_ACTIVE_SHARES=1. Không có gì bị thay đổi. Xem docs/ops.md §7.2.
+[13:11:01Z]   → mã thoát 1 (0.5 giây)
+[13:11:02Z]   ĐẠT — còn link đang hoạt động → TỪ CHỐI, DB không đổi
+[13:11:02Z]   thu hồi link (runbook: thu hồi trước khi lùi)
+[13:11:03Z] $ alembic downgrade 0005
+[13:11:03Z]     INFO  [alembic.runtime.migration] Running downgrade 0007 -> 0006, order_unique_per_shop — mã đơn / mã yêu cầu trả unique theo shop (02a §3 Migration 0007, BR-29, T-202)
+[13:11:03Z]     INFO  [alembic.runtime.migration] 0007 downgrade: tạo lại unique toàn cục mã đơn / mã yêu cầu trả
+[13:11:03Z]     raise RuntimeError(
+[13:11:03Z]     RuntimeError: Không downgrade 0006: còn kiện của đơn TikTok / shop Shopee sẽ bị ngắt (CANCELLED: 2, DELIVERED: 1, HANDED_OVER: 2, NEW: 30, PACKED: 4, RETURN_EXPECTED: 4, RETURN_MISSING: 1) — bản Phase 2 tra vận chuyển mọi kiện bằng token một shop Shopee. Chấp nhận tách các kiện này khỏi đơn trong thời gian chạy Phase 2 thì đặt AICAM_DOWNGRADE_DETACH_FOREIGN_ORDERS=1 (nâng cấp lại gắn lại). Không c
+[13:11:03Z]   → mã thoát 1 (0.5 giây)
+[13:11:05Z]   ĐẠT — còn kiện của đơn ngoài (TikTok + shop Shopee bị ngắt) → TỪ CHỐI, DB không đổi
+[13:11:05Z]   ĐẠT — vẫn ở 0007 sau 2 lần từ chối
+[13:11:05Z] $ AICAM_DOWNGRADE_DETACH_FOREIGN_ORDERS=1 alembic downgrade 0005
+[13:11:05Z]     INFO  [alembic.runtime.migration] Running downgrade 0007 -> 0006, order_unique_per_shop — mã đơn / mã yêu cầu trả unique theo shop (02a §3 Migration 0007, BR-29, T-202)
+[13:11:05Z]     INFO  [alembic.runtime.migration] 0007 downgrade: tạo lại unique toàn cục mã đơn / mã yêu cầu trả
+[13:11:05Z]     INFO  [alembic.runtime.migration] Running downgrade 0006 -> 0005, phase3_schema — schema Phase 3 (02a §3 Migration 0006, T-201)
+[13:11:05Z]     INFO  [alembic.runtime.migration] 0006 downgrade: chép sang phase3_archive {"notify_event": 0, "notify_provider_token": 0, "backup_run": 0, "notify_channel": 1, "notify_message": 0, "package_order": 0, "share_link": 1, "backup_object": 0, "share_item": 1, "shop_cols": 2, "order_cols": 42, "return_case_cols": 4, "claim_cols": 1, "claim_evidence_cols": 3, "session_cols": 0, "setting_cols": 1, "tikto
+[13:11:05Z]     INFO  [alembic.runtime.migration] 0006 downgrade: 1 dòng bằng chứng đã bỏ; 2 clip + 0 ảnh còn hạn giữ → 1 hồ sơ LEGACY_HOLD đã đóng
+[13:11:05Z]     INFO  [alembic.runtime.migration] 0006 downgrade: |B| = 2, được bảo vệ sau = 21 clip + 2 ảnh, thiếu = 0
+[13:11:05Z]     INFO  [alembic.runtime.migration] 0006 downgrade: tách 44 kiện của đơn ngoài, 0 clip / ảnh MISSING về trạng thái Phase 2
+[13:11:05Z]     INFO  [alembic.runtime.migration] 0006 downgrade: ngắt 1 shop Shopee (Phase 2 một shop), 2 đơn TikTok rời shop, xóa 1 shop TikTok
+[13:11:05Z]   → mã thoát 0 (0.8 giây)
+[13:11:05Z]   downgrade 0007 → 0005: 0.8 giây
+[13:11:05Z]   ĐẠT — AICAM_DOWNGRADE_DETACH_FOREIGN_ORDERS=1 → lùi được, mã 0
+[13:11:05Z]   ĐẠT — alembic_version = 0005
+[13:11:05Z] == Bước 8 — kiểm bằng CODE PHASE 2 trên DB đã lùi ==
+[13:11:05Z] $ alembic current
+[13:11:06Z]     0005 (head)
+[13:11:06Z]   → mã thoát 0 (0.5 giây)
+[13:11:06Z]   ĐẠT — image Phase 2 nhận DB (alembic current = 0005)
+[13:11:07Z]   J-06 Phase 2 gửi sàn 1 kiện: ['2510C0000001']
+[13:11:07Z]   ĐẠT — J-06 Phase 2 KHÔNG gửi mã đơn TikTok (DEC-509)
+[13:11:07Z]   ĐẠT — J-06 Phase 2 chỉ gửi đơn của shop Shopee còn kết nối (kiện shop cũ đã tách)
+[13:11:07Z]   ĐẠT — J-02 Phase 2 (giữ 5 ngày) ứng viên xóa y hệt trước nâng cấp (4 clip, 0 ảnh) — bằng chứng đã bỏ vẫn được giữ
+[13:11:08Z]   ĐẠT — sau hạn giữ (bỏ lúc lùi + 5 ngày) J-02 Phase 2 mới xóa được clip đã bỏ
+[13:11:08Z]   hồ sơ hệ thống giữ bằng chứng đã bỏ: [('CLOSED', 'Bằng chứng đã bỏ — giữ tới 05/01/2027')]
+[13:11:08Z]   ĐẠT — 1 hồ sơ LEGACY_HOLD CLOSED
+[13:11:08Z]   ĐẠT — clip: 23 dòng y hệt trước khi lùi
+[13:11:08Z]   ĐẠT — snapshot: 2 dòng y hệt trước khi lùi
+[13:11:08Z]   ĐẠT — session: 13 dòng y hệt trước khi lùi
+[13:11:08Z] == Bước 9 — nâng cấp lại (alembic upgrade head) và so khớp từng bảng ==
+[13:11:08Z] $ alembic upgrade head
+[13:11:09Z]     INFO  [alembic.runtime.migration] Running upgrade 0005 -> 0006, phase3_schema — schema Phase 3 (02a §3 Migration 0006, T-201)
+[13:11:09Z]     INFO  [alembic.runtime.migration] 0006: backfill {"order_group": 40, "order_unknown": {"AWAITING_SHIPMENT": 1, "IN_TRANSIT": 1}, "return_group": 4, "return_shop": 4, "shop_grant_ref": 2, "claim_submitted_audit": 0, "claim_result_audit": 0, "claim_submitted_fallback": 1, "claim_result_fallback": 0, "session_cols_3b": 0, "prior_rows": 0, "prior_claims": 0, "prior_review_needed": 0, "cancel_revert_ca
+[13:11:09Z]     INFO  [alembic.runtime.migration] 0006: khôi phục từ phase3_archive {"tiktok_shops": 1, "shop_cols": 2, "reconnected_shops": 1, "order_shop": 2, "order_cols": 42, "return_case_cols": 4, "claim_cols": 1, "claim_evidence_cols": 2, "removed_evidence_reinserted": 1, "removed_evidence_conflicts": 0, "legacy_hold_claims_dropped": 1, "detached_reattached": 44, "missing_clips": 0, "missing_snapshots": 0, 
+[13:11:09Z]     WARNI [alembic.runtime.migration] 0006: đơn có trạng thái sàn chưa ánh xạ → nhóm UNKNOWN (không đổi trạng thái kho): {"AWAITING_SHIPMENT": 1, "IN_TRANSIT": 1}
+[13:11:09Z]     INFO  [alembic.runtime.migration] Running upgrade 0006 -> 0007, order_unique_per_shop — mã đơn / mã yêu cầu trả unique theo shop (02a §3 Migration 0007, BR-29, T-202)
+[13:11:09Z]   → mã thoát 0 (0.9 giây)
+[13:11:09Z]   upgrade lại 0005 → 0007: 0.9 giây
+[13:11:09Z]   ĐẠT — nâng cấp lại mã 0
+[13:11:09Z]   ĐẠT — phase3_archive đã drop
+[13:11:10Z]   ĐẠT — mọi bảng (38) y hệt trước khi lùi (md5 to_jsonb từng bảng)
+[13:11:11Z]   ĐẠT — bằng chứng (clip, ảnh, phiên, hồ sơ, claim_evidence) y hệt trước khi lùi
+[13:11:11Z] $ alembic check
+[13:11:11Z]     No new upgrade operations detected.
+[13:11:11Z]     INFO  [alembic.ddl.postgresql] Detected sequence named 'setting_id_seq' as owned by integer column 'setting(id)', assuming SERIAL and omitting
+[13:11:11Z]   → mã thoát 0 (0.6 giây)
+[13:11:11Z]   ĐẠT — alembic check sau nâng cấp lại
+[13:11:11Z] == KẾT QUẢ: ĐẠT (tổng 27 giây) ==
+

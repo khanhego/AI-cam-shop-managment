@@ -1,0 +1,15 @@
+$ uv run ruff check . && uv run ruff format --check . && uv run pytest -q -rfE  (sau khi thêm test G4; chạy riêng, không tiến trình pytest nào khác trên aicam_test; 2026-10-08 10:14)
+All checks passed!
+389 files already formatted
+FAILED tests/integration/test_share_review_affected.py::test_mark_wrong_scan_reports_affected_shares
+1 failed, 1748 passed, 195 skipped, 1 warning in 540.40s (0:09:00)
+EXIT=1
+
+# Phân tích (QA, 2026-10-08):
+# - Lần chạy đầu (10:03) bị chồng với pytest khác trên cùng DB aicam_test (QA chạy test lẻ song song) → 6 failed + 2 errors: KHÔNG tính (lỗi quy trình chạy). Chạy lại riêng như trên.
+# - test_share_review_affected::test_mark_wrong_scan_reports_affected_shares fail TẤT ĐỊNH khi chạy sau test_share_mark_race (G3V-1, be 2937d59):
+#   $ uv run pytest tests/integration/test_share_mark_race.py tests/integration/test_share_review_affected.py → 1 failed, 3 passed
+#   Lỗi: entry audit SESSION_WRONG_SCAN_MARK đọc phải dòng do test_share_mark_race commit thật để lại (audit_log không bị TRUNCATE) → active_shares khác.
+#   Chạy riêng test_share_review_affected → 2 passed. Lỗi cô lập test (BUG-G4-2, Low), không phải lỗi sản phẩm. Không có test mới G4 nào fail.
+# - Lần chạy integration khác thấy 1 lần mỗi test: test_session_lifecycle::test_timeouts_warn_once_then_abandon, test_migration_0006_0007::test_0007_downgrade_refused_with_duplicate_codes
+#   (cả khi bỏ file test mới G4: "2 failed, 842 passed"); chạy riêng / chạy lại đều pass — nghi cùng loại dữ liệu commit thật còn sót giữa test. Lần chạy integration đầu (09:35) 844 passed / 0 failed.

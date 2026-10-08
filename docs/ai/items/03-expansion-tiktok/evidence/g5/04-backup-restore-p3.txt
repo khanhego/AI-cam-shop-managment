@@ -1,0 +1,58 @@
+# Bước 4: sao lưu local (pg-backup.sh) + khôi phục pg trên schema 0007 — 2026-10-08T14:01:03+07:00
+## B1: dc3 exec backup /bin/sh /pg-backup.sh once
+2026-10-08T14:01:03+07:00 backup_ok aicam-20261008-140103.dump
+exit=0
+   -rw-------  1 admin  staff  151764 Oct  8 14:01 /Users/admin/KhanhCode/.aicam-g5-tmp/backups/aicam-20261008-140103.dump
+   -rw-------  1 admin  staff     405 Oct  8 13:46 /Users/admin/KhanhCode/.aicam-g5-tmp/backups/imports-20261008-134617.tgz
+   -rw-------  1 admin  staff     405 Oct  8 14:01 /Users/admin/KhanhCode/.aicam-g5-tmp/backups/imports-20261008-140103.tgz
+## B2 (ngay sau dump): số dòng + md5 nội dung MỌI bảng của DB đang chạy
+      38
+## B3: createdb aicam_restore_test + pg_restore --no-owner
+pg_restore exit=0 (1 giây)
+## B4: số dòng + md5 mọi bảng của bản khôi phục
+   alembic_version gốc=1/30930fc98915eedc732ba0eb8a285897 khôiphục=1/30930fc98915eedc732ba0eb8a285897 KHỚP
+   approval_request gốc=0/d41d8cd98f00b204e9800998ecf8427e khôiphục=0/d41d8cd98f00b204e9800998ecf8427e KHỚP
+   audit_log gốc=85/75586d2b7f0793e31111c5e9cfa870d3 khôiphục=85/75586d2b7f0793e31111c5e9cfa870d3 KHỚP
+   backup_object gốc=17/7fdb8419524d5d5882dc0a61ce4f07e1 khôiphục=17/7fdb8419524d5d5882dc0a61ce4f07e1 KHỚP
+   backup_run gốc=1/9c8b59ac2a77d6abbc041a11b714c350 khôiphục=1/9c8b59ac2a77d6abbc041a11b714c350 KHỚP
+   camera gốc=2/adc878a702d969b6b01ebd29c9342521 khôiphục=2/adc878a702d969b6b01ebd29c9342521 KHỚP
+   claim gốc=2/ea33edeedeb32713f549702a380f248c khôiphục=2/ea33edeedeb32713f549702a380f248c KHỚP
+   claim_evidence gốc=7/0c14e105de638f4c22276280ce0e1d49 khôiphục=7/0c14e105de638f4c22276280ce0e1d49 KHỚP
+   claim_note gốc=5/599b69bbb132d845e269fbe26805d8ce khôiphục=5/599b69bbb132d845e269fbe26805d8ce KHỚP
+   clip gốc=18/1e704e9219757a9d3ed24122377cbc2b khôiphục=18/1e704e9219757a9d3ed24122377cbc2b KHỚP
+   csv_import gốc=1/c086e15f1ead201325d6c789da2330ec khôiphục=1/c086e15f1ead201325d6c789da2330ec KHỚP
+   evidence_pack gốc=1/85765eeb7646f950b6c01c7bade2a62b khôiphục=1/85765eeb7646f950b6c01c7bade2a62b KHỚP
+   export gốc=1/72574d9d462ad14915ca506d09146be8 khôiphục=1/72574d9d462ad14915ca506d09146be8 KHỚP
+   inspection_line gốc=3/20e7ec2ab73700f6c2bc1ffdedf0e3b3 khôiphục=3/20e7ec2ab73700f6c2bc1ffdedf0e3b3 KHỚP
+   notify_channel gốc=0/d41d8cd98f00b204e9800998ecf8427e khôiphục=0/d41d8cd98f00b204e9800998ecf8427e KHỚP
+   notify_event gốc=2/db03b627a31aed1bab092a30db5dc1db khôiphục=2/db03b627a31aed1bab092a30db5dc1db KHỚP
+   notify_message gốc=0/d41d8cd98f00b204e9800998ecf8427e khôiphục=0/d41d8cd98f00b204e9800998ecf8427e KHỚP
+   notify_provider_token gốc=0/d41d8cd98f00b204e9800998ecf8427e khôiphục=0/d41d8cd98f00b204e9800998ecf8427e KHỚP
+   order gốc=9/fc5809da1366eb5c392d09602ad96fd0 khôiphục=9/fc5809da1366eb5c392d09602ad96fd0 KHỚP
+   order_item gốc=10/3fea1a73064e944c4c48c6f2224d1aff khôiphục=10/3fea1a73064e944c4c48c6f2224d1aff KHỚP
+   package gốc=9/0f04101323ee6366dfd95c7983fcae46 khôiphục=9/0f04101323ee6366dfd95c7983fcae46 KHỚP
+   package_order gốc=0/d41d8cd98f00b204e9800998ecf8427e khôiphục=0/d41d8cd98f00b204e9800998ecf8427e KHỚP
+   recon_alert gốc=0/d41d8cd98f00b204e9800998ecf8427e khôiphục=0/d41d8cd98f00b204e9800998ecf8427e KHỚP
+   refresh_token gốc=61/b91151a534c29e0a5fcc4e01d3bd8a59 khôiphục=61/b91151a534c29e0a5fcc4e01d3bd8a59 KHỚP
+   return_case gốc=3/ef789cf087e24014a0968e4123e88174 khôiphục=3/ef789cf087e24014a0968e4123e88174 KHỚP
+   return_case_package gốc=3/74f2863873abea2e58cdf7d87d841ee4 khôiphục=3/74f2863873abea2e58cdf7d87d841ee4 KHỚP
+   scan_dedup gốc=0/d41d8cd98f00b204e9800998ecf8427e khôiphục=0/d41d8cd98f00b204e9800998ecf8427e KHỚP
+   session gốc=9/e67686868c0c93ebcfb968965a7584b4 khôiphục=9/e67686868c0c93ebcfb968965a7584b4 KHỚP
+   session_event gốc=18/e1421db4f95c64ddc8c2245df8afe1ed khôiphục=18/e1421db4f95c64ddc8c2245df8afe1ed KHỚP
+   setting gốc=1/811b98ae5f86bfeaed75f745b8514ea5 khôiphục=1/811b98ae5f86bfeaed75f745b8514ea5 KHỚP
+   share_item gốc=3/50756244778313aaa6ea73d03858dd5c khôiphục=3/50756244778313aaa6ea73d03858dd5c KHỚP
+   share_link gốc=2/5634dea0b151e0c2bcffd7503b0046f4 khôiphục=2/5634dea0b151e0c2bcffd7503b0046f4 KHỚP
+   shop gốc=1/2b685ef7d81cd95654b2f24d3181bf87 khôiphục=1/2b685ef7d81cd95654b2f24d3181bf87 KHỚP
+   snapshot gốc=8/fa2625bb0fdde5eea7d4ab3dc149fcf2 khôiphục=8/fa2625bb0fdde5eea7d4ab3dc149fcf2 KHỚP
+   station gốc=1/290b3a605e32fe49145ab009a2de30a0 khôiphục=1/290b3a605e32fe49145ab009a2de30a0 KHỚP
+   status_history gốc=32/d5548c4ab09c29354d5b906853a6fdd0 khôiphục=32/d5548c4ab09c29354d5b906853a6fdd0 KHỚP
+   user gốc=4/5dff40bb16cf3893937bad698cc0d39b khôiphục=4/5dff40bb16cf3893937bad698cc0d39b KHỚP
+   video_segment gốc=57/b969b4d883e09cdefbd0d52eb3b5fc23 khôiphục=57/b969b4d883e09cdefbd0d52eb3b5fc23 KHỚP
+   → 38/38 bảng khớp số dòng + md5
+   alembic_version bản khôi phục: 0007
+   sequence claim_code_seq gốc=2 khôiphục=2
+   sequence return_case_code_seq gốc=3 khôiphục=3
+   sequence placeholder_code_seq gốc=1 khôiphục=1
+   schema phase3_archive trong bản khôi phục: 0
+## B5: xoá DB tạm
+exit=0

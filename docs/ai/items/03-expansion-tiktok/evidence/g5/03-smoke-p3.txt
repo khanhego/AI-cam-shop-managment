@@ -1,0 +1,154 @@
+# Bước 3: smoke Phase 3 qua Caddy https://localhost:8443 (image staging-p3, FE e893a36) — 2026-10-08T14:00:33+07:00
+Cấu hình: APP_ENV=production; PLATFORM_ADAPTER=shopee, SHOPEE_ENABLED=false; TIKTOK_ENABLED=false (TIKTOK_ADAPTER=tiktok mặc định — production cấm mock); NOTIFY_TRANSPORT=real, không bot token / Zalo; S3 = MinIO giả lập (Q20) + s3proxy HTTPS (tls internal) làm S3_PUBLIC_ENDPOINT; BACKUP_ENCRYPTION_KEY từ backup-keygen.
+Script: p3smoke.py (chỉ đọc, chạy lại được) + p3smoke2.py (có trạng thái) + fe-check.cjs (Playwright Chromium). Không in mật khẩu / token / URL ký (token link thay bằng [token]).
+
+## A. p3smoke.py (P1–P5) — chạy lần cuối 2026-10-08T14:00:33+07:00
+[✓] P1 healthz qua Caddy — 200 {"status":"ok","version":"0.1.0"}
+[✓] P1b HTTP → HTTPS — 308 → https://localhost/admin/reports
+[✓] P1c FE /admin/reports qua Caddy: index.html no-cache + CSP + nosniff/DENY — 200 cache=no-cache xfo=DENY
+[✓] P1d asset immutable, *.map 404 — /assets/index-iq25vX33.js 200 public, max-age=31536000, immutable; map 404
+[✓] P2 đăng nhập ADMIN (tài khoản tạo ở Phase 2) + /me — role=ADMIN username=admin
+[✓] P2 đăng nhập SUPERVISOR (tài khoản tạo ở Phase 2) + /me — role=SUPERVISOR username=sup
+[✓] P2 đăng nhập CSKH (tài khoản tạo ở Phase 2) + /me — role=CSKH username=cskh
+[✓] P2 đăng nhập STATION (tài khoản tạo ở Phase 2) + /me — role=STATION username=station01
+[✓] P3 kiện Phase 2 (PACK + RETURN) + clip READY đọc được — RETURN_RECEIVED_ISSUE phiên=['PACK', 'RETURN'] clip=[('CAM1', 'READY'), ('CAM2', 'READY'), ('CAM1', 'READY'), ('CAM2', 'READY')] platform=None
+[✓] P3b phát clip Phase 2 (play-url → 206) — play-url 200, media 206
+[✓] P3c hồ sơ khiếu nại Phase 2 + bằng chứng (PACK, RETURN, ảnh) đọc được qua API-132 Phase 3; có đúng 1 phiên chính (BR-39) — [('KN-000002', 'MANUAL', 'SUBMITTED'), ('KN-000001', 'AUTO_RETURN', 'NEW')]; KN-000001 evidence=[('SESSION', 'PACK', False), ('SESSION', 'RETURN', True), ('SNAPSHOT', None, False), ('SNAPSHOT', None, False), ('SNAPSHOT', None, False)] deadline_source=DEFAULT
+[✓] P3d 0006 backfill claim.submitted_at từ audit (KN-000002 SUBMITTED ở Phase 2; cột chỉ đọc, không có trong API-132 — xem DB) — KN-000001 NEW submitted_at=-; KN-000002 SUBMITTED submitted_at=2026-10-08 06:33:33.082572+00
+[✓] P3e hồ sơ hàng hoàn Phase 2 trên API-110 Phase 3 — [('HH-000003', 'UNANNOUNCED', 'CANCELLED', None, None), ('HH-000002', 'UNANNOUNCED', 'RECEIVED_OK', None, None), ('HH-000001', 'UNANNOUNCED', 'RECEIVED_ISSUE', None, None)]
+[✓] P4 API-70 GET /shops: platforms[] Shopee + TikTok, chưa cấu hình (staging không có partner) — platforms=[{"platform": "SHOPEE", "enabled": false, "returns_enabled": false, "configured": false}, {"platform": "TIKTOK", "enabled": false, "returns_enabled": false, "configured": false}] shops=[('SHOPEE', 'Shop Shopee STG (giả lập)', 'CONNECTED')]
+[✓] P4b API-71 auth-url shopee khi chưa cấu hình → 503 PLATFORM_NOT_CONFIGURED — 503 Chưa cấu hình Shopee Open Platform. Dùng Nhập đơn từ file.
+[✓] P4b API-71 auth-url tiktok khi chưa cấu hình → 503 PLATFORM_NOT_CONFIGURED — 503 Chưa cấu hình TikTok Shop. Liên hệ IT để bật (cần tài khoản đối tác TikTok Shop).
+[✓] P4c API-156 /shops/brief CSKH 200; /shops SUPERVISOR — brief 200 [('SHOPEE', 'Shop Shopee STG (giả lập)')]; /shops SUP 403
+[✓] P4d API-155 callback TikTok state sai → chuyển hướng lỗi (không 500) — 302 → /admin/settings/platforms?platform=tiktok&result=error
+[✓] P5 API-15x /reports/returns: quyền đúng ma trận — {'ADMIN': 200, 'SUPERVISOR': 200, 'CSKH': 200, 'STATION': 403}; tóm tắt={"period": {"from": "2026-09-09", "to": "2026-10-08"}, "filters": {"platform": null, "shop_id": null}, "generated_at": "2026-10-08T07:00:34.207840Z"}
+[✓] P5b API-153 /reports/returns/export CSV mở được (utf-8 BOM, dấu ';') — 200 text/csv; charset=utf-8 attachment; filename="bao-cao-hang-hoan-2026-09-09_2026-10-08.csv" 0.01s; 62 dòng; dòng 1–3=[['Báo cáo hàng hoàn'], ['Kỳ', '09/09/2026 – 08/10/2026'], ['Sàn', 'Tất cả']]; số cột tối đa=8
+[✓] P5 API-15x /reports/claims: quyền đúng ma trận — {'ADMIN': 200, 'SUPERVISOR': 200, 'CSKH': 200, 'STATION': 403}; tóm tắt={"period": {"from": "2026-09-09", "to": "2026-10-08"}, "filters": {"platform": null, "shop_id": null}, "generated_at": "2026-10-08T07:00:34.239239Z"}
+[✓] P5b API-153 /reports/claims/export CSV mở được (utf-8 BOM, dấu ';') — 200 text/csv; charset=utf-8 attachment; filename="bao-cao-khieu-nai-2026-09-09_2026-10-08.csv" 0.01s; 63 dòng; dòng 1–3=[['Báo cáo khiếu nại'], ['Kỳ', '09/09/2026 – 08/10/2026'], ['Sàn', 'Tất cả']]; số cột tối đa=6
+[✓] P5 API-15x /reports/productivity: quyền đúng ma trận — {'ADMIN': 200, 'SUPERVISOR': 200, 'CSKH': 403, 'STATION': 403}; tóm tắt={"period": {"from": "2026-09-09", "to": "2026-10-08"}, "filters": {"platform": null, "shop_id": null, "station_id": null}, "generated_at": "2026-10-08T07:00:34.291673Z"}
+[✓] P5b API-153 /reports/productivity/export CSV mở được (utf-8 BOM, dấu ';') — 200 text/csv; charset=utf-8 attachment; filename="bao-cao-nang-suat-2026-09-09_2026-10-08.csv" 0.01s; 24 dòng; dòng 1–3=[['Báo cáo năng suất'], ['Kỳ', '09/09/2026 – 08/10/2026'], ['Sàn', 'Tất cả']]; số cột tối đa=7
+[✓] P5c API-153 STATION → 403 — 403
+[✓] P5d API-150 kỳ > 366 ngày → 422 — 422 {"error":{"code":"VALIDATION_ERROR","message":"Dữ liệu không hợp lệ.","details":{"fields":{"from":"Chọn tối đa 366 ngày.","to":"Không chọn ngày trong 
+TỔNG: 26/26 ✓
+(lượt đầu: 21/26 — 5 ✗ đều do kỳ vọng sai của script: P3c phiên chính của hồ sơ AUTO_RETURN là phiên RETURN (BR-39), P3d submitted_at là cột chỉ đọc không có trong API-132 (kiểm ở DB), P5b CSV có khối tiêu đề 1 ô ở dòng 1. Đã sửa script, không sửa sản phẩm)
+
+## B. p3smoke2.py (P6–P9)
+2026-10-08T13:53:48+07:00
+[✓] P6 API-180: đã cấu hình, chờ xác nhận khóa, dấu vân tay = dòng in của backup-keygen — state=KEY_UNCONFIRMED enabled=False fp=A230-947D-47BC-2A4D storage={'endpoint_host': 'minio:9000', 'bucket': 'aicam-stg-backup'}
+[✓] P6b bật trước xác nhận → 409; vân tay sai → 409; SUPERVISOR 403; đúng → 200; bật → ON — 409 BACKUP_KEY_UNCONFIRMED; sai 409; SUP 403; đúng 200; bật 200 state=ON
+[✓] P6c API-183 kiểm tra kết nối (MinIO qua S3_ENDPOINT) ≤ 10 giây — 200 {'ok': True, 'elapsed_ms': 34} 0.04s
+[✓] P6d API-184 → J-20 trên worker-backup: SUCCESS, dấu vân tay khóa; gọi lại khi đang chạy → 409 — 202 run=SUCCESS size=265713 fp=A230-947D-47BC-2A4D; lại 409 BACKUP_RUNNING
+   J-21: (0, "{'clips': 10, 'snapshots': 5}")  J-22: (0, "{'lease_expired': 0, 'UPLOADED': 13}")
+[✗] P6e J-21 / J-22: bằng chứng hồ sơ (clip + ảnh) lên MinIO; DB + imports có bản .enc — db=[] imports=[] evidence=0 đối tượng; backup_object []
+Traceback (most recent call last):
+  File "/private/tmp/claude-501/-Users-admin-KhanhCode-AI-cam-shop-managment/e0a20f5e-6330-432a-9f3d-17819a1b4492/scratchpad/g5p3/p3smoke2.py", line 38, in <module>
+    head = dc("exec", "-T", "minio", "sh", "-c", 'mc alias set l http://localhost:9000 "$MINIO_ROOT_USER" "$MINIO_ROOT_PASSWORD" >/dev/null && mc cat l/aicam-stg-backup/' + (ev_objs or db_objs)[0] + " | head -c 9").stdout
+                                                                                                                                                                             ~~~~~~~~~~~~~~~~~~~~^^^
+IndexError: list index out of range
+----- (lượt 2 từ P6e) 2026-10-08T13:55:50+07:00
+(chạy tiếp từ P6e — lượt đầu dừng ở P6e vì script lọc sai tiền tố khóa đối tượng `backup/`; J-21 / J-22 chạy lại vô hại)
+   J-21: (0, "{'clips': 0, 'snapshots': 0}")  J-22: (0, "{'lease_expired': 0}")
+[✓] P6e J-21 / J-22: bằng chứng hồ sơ (clip + ảnh) lên MinIO; DB có bản .enc (imports: xem chi tiết) — db=['aicam-20261008T065349Z.dump.enc'] imports=['20261008T065349Z.tgz.enc'] evidence=15 đối tượng (10 clip, 5 ảnh); backup_object ['CLIP:UPLOADED=10', 'DB_DUMP:UPLOADED=1', 'IMPORTS:UPLOADED=1', 'SNAPSHOT:UPLOADED=5']
+[✗] P6f đối tượng trên kho là bản mã (đầu tệp AICAMENC1, nhà cung cấp không thấy rõ) — đầu tệp='AICAMENC\x01'
+[✓] P6h khóa ứng dụng của máy kho (policy s3-policy.example.json) KHÔNG xóa được phiên bản / tắt versioning (RK-28) — DeleteObjectVersion AccessDenied; PutBucketVersioning AccessDenied
+[✓] P6g backup-restore --list (ops §6.2) — exit=0
+Bản sao DB trên kho (mới nhất trước) — dùng: aicam backup-restore --db <khóa đối tượng>
+  backup/db/2026/10/08/aicam-20261008T065349Z.dump.enc  265,713 byte  2026-10-08 06:53 UTC  hoàn tất ← --db latest
+   API-164: storage_configured True [('RETURN', True, True, None), ('PACK', True, True, None)]
+[✓] P7 API-160 tạo link từ hồ sơ KN-000001 (nguồn CLAIM, phiên chọn sẵn) → 202 CREATING — 202  phiên=2
+[✓] P7b J-24 (worker-export, ffmpeg) → ACTIVE, URL trên https S3 công khai — ACTIVE sau 6s, url=https://s3.aicam-staging.test:8944/aicam-stg-share/share/[token]/index.html, items=[(1, True, 2555647, True), (2, True, 2756075, True)]
+[✓] P7c W1 mở thẳng từ MinIO (qua HTTPS giả lập, không cookie / Bearer): 200 text/html, có CSP, có mã vận đơn — 200 text/html; charset=utf-8, 8811 byte
+[✓] P7d video W1 tải được, SHA-256 = video_sha256, ffprobe H.264 (ghép 2 camera + chữ) — 200 video/mp4 sha khớp=True codec_name=h264 width=2560 height=720 duration=16.266667
+[✓] P7e ảnh JPEG trên W1 tải được — có ảnh
+[✓] P7f bỏ chữ ký → bị từ chối (bucket riêng tư, không liệt kê) — 403 application/xml
+[✓] P7g API-161 danh sách link + số theo trạng thái — counts={'ACTIVE': 1, 'REVOKED': 0, 'EXPIRED': 0, 'ALL': 1}
+[✓] P7h API-163 thu hồi → J-25 xóa bản cloud: W1 chết ≤ 60 giây — 200 REVOKED; W1 → 404 application/xml sau 3s
+[✓] P8 phiên mở hoàn bị hủy 'Quét nhầm' (tạo ở Phase 2) → API-164 evidence_exclusion; API-160 → 409 SESSION_EXCLUDED, không tạo link — API-164 [('STATION_CANCEL', True)]; API-160 409 SESSION_EXCLUDED details={'session_id': '01a11a37-8672-775b-b247-eae292df2370'}
+[✓] P8b phiên PACK cùng kiện vẫn tạo link được (202) — 202
+[✓] P9 API-170 kênh: nhà cung cấp chưa cấu hình (không có bot token / Zalo OA), có danh mục sự kiện — providers={'TELEGRAM': {'configured': False}, 'ZALO_OA': {'configured': False}} events=10 quiet={'enabled': True, 'start': '22:00', 'end': '07:00'}
+[✓] P9b API-171 thêm kênh khi chưa cấu hình → 409 PROVIDER_NOT_CONFIGURED; SUPERVISOR 403 — 409 Chưa cấu hình bot Telegram trên máy chủ. Liên hệ IT.; SUP 403
+[✓] P9c API-176 giờ yên lặng 200; API-175 nhật ký gửi 200 — 200 200 total=0
+TỔNG: 16/17 ✓
+(ghi chú B: P6e lượt 1 ✗ do script lọc khóa đối tượng thiếu tiền tố 'backup/' (đối tượng thật có — xem lượt 2); P6f ✗ do script so chuỗi 'AICAMENC1' trong khi định dạng là b'AICAMENC' + byte phiên bản 0x01 (cloud/crypto.py:3) — đầu tệp 'AICAMENC\x01' đúng định dạng AICAMENC1 → tính ✓. Kết quả B sau hiệu chỉnh: 17/17 ✓ (+ P6–P6d lượt 1 = 21/21).)
+
+## C. Khôi phục cloud → DB tạm + backup-verify
+## Khôi phục từ kho cloud vào DB TẠM aicam_cloudrestore + thư mục video TẠM (volume aicam-staging_vrestore) — ops §6.2 (không đụng DB / volume đang chạy) — 2026-10-08T13:56:39+07:00
+createdb exit=0
+2026-10-08 06:56:42 [info     ] backup_restore                 exit_code=0
+Đã khôi phục DB từ backup/db/2026/10/08/aicam-20261008T065349Z.dump.enc (khóa A230-947D-47BC-2A4D, 265,661 byte, pg_restore 0.4 giây).
+Đã khôi phục 0 file nhập vào /data/imports.
+Sao lưu tự động đã TẮT (Chờ kiểm khôi phục) tới khi `aicam backup-verify` đạt.
+Bằng chứng: tải 15 / thiếu (MISSING) 11 / ngoài DB 0 / giải mã lỗi 0 / thiếu khóa 0 (đã có trên đĩa 0, nguồn đã xóa theo lưu trữ 0, về lại bình thường 0) — 0.5 giây.
+Xong sau 1.0 giây.
+backup-restore exit=0 (4 giây)
+2026-10-08 06:56:44 [info     ] backup_verify                  accepted=0 mismatch=0 missing_known=11 ok=15
+khớp 15 / lệch đã chấp nhận 0 / lệch 0 / thiếu đã ghi nhận 11 / thiếu 0
+ĐẠT — đã gỡ 'Chờ kiểm khôi phục'. Admin bật lại sao lưu ở Dashboard → Sao lưu cloud.
+backup-verify exit=0 (2 giây)
+## So DB tạm (khôi phục từ cloud) với DB đang chạy: số dòng từng bảng (bản dump lúc 06:53Z; khác biệt = dữ liệu sinh sau đó)
+   audit_log live=60 restore=53 KHÁC
+   backup_object live=17 restore=0 KHÁC
+   refresh_token live=22 restore=18 KHÁC
+   share_item live=3 restore=0 KHÁC
+   share_link live=2 restore=0 KHÁC
+   video_segment live=49 restore=41 KHÁC
+   (bảng không liệt kê = cùng số dòng) tổng bảng: 38
+   clip trạng thái trong DB tạm: READY=10, MISSING=8
+   ảnh trạng thái trong DB tạm: MISSING=3, READY=5
+   setting backup trong DB tạm: false restore_pending=false
+   tệp trong thư mục tạm:      10 clips       5 snapshots 
+   xoá DB tạm: exit=0
+   xoá volume tạm aicam-staging_vrestore: exit=0
+
+## D. FE (Playwright Chromium, ignoreHTTPSErrors, bắt console error + securitypolicyviolation) + W1
+(lượt 1 của script: bước CSKH bị 401 do script chờ URL /admin khớp ngay /admin/login trước khi đăng nhập xong; bước station dùng sai nhãn ô — lỗi script, chạy lại toàn bộ)
+đăng nhập admin qua FE: /admin
+/admin: → /admin chữ "" -; lỗi console mới=0; CSP=0
+/admin/reports: → /admin/reports chữ "Báo cáo" có; lỗi console mới=0; CSP=0
+/admin/shares: → /admin/shares chữ "SPXSTG0000005" có; lỗi console mới=0; CSP=0
+/admin/settings/platforms: → /admin/settings/platforms chữ "TikTok" có; lỗi console mới=0; CSP=0
+/admin/settings/shopee: → /admin/settings/platforms chữ "TikTok" có; lỗi console mới=0; CSP=0
+/admin/settings/notifications: → /admin/settings/notifications chữ "Telegram" có; lỗi console mới=0; CSP=0
+/admin/settings/backup: → /admin/settings/backup chữ "A230-947D-47BC-2A4D" có; lỗi console mới=0; CSP=0
+/admin/claims/01a11a37-56f6-7656-8465-309e1ac1edbb: → /admin/claims/01a11a37-56f6-7656-8465-309e1ac1edbb chữ "KN-000001" có; lỗi console mới=0; CSP=0
+/admin/packages/01a11a36-1b9e-773d-a5e8-5bc8f2191556: → /admin/packages/01a11a36-1b9e-773d-a5e8-5bc8f2191556 chữ "SPXSTG0000002" có; lỗi console mới=0; CSP=0
+/admin/returns: → /admin/returns chữ "" -; lỗi console mới=0; CSP=0
+/admin/recon: → /admin/recon chữ "" -; lỗi console mới=0; CSP=0
+/admin/settings/storage: → /admin/settings/storage chữ "" -; lỗi console mới=0; CSP=0
+/admin/reports: → /admin/reports chữ "Báo cáo" có; lỗi console mới=0; CSP=0
+/admin/settings/backup: → /admin/forbidden chữ "" -; lỗi console mới=0; CSP=0
+station đăng nhập: → /station; lỗi console=0 []; CSP=0
+W1 (Chromium, không đăng nhập): HTTP 200 tiêu đề="Bằng chứng video — Hệ thống X" video={"rs":4,"d":17.133333,"w":2560} ảnh naturalWidth=[1280]; lỗi console=0 []; CSP=0
+TỔNG lỗi console=0, CSP=0
+Ảnh /admin/reports: phát hiện BUG-G5-P3-1 — khối 'Theo sàn / shop' hiện 'undefined · null' cho kiện không có shop (đơn nhập CSV). CSV xuất ghi đúng ';(Không có shop)'. FE ReturnsReportView.tsx:132, ClaimsReportView.tsx:121: `${PLATFORM_SHORT[r.platform]} · ${r.shop_name}` không xử lý platform / shop_name null.
+
+## E. Beat (lịch Phase 3 có trong image; đã gửi thật trong ~12 phút chạy)
+   2 Sending due task j04-sync-orders (platforms.sync_orders)
+   1 Sending due task j05-verify-unverified (platforms.verify_unverified)
+  21 Sending due task j07-session-timeouts (sessions.check_timeouts)
+   1 Sending due task j09-check-clock-drift (stations.check_clock_drift)
+  10 Sending due task j10-index-segments (media.index_segments)
+   2 Sending due task j11-housekeeping (maintenance.housekeeping)
+   1 Sending due task j21-backup-enqueue (backup.enqueue_evidence)
+   2 Sending due task j22-backup-upload (backup.upload_evidence)
+  10 Sending due task j25-share-cleanup (shares.cleanup)
+  21 Sending due task j26-notify-scan (notify.scan)
+  42 Sending due task j27-notify-dispatch (notify.dispatch)
+j20-backup-db backup.run_db <crontab: 0 0,6,12,18 * * * (m/h/dM/MY/d)>
+j21-backup-enqueue backup.enqueue_evidence 600.0
+j22-backup-upload backup.upload_evidence 300.0
+j23-backup-prune backup.prune <crontab: 0 20 * * * (m/h/dM/MY/d)>
+j25-share-cleanup shares.cleanup 60.0
+j26-notify-scan notify.scan 30.0
+j27-notify-dispatch notify.dispatch 15.0
+j28-notify-daily-summary notify.daily_summary <crontab: 0 11 * * * (m/h/dM/MY/d)>
+
+## F. Kiểm cấu hình production (validator settings, APP_ENV=production) — dc3 run --rm --no-deps -e … api
+   -e TIKTOK_ENABLED=true -e TIKTOK_ADAPTER=mock -e TIKTOK_APP_KEY=x -e TIKTOK_APP_SECRET=y -e TIKTOK_SERVICE_ID=z → Value error, Môi trường production không được dùng TIKTOK_ADAPTER=mock khi bật TikTok 
+   -e TIKTOK_ENABLED=true → Value error, TIKTOK_ENABLED cần đặt: TIKTOK_APP_KEY, TIKTOK_APP_SECRET, TIKTOK_SERVICE_ID 
+   -e NOTIFY_TRANSPORT=mock → Value error, Production không được dùng NOTIFY_TRANSPORT=mock 
+   -e PLATFORM_ADAPTER=mock → Value error, Production không được dùng PLATFORM_ADAPTER=mock 
+   -e S3_PUBLIC_ENDPOINT=http://s3.aicam-staging.test:8944 → Value error, Production: S3_PUBLIC_ENDPOINT (hoặc S3_ENDPOINT) phải là https:// (NFR-42) 
+   -e S3_PUBLIC_ENDPOINT=https://localhost:8944 → Value error, Production không được dùng S3_PUBLIC_ENDPOINT trỏ localhost 
+   -e S3_SHARE_BUCKET=aicam-stg-backup → Value error, S3_BUCKET (sao lưu) và S3_SHARE_BUCKET (link) phải là hai bucket khác nhau 
+   → TikTok thật / thông báo thật / Shopee thật không smoke được trên staging: production cấm adapter / transport mock, chưa có tài khoản đối tác (Q18 / T-3) và bot (Q21) → 'chưa test'.
